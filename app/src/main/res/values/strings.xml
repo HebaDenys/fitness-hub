@@ -1,0 +1,280 @@
+<resources>
+    <string name="privacy_rationale_title">Why Fitness Hub reads your health data</string>
+    <string name="privacy_rationale_icon_description">Health data privacy</string>
+    <string name="privacy_rationale_body">Fitness Hub is local-first: your health data stays on this device. There is no cloud, no account, and no tracking. Health Connect access is used only to import the metrics shown in the app.</string>
+    <string name="privacy_rationale_purpose_heading">What each metric is used for</string>
+    <string name="privacy_rationale_purpose_activity">Steps, distance, and calories: your daily activity summaries.</string>
+    <string name="privacy_rationale_purpose_sleep">Sleep: your nightly sleep duration and sleep trends.</string>
+    <string name="privacy_rationale_purpose_heart_rate">Heart rate: your resting heart rate and recorded heart rate readings.</string>
+    <string name="privacy_rationale_purpose_oxygen">Oxygen saturation: your SpO2 readings.</string>
+    <string name="privacy_rationale_purpose_weight">Weight and body composition: your weight and body fat trends.</string>
+    <string name="privacy_rationale_continue">Continue</string>
+
+    <!-- App & Navigation -->
+    <string name="app_name">Fitness Hub</string>
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_activity">Activity</string>
+    <string name="nav_sleep">Sleep</string>
+    <string name="nav_body">Body</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Screen States -->
+    <string name="state_loading">Loading health dataâ€¦</string>
+    <string name="state_empty_title">No health data available</string>
+    <string name="state_empty_description">Sync your data or check Health Connect permissions to start seeing your health insights.</string>
+    <string name="state_permission_title">Permissions required</string>
+    <string name="state_permission_description">Fitness Hub needs Health Connect permissions to display this metric.</string>
+    <string name="state_error_title">Something went wrong</string>
+    <string name="action_grant_permissions">Grant permissions</string>
+    <string name="action_open_settings">Go to settings</string>
+    <string name="action_retry">Retry</string>
+    <string name="action_sync_now">Sync now</string>
+    <string name="action_syncing">Syncingâ€¦</string>
+
+    <!-- Metrics -->
+    <string name="metric_steps">Steps</string>
+    <string name="metric_distance">Distance</string>
+    <string name="metric_active_calories">Active calories</string>
+    <string name="metric_total_calories">Total calories</string>
+    <string name="metric_sleep">Sleep</string>
+    <string name="metric_resting_heart_rate">Resting HR</string>
+    <string name="metric_oxygen_saturation">Oxygen saturation</string>
+    <string name="metric_weight">Weight</string>
+    <string name="metric_body_fat">Body fat</string>
+    <string name="metric_exercise">Exercise</string>
+    <string name="metric_heart_rate">Heart rate</string>
+
+    <!-- Values & Units -->
+    <string name="value_unavailable">Unavailable</string>
+    <string name="value_not_recorded">Not recorded</string>
+    <string name="value_permission_denied">Permission denied</string>
+    <string name="unit_steps">%1$d steps</string>
+    <string name="unit_km">%1$.1f km</string>
+    <string name="unit_kcal">%1$.0f kcal</string>
+    <string name="unit_minutes">%1$d min</string>
+    <string name="unit_hours_minutes">%1$dh %2$dm</string>
+    <string name="unit_bpm">%1$d bpm</string>
+    <string name="unit_percent">%1$.1f%%</string>
+    <string name="unit_kg">%1$.1f kg</string>
+
+    <!-- Baseline deltas -->
+    <string name="delta_no_baseline">No baseline</string>
+    <string name="delta_no_change">No change</string>
+    <string name="delta_positive">+%1$s</string>
+    <string name="delta_negative">-%1$s</string>
+    <string name="delta_vs_previous">vs previous period</string>
+    <string name="cd_delta_increased">Increased by %1$s compared to previous period</string>
+    <string name="cd_delta_decreased">Decreased by %1$s compared to previous period</string>
+    <string name="cd_delta_unchanged">Unchanged compared to previous period</string>
+    <string name="cd_delta_no_baseline">No baseline available for comparison</string>
+
+    <!-- Provenance -->
+    <string name="provenance_estimate">ESTIMATE</string>
+    <string name="provenance_measured">MEASURED</string>
+    <string name="provenance_estimate_description">Derived metric estimated via impedance formula</string>
+    <string name="provenance_algorithm">Algorithm: %1$s</string>
+
+    <!-- Range Selector -->
+    <string name="range_7d">7D</string>
+    <string name="range_30d">30D</string>
+    <string name="range_90d">90D</string>
+    <string name="cd_range_selector">Select chart time range</string>
+
+    <!-- Charts -->
+    <string name="chart_steps_title">Steps trend</string>
+    <string name="chart_sleep_title">Sleep trend</string>
+    <string name="chart_weight_title">Weight trend</string>
+    <string name="cd_chart_steps">Steps trend chart for selected period</string>
+    <string name="cd_chart_sleep">Sleep duration trend chart for selected period</string>
+    <string name="cd_chart_weight">Weight trend chart for selected period</string>
+    <string name="chart_gaps_note">Gaps indicate days without measurements</string>
+
+    <!-- Dashboard Screen -->
+    <string name="dashboard_title">Dashboard</string>
+    <string name="dashboard_today_section">Today</string>
+    <string name="dashboard_trends_section">Trends</string>
+    <string name="dashboard_date_today">Today</string>
+    <string name="dashboard_date_yesterday">Yesterday</string>
+    <string name="dashboard_sync_success">Synchronization complete</string>
+    <string name="dashboard_sync_failed">Synchronization failed. Check Health Connect permissions and try again.</string>
+
+    <!-- Activity Screen -->
+    <string name="activity_title">Activity</string>
+    <string name="activity_history_section">Daily history</string>
+
+    <!-- Sleep Screen -->
+    <string name="sleep_title">Sleep</string>
+    <string name="sleep_attribution_note">Attributed to wake day</string>
+    <string name="sleep_history_section">Nightly history</string>
+
+    <!-- Body Screen -->
+    <string name="body_title">Body Composition</string>
+    <string name="body_history_section">Measurement history</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_hc_section">Health Connect</string>
+    <string name="settings_hc_connected">Connected</string>
+    <string name="settings_hc_disconnected">Permissions required</string>
+    <string name="settings_hc_unavailable">Health Connect unavailable</string>
+    <string name="settings_history_access">Historical data (30+ days)</string>
+    <string name="settings_history_granted">Granted</string>
+    <string name="settings_history_denied">Not granted</string>
+    <string name="settings_permissions_section">Metric permissions</string>
+    <string name="settings_permission_granted">Granted</string>
+    <string name="settings_permission_denied">Not granted</string>
+    <string name="settings_sync_section">Synchronization</string>
+    <string name="settings_privacy_section">Privacy</string>
+    <string name="settings_privacy_description">Local-first: all health records remain on your device. No cloud storage, tracking, or remote backends.</string>
+    <string name="settings_view_rationale">View privacy notice</string>
+
+    <!-- Accessibility descriptions -->
+    <string name="cd_icon_dashboard">Dashboard navigation icon</string>
+    <string name="cd_icon_activity">Activity navigation icon</string>
+    <string name="cd_icon_sleep">Sleep navigation icon</string>
+    <string name="cd_icon_body">Body composition navigation icon</string>
+    <string name="cd_icon_settings">Settings navigation icon</string>
+    <string name="cd_metric_card">%1$s: %2$s</string>
+    <string name="cd_sync_in_progress">Synchronization in progress</string>
+    <string name="cd_status_icon">Status icon</string>
+
+    <string name="nutrition_title">Nutrition</string>
+    <string name="nutrition_daily_totals">Daily totals</string>
+    <string name="nutrition_logged_items">Logged items</string>
+    <string name="nutrition_empty_hint">No food logged for this day. Scan a barcode, photograph a nutrition label, or add an item manually.</string>
+    <string name="nutrition_scan_barcode">Scan barcode</string>
+    <string name="nutrition_scan_barcode_short">Barcode</string>
+    <string name="nutrition_capture_label">Photograph nutrition label</string>
+    <string name="nutrition_capture_label_short">Label</string>
+    <string name="nutrition_capture">Capture</string>
+    <string name="nutrition_manual_entry">Manual</string>
+    <string name="nutrition_camera_permission_required">Camera access is needed to scan barcodes and read labels. Everything works without it if you add items manually.</string>
+    <string name="nutrition_barcode_unknown">This barcode is not in the local database. Photograph the nutrition label or enter the values manually.</string>
+    <string name="nutrition_entry_summary">%1$s Â· %2$s serving(s) Â· %3$s</string>
+    <string name="nutrition_catalog_title">Online product lookup</string>
+    <string name="nutrition_catalog_description">Off by default. When enabled, unknown barcodes are looked up on Open Food Facts and cached locally.</string>
+    <string name="nutrition_confirm_title">Confirm values</string>
+    <string name="nutrition_confirm_provenance">Source: %1$s. Check the values before saving.</string>
+    <string name="nutrition_field_name">Product name</string>
+    <string name="nutrition_field_servings">Servings</string>
+    <string name="nutrition_choose_meal">Meal</string>
+    <string name="meal_breakfast">Breakfast</string>
+    <string name="meal_lunch">Lunch</string>
+    <string name="meal_dinner">Dinner</string>
+    <string name="meal_snack">Snack</string>
+    <string name="metric_energy">Energy</string>
+    <string name="metric_protein">Protein</string>
+    <string name="metric_carbs">Carbs</string>
+    <string name="metric_fat">Fat</string>
+    <string name="metric_sugar">Sugar</string>
+    <string name="unit_grams">%1$s g</string>
+    <string name="action_close">Close</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_save">Save</string>
+    <string name="action_remove_entry">Remove entry</string>
+    <string name="provenance_label_ocr">read from label</string>
+    <string name="provenance_open_food_facts">Open Food Facts</string>
+    <string name="provenance_user_entered">entered by you</string>
+    <string name="nav_nutrition">Nutrition</string>
+    <string name="cd_icon_nutrition">Nutrition tab</string>
+    <string name="scale_section">Xiaomi scale (local Bluetooth)</string>
+    <string name="scale_section_description">Fitness Hub listens for your scale\'s encrypted broadcasts locally. No Xiaomi account is used and nothing is sent to any server. Only weigh-ins from now on can be captured.</string>
+    <string name="scale_bindkey_label">Scale bindkey (32 hex characters)</string>
+    <string name="scale_bindkey_supporting">Extract it from your Xiaomi account with a community tool, then paste it here. It is stored encrypted in the Android Keystore.</string>
+    <string name="scale_bindkey_saved">Bindkey stored.</string>
+    <string name="scale_bindkey_invalid">That is not a valid 16-byte hex bindkey.</string>
+    <string name="scale_bindkey_remove">Remove key</string>
+    <string name="scale_profile_title">Profile for estimates</string>
+    <string name="scale_profile_description">Height, age and sex are needed to estimate body composition from weight. Estimates are labelled with the formula used.</string>
+    <string name="scale_profile_height">Height (cm)</string>
+    <string name="scale_profile_age">Age</string>
+    <string name="sex_male">Male</string>
+    <string name="sex_female">Female</string>
+    <string name="scale_bluetooth_unavailable">Bluetooth is off. Turn it on to receive weigh-ins.</string>
+    <string name="scale_start_scanning">Start listening for weigh-ins</string>
+    <string name="scale_stop_scanning">Stop listening</string>
+    <string name="scale_scanning_hint">Step on the scale now. A few seconds after you step off, the scale keeps advertising, so stay clear until listening stops.</string>
+    <string name="scale_last_measurement">Last weigh-in</string>
+    <string name="scale_weight_reading">Weight: %1$s kg</string>
+    <string name="scale_impedance_reading">Impedance: %1$s Ohm</string>
+    <string name="nav_workout">Workouts</string>
+    <string name="cd_icon_workout">Workouts tab</string>
+    <string name="workout_title">Workouts</string>
+    <string name="workout_start_session">Start session</string>
+    <string name="workout_end_session">End session</string>
+    <string name="workout_log_set">Log a set</string>
+    <string name="workout_reps">Repetitions</string>
+    <string name="workout_load_kg">Load (kg)</string>
+    <string name="workout_rpe">RPE (perceived effort)</string>
+    <string name="workout_rpe_hint">1 to 10</string>
+    <string name="workout_rir">Reps in reserve</string>
+    <string name="workout_rir_hint">How many reps you could still have done</string>
+    <string name="workout_warm_up">Warm-up</string>
+    <string name="workout_session_sets">Sets in this session</string>
+    <string name="workout_set_summary">Set %1$d · %2$s reps · %3$s kg</string>
+    <string name="workout_delete_set">Remove set</string>
+    <string name="workout_records">Personal records</string>
+    <string name="workout_record_one_rm">Heaviest single: %1$s kg x %2$s</string>
+    <string name="workout_record_three_rm">Estimated 3RM: %1$s kg</string>
+    <string name="workout_record_volume">Best set volume: %1$s kg x %2$s</string>
+    <string name="workout_record_estimated">Estimated with %1$s</string>
+    <string name="workout_add_exercise">Add a custom exercise</string>
+    <string name="workout_exercise_name">Exercise name</string>
+    <string name="workout_unknown_exercise">Unknown exercise</string>
+    <string name="workout_rest_timer">Rest timer</string>
+    <string name="workout_rest_remaining">Rest %1$d s</string>
+    <string name="workout_estimated_one_rm">Estimated one-rep max</string>
+    <string name="action_skip">Skip</string>
+    <string name="muscle_chest">Chest</string>
+    <string name="muscle_back">Back</string>
+    <string name="muscle_legs">Legs</string>
+    <string name="muscle_shoulders">Shoulders</string>
+    <string name="muscle_arms">Arms</string>
+    <string name="muscle_core">Core</string>
+    <string name="muscle_full_body">Full body</string>
+    <string name="muscle_cardio">Cardio</string>
+    <!-- Insights and cross-domain analytics -->
+    <string name="insights_title">Insights</string>
+    <string name="insights_chart_title">%1$s trend</string>
+    <string name="insights_sample_size">Based on %1$d days with both values</string>
+    <string name="insights_correlation_value">Correlation with %4$s: %1$.2f (%2$s, with %3$s)</string>
+    <string name="insights_correlation_none">Not enough overlapping days to compare these two series yet.</string>
+    <string name="insights_strength_strong">strong</string>
+    <string name="insights_strength_moderate">moderate</string>
+    <string name="insights_strength_none">no clear relationship</string>
+    <string name="insights_advisory">These two series move together across the days shown. That is an association, not a cause: changing one would not necessarily change the other.</string>
+
+    <!-- Encrypted backup and restore -->
+    <string name="backup_title">Encrypted backup</string>
+    <string name="backup_description">Backups are encrypted on this device with your passphrase. Nothing is uploaded. Keep the passphrase safe: without it the backup cannot be restored.</string>
+    <string name="backup_passphrase">Passphrase</string>
+    <string name="backup_create">Create backup</string>
+    <string name="backup_created">Backup created. Copy this archive somewhere safe.</string>
+    <string name="backup_archive">Backup archive</string>
+    <string name="backup_restore">Restore from archive</string>
+    <string name="backup_restored">Restore finished: %1$d rows imported.</string>
+    <string name="backup_failed">Backup failed (%1$s).</string>
+
+    <!-- Shared actions -->
+    <string name="action_dismiss">Dismiss</string>
+    <string name="cd_navigate_back">Navigate back</string>
+    <string name="insights_settings_description">Cross-domain trends, correlations, and encrypted backups.</string>
+    <string name="insights_open">Open insights and backup</string>
+    <!-- Optional AI (bring your own key) -->
+    <string name="ai_section_title">Optional AI</string>
+    <string name="ai_section_description">Off by default. You supply your own provider key, it is encrypted on this device, and nothing is sent until you review the exact request and confirm it.</string>
+    <string name="ai_enable_label">Enable AI features</string>
+    <string name="ai_provider_label">Provider</string>
+    <string name="ai_provider_unset">Not set</string>
+    <string name="ai_api_key_label">API key</string>
+    <string name="ai_save_key">Save key</string>
+    <string name="ai_clear_key">Delete key</string>
+    <string name="ai_prompt_label">Describe a meal or workout</string>
+    <string name="ai_review_payload">Review request</string>
+    <string name="ai_result_ok">Provider responded.</string>
+    <string name="ai_result_failed">Request failed (%1$s).</string>
+    <string name="ai_confirm_title">Send this request?</string>
+    <string name="ai_confirm_body">This is the exact content that will leave your device. Your key is shown masked. Nothing is sent unless you tap send.</string>
+    <string name="ai_confirm_send">Send</string>
+    <string name="ai_confirm_cancel">Cancel</string>
+</resources>

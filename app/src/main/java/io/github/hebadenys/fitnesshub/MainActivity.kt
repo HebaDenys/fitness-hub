@@ -1,67 +1,170 @@
 package io.github.hebadenys.fitnesshub
+
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.FitnessCenter
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.compose.*
-import io.github.hebadenys.fitnesshub.core.database.DailyHealthEntity
-import io.github.hebadenys.fitnesshub.core.healthconnect.HealthConnectManager
-import io.github.hebadenys.fitnesshub.core.sync.HealthSyncRepository
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
-import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
-import javax.inject.Inject
+import io.github.hebadenys.fitnesshub.feature.activity.ActivityScreen
+import io.github.hebadenys.fitnesshub.feature.body.BodyScreen
+import io.github.hebadenys.fitnesshub.feature.dashboard.DashboardScreen
+import io.github.hebadenys.fitnesshub.feature.insights.InsightsScreen
+import io.github.hebadenys.fitnesshub.feature.nutrition.NutritionScreen
+import io.github.hebadenys.fitnesshub.feature.settings.SettingsScreen
+import io.github.hebadenys.fitnesshub.feature.sleep.SleepScreen
+import io.github.hebadenys.fitnesshub.feature.workout.WorkoutScreen
+import io.github.hebadenys.fitnesshub.ui.theme.FitnessHubTheme
 
-@AndroidEntryPoint class MainActivity:ComponentActivity(){
- override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);setContent{MaterialTheme{FitnessHubUi()}}}
+@AndroidEntryPoint
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            FitnessHubTheme {
+                FitnessHubAppRoot()
+            }
+        }
+    }
 }
-@HiltViewModel class MainViewModel @Inject constructor(val health:HealthConnectManager,private val repo:HealthSyncRepository):ViewModel(){
- val days=repo.observeDaily().stateIn(viewModelScope,SharingStarted.WhileSubscribed(5000),emptyList())
- var status by mutableStateOf<String?>(null); private set
- fun sync(){viewModelScope.launch{status=repo.sync().fold({"Synchronization complete"},{"Sync failed: "+(it.message?:"unknown error")})}}
+
+private enum class Screen(
+    val route: String,
+    val labelRes: Int,
+    val icon: ImageVector,
+    val cdRes: Int
+) {
+    Dashboard("dashboard", R.string.nav_dashboard, Icons.Default.Home, R.string.cd_icon_dashboard),
+    Activity("activity", R.string.nav_activity, Icons.Default.LocationOn, R.string.cd_icon_activity),
+    Sleep("sleep", R.string.nav_sleep, Icons.Default.DateRange, R.string.cd_icon_sleep),
+    Body("body", R.string.nav_body, Icons.Default.Favorite, R.string.cd_icon_body),
+    Nutrition("nutrition", R.string.nav_nutrition, Icons.Default.Restaurant, R.string.cd_icon_nutrition),
+    Workout("workout", R.string.nav_workout, Icons.Default.FitnessCenter, R.string.cd_icon_workout);
+
+    companion object {
+        const val SETTINGS_ROUTE = "settings"
+        const val INSIGHTS_ROUTE = "insights"
+    }
 }
-@Composable fun FitnessHubUi(vm:MainViewModel=hiltViewModel()){
- val nav=rememberNavController(); val routes=listOf("dashboard","activity","sleep","body","settings")
- Scaffold(bottomBar={NavigationBar{routes.forEach{route->NavigationBarItem(selected=false,onClick={nav.navigate(route){launchSingleTop=true}},icon={},label={Text(route.replaceFirstChar{it.uppercase()})})}}}){padding->
-  NavHost(navController=nav,startDestination="dashboard",modifier=Modifier.padding(padding)){
-   composable("dashboard"){Dashboard(vm)}
-   composable("activity"){MetricList(vm,"Activity"){d->"Steps: "+d.steps+" · Distance: "+String.format("%.1f",d.distanceMeters/1000)+" km · Active: "+String.format("%.0f",d.activeCalories)+" kcal"}}
-   composable("sleep"){MetricList(vm,"Sleep"){d->"Sleep: "+(d.sleepMinutes?:0)+" min · Resting HR: "+(d.restingHeartRate?.toString()?:"—")}}
-   composable("body"){MetricList(vm,"Body"){d->"Weight: "+(d.weightKg?.let{String.format("%.1f",it)}?:"—")+" kg · Body fat: "+(d.bodyFatPercent?.let{String.format("%.1f",it)}?:"—")+"%"}}
-   composable("settings"){Settings(vm)}
-  }
- }
-}
-@Composable private fun Dashboard(vm:MainViewModel){
- val days by vm.days.collectAsStateWithLifecycle(); val d=days.firstOrNull()
- Column(Modifier.fillMaxSize().padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
-  Text("Fitness Hub",style=MaterialTheme.typography.headlineMedium)
-  if(d==null) Text("No health data imported yet.") else { Text("Today",style=MaterialTheme.typography.titleLarge);Text("Steps: "+d.steps);Text("Active calories: "+String.format("%.0f",d.activeCalories)+" kcal");Text("Sleep: "+(d.sleepMinutes?:0)+" min");Text("Weight: "+(d.weightKg?.let{String.format("%.1f kg",it)}?:"Unavailable"));Text("Resting HR: "+(d.restingHeartRate?.let{it.toString()+" bpm"}?:"Unavailable")) }
-  vm.status?.let{Text(it)}
- }
-}
-@Composable private fun MetricList(vm:MainViewModel,title:String,line:(DailyHealthEntity)->String){
- val days by vm.days.collectAsStateWithLifecycle()
- Column(Modifier.fillMaxSize().padding(20.dp)){Text(title,style=MaterialTheme.typography.headlineMedium);Spacer(Modifier.height(12.dp));LazyColumn(verticalArrangement=Arrangement.spacedBy(8.dp)){items(days,key={it.date}){d->Card(Modifier.fillMaxWidth()){Column(Modifier.padding(12.dp)){Text(d.date,style=MaterialTheme.typography.titleMedium);Text(line(d))}}}}}
-}
-@Composable private fun Settings(vm:MainViewModel){
- val scope=rememberCoroutineScope();var granted by remember{mutableStateOf(false)}
- val launcher=rememberLauncherForActivityResult(vm.health.permissionContract){scope.launch{granted=vm.health.hasPermissions()}}
- LaunchedEffect(Unit){granted=vm.health.hasPermissions()}
- Column(Modifier.fillMaxSize().padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
-  Text("Settings",style=MaterialTheme.typography.headlineMedium);Text(if(vm.health.client==null)"Health Connect unavailable" else if(granted)"Health Connect connected" else "Health Connect permissions required")
-  if(vm.health.client!=null&&!granted) Button(onClick={launcher.launch(vm.health.permissions)}){Text("Grant permissions")}
-  Button(enabled=granted,onClick=vm::sync){Text("Sync now")};vm.status?.let{Text(it)}
- }
+
+@Composable
+fun FitnessHubAppRoot() {
+    val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route ?: Screen.Dashboard.route
+
+    Scaffold(
+        bottomBar = {
+            NavigationBar {
+                Screen.entries.forEach { screen ->
+                    val selected = currentRoute == screen.route
+                    NavigationBarItem(
+                        selected = selected,
+                        onClick = {
+                            if (!selected) {
+                                navController.navigate(screen.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+                        },
+                        icon = {
+                            Icon(
+                                imageVector = screen.icon,
+                                contentDescription = stringResource(screen.cdRes)
+                            )
+                        },
+                        label = {
+                            Text(text = stringResource(screen.labelRes))
+                        }
+                    )
+                }
+            }
+        }
+    ) { padding ->
+        NavHost(
+            navController = navController,
+            startDestination = Screen.Dashboard.route,
+            modifier = Modifier.padding(padding)
+        ) {
+            composable(Screen.Dashboard.route) {
+                DashboardScreen(
+                    onNavigateToSettings = {
+                        navController.navigate(Screen.SETTINGS_ROUTE) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+            composable(Screen.Activity.route) {
+                ActivityScreen(
+                    onNavigateToSettings = {
+                        navController.navigate(Screen.SETTINGS_ROUTE) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+            composable(Screen.Sleep.route) {
+                SleepScreen(
+                    onNavigateToSettings = {
+                        navController.navigate(Screen.SETTINGS_ROUTE) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+            composable(Screen.Body.route) {
+                BodyScreen(
+                    onNavigateToSettings = {
+                        navController.navigate(Screen.SETTINGS_ROUTE) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+            composable(Screen.Nutrition.route) {
+                NutritionScreen()
+            }
+            composable(Screen.Workout.route) {
+                WorkoutScreen()
+            }
+            composable(Screen.SETTINGS_ROUTE) {
+                SettingsScreen(
+                    onNavigateToInsights = {
+                        navController.navigate(Screen.INSIGHTS_ROUTE) {
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+            composable(Screen.INSIGHTS_ROUTE) {
+                InsightsScreen(onNavigateBack = { navController.popBackStack() })
+            }
+        }
+    }
 }

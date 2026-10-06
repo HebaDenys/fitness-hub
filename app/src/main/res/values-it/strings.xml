@@ -1,0 +1,280 @@
+<resources>
+    <string name="privacy_rationale_title">PerchÃ© Fitness Hub legge i tuoi dati sanitari</string>
+    <string name="privacy_rationale_icon_description">Privacy dei dati sanitari</string>
+    <string name="privacy_rationale_body">Fitness Hub funziona in locale: i tuoi dati sanitari restano su questo dispositivo. Non ci sono cloud, account o tracciamenti; l\'accesso a Health Connect serve esclusivamente a importare le metriche mostrate nell\'app.</string>
+    <string name="privacy_rationale_purpose_heading">A cosa serve ogni metrica</string>
+    <string name="privacy_rationale_purpose_activity">Passi, distanza e calorie: i riepiloghi della tua attivitÃ  giornaliera.</string>
+    <string name="privacy_rationale_purpose_sleep">Sonno: la durata del sonno notturno e le tue tendenze del sonno.</string>
+    <string name="privacy_rationale_purpose_heart_rate">Frequenza cardiaca: la frequenza a riposo e i rilevamenti registrati.</string>
+    <string name="privacy_rationale_purpose_oxygen">Saturazione dell\'ossigeno: i tuoi valori di SpO2.</string>
+    <string name="privacy_rationale_purpose_weight">Peso e composizione corporea: le tendenze di peso e di massa grassa.</string>
+    <string name="privacy_rationale_continue">Continua</string>
+
+    <!-- App & Navigation -->
+    <string name="app_name">Fitness Hub</string>
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_activity">AttivitÃ </string>
+    <string name="nav_sleep">Sonno</string>
+    <string name="nav_body">Corpo</string>
+    <string name="nav_settings">Impostazioni</string>
+
+    <!-- Screen States -->
+    <string name="state_loading">Caricamento dati sanitariâ€¦</string>
+    <string name="state_empty_title">Nessun dato sanitario disponibile</string>
+    <string name="state_empty_description">Sincronizza i tuoi dati o verifica i permessi di Health Connect per iniziare a visualizzare i tuoi dati sanitari.</string>
+    <string name="state_permission_title">Permessi richiesti</string>
+    <string name="state_permission_description">Fitness Hub richiede i permessi di Health Connect per visualizzare questa metrica.</string>
+    <string name="state_error_title">Si Ã¨ verificato un errore</string>
+    <string name="action_grant_permissions">Concedi permessi</string>
+    <string name="action_open_settings">Vai a Impostazioni</string>
+    <string name="action_retry">Riprova</string>
+    <string name="action_sync_now">Sincronizza ora</string>
+    <string name="action_syncing">Sincronizzazioneâ€¦</string>
+
+    <!-- Metrics -->
+    <string name="metric_steps">Passi</string>
+    <string name="metric_distance">Distanza</string>
+    <string name="metric_active_calories">Calorie attive</string>
+    <string name="metric_total_calories">Calorie totali</string>
+    <string name="metric_sleep">Sonno</string>
+    <string name="metric_resting_heart_rate">FC a riposo</string>
+    <string name="metric_oxygen_saturation">Saturazione ossigeno</string>
+    <string name="metric_weight">Peso</string>
+    <string name="metric_body_fat">Massa grassa</string>
+    <string name="metric_exercise">Allenamento</string>
+    <string name="metric_heart_rate">Frequenza cardiaca</string>
+
+    <!-- Values & Units -->
+    <string name="value_unavailable">Non disponibile</string>
+    <string name="value_not_recorded">Non registrato</string>
+    <string name="value_permission_denied">Permesso negato</string>
+    <string name="unit_steps">%1$d passi</string>
+    <string name="unit_km">%1$.1f km</string>
+    <string name="unit_kcal">%1$.0f kcal</string>
+    <string name="unit_minutes">%1$d min</string>
+    <string name="unit_hours_minutes">%1$dh %2$dm</string>
+    <string name="unit_bpm">%1$d bpm</string>
+    <string name="unit_percent">%1$.1f%%</string>
+    <string name="unit_kg">%1$.1f kg</string>
+
+    <!-- Baseline deltas -->
+    <string name="delta_no_baseline">Nessun riferimento</string>
+    <string name="delta_no_change">Nessuna variazione</string>
+    <string name="delta_positive">+%1$s</string>
+    <string name="delta_negative">-%1$s</string>
+    <string name="delta_vs_previous">risp. al periodo prec.</string>
+    <string name="cd_delta_increased">Aumentato di %1$s rispetto al periodo precedente</string>
+    <string name="cd_delta_decreased">Diminuito di %1$s rispetto al periodo precedente</string>
+    <string name="cd_delta_unchanged">Invariato rispetto al periodo precedente</string>
+    <string name="cd_delta_no_baseline">Nessun dato di riferimento per il confronto</string>
+
+    <!-- Provenance -->
+    <string name="provenance_estimate">STIMA</string>
+    <string name="provenance_measured">MISURATO</string>
+    <string name="provenance_estimate_description">Metrica stimata tramite formula di impedenza</string>
+    <string name="provenance_algorithm">Algoritmo: %1$s</string>
+
+    <!-- Range Selector -->
+    <string name="range_7d">7G</string>
+    <string name="range_30d">30G</string>
+    <string name="range_90d">90G</string>
+    <string name="cd_range_selector">Seleziona intervallo temporale del grafico</string>
+
+    <!-- Charts -->
+    <string name="chart_steps_title">Andamento passi</string>
+    <string name="chart_sleep_title">Andamento sonno</string>
+    <string name="chart_weight_title">Andamento peso</string>
+    <string name="cd_chart_steps">Grafico andamento passi per il periodo selezionato</string>
+    <string name="cd_chart_sleep">Grafico andamento durata sonno per il periodo selezionato</string>
+    <string name="cd_chart_weight">Grafico andamento peso per il periodo selezionato</string>
+    <string name="chart_gaps_note">I vuoti indicano giorni senza misurazioni</string>
+
+    <!-- Dashboard Screen -->
+    <string name="dashboard_title">Dashboard</string>
+    <string name="dashboard_today_section">Oggi</string>
+    <string name="dashboard_trends_section">Tendenze</string>
+    <string name="dashboard_date_today">Oggi</string>
+    <string name="dashboard_date_yesterday">Ieri</string>
+    <string name="dashboard_sync_success">Sincronizzazione completata</string>
+    <string name="dashboard_sync_failed">Sincronizzazione non riuscita. Controlla le autorizzazioni di Health Connect e riprova.</string>
+
+    <!-- Activity Screen -->
+    <string name="activity_title">AttivitÃ </string>
+    <string name="activity_history_section">Cronologia giornaliera</string>
+
+    <!-- Sleep Screen -->
+    <string name="sleep_title">Sonno</string>
+    <string name="sleep_attribution_note">Attribuito al giorno di risveglio</string>
+    <string name="sleep_history_section">Cronologia notturna</string>
+
+    <!-- Body Screen -->
+    <string name="body_title">Composizione corporea</string>
+    <string name="body_history_section">Cronologia misurazioni</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Impostazioni</string>
+    <string name="settings_hc_section">Health Connect</string>
+    <string name="settings_hc_connected">Collegato</string>
+    <string name="settings_hc_disconnected">Permessi richiesti</string>
+    <string name="settings_hc_unavailable">Health Connect non disponibile</string>
+    <string name="settings_history_access">Dati storici (oltre 30 giorni)</string>
+    <string name="settings_history_granted">Concesso</string>
+    <string name="settings_history_denied">Non concesso</string>
+    <string name="settings_permissions_section">Permessi per metrica</string>
+    <string name="settings_permission_granted">Concesso</string>
+    <string name="settings_permission_denied">Non concesso</string>
+    <string name="settings_sync_section">Sincronizzazione</string>
+    <string name="settings_privacy_section">Privacy</string>
+    <string name="settings_privacy_description">Funzionamento in locale: tutti i dati sanitari restano sul dispositivo. Nessun cloud, tracciamento o backend remoto.</string>
+    <string name="settings_view_rationale">Visualizza informativa privacy</string>
+
+    <!-- Accessibility descriptions -->
+    <string name="cd_icon_dashboard">Icona navigazione dashboard</string>
+    <string name="cd_icon_activity">Icona navigazione attivitÃ </string>
+    <string name="cd_icon_sleep">Icona navigazione sonno</string>
+    <string name="cd_icon_body">Icona navigazione composizione corporea</string>
+    <string name="cd_icon_settings">Icona navigazione impostazioni</string>
+    <string name="cd_metric_card">%1$s: %2$s</string>
+    <string name="cd_sync_in_progress">Sincronizzazione in corso</string>
+    <string name="cd_status_icon">Icona di stato</string>
+
+    <string name="nutrition_title">Alimentazione</string>
+    <string name="nutrition_daily_totals">Totali giornalieri</string>
+    <string name="nutrition_logged_items">Alimenti registrati</string>
+    <string name="nutrition_empty_hint">Nessun alimento registrato per questo giorno. Scansiona un codice a barre, fotografa un\'etichetta nutrizionale oppure inserisci un alimento manualmente.</string>
+    <string name="nutrition_scan_barcode">Scansiona codice a barre</string>
+    <string name="nutrition_scan_barcode_short">Codice</string>
+    <string name="nutrition_capture_label">Fotografa l\'etichetta nutrizionale</string>
+    <string name="nutrition_capture_label_short">Etichetta</string>
+    <string name="nutrition_capture">Acquisisci</string>
+    <string name="nutrition_manual_entry">Manuale</string>
+    <string name="nutrition_camera_permission_required">Serve l\'accesso alla fotocamera per scansionare i codici e leggere le etichette. Senza di esso puoi comunque inserire gli alimenti manualmente.</string>
+    <string name="nutrition_barcode_unknown">Questo codice a barre non Ã¨ nel database locale. Fotografa l\'etichetta nutrizionale oppure inserisci i valori manualmente.</string>
+    <string name="nutrition_entry_summary">%1$s Â· %2$s porzione/i Â· %3$s</string>
+    <string name="nutrition_catalog_title">Ricerca prodotti online</string>
+    <string name="nutrition_catalog_description">Disattivata per impostazione predefinita. Se abilitata, i codici sconosciuti vengono cercati su Open Food Facts e memorizzati in locale.</string>
+    <string name="nutrition_confirm_title">Conferma i valori</string>
+    <string name="nutrition_confirm_provenance">Origine: %1$s. Controlla i valori prima di salvare.</string>
+    <string name="nutrition_field_name">Nome del prodotto</string>
+    <string name="nutrition_field_servings">Porzioni</string>
+    <string name="nutrition_choose_meal">Pasto</string>
+    <string name="meal_breakfast">Colazione</string>
+    <string name="meal_lunch">Pranzo</string>
+    <string name="meal_dinner">Cena</string>
+    <string name="meal_snack">Spuntino</string>
+    <string name="metric_energy">Energia</string>
+    <string name="metric_protein">Proteine</string>
+    <string name="metric_carbs">Carboidrati</string>
+    <string name="metric_fat">Grassi</string>
+    <string name="metric_sugar">Zuccheri</string>
+    <string name="unit_grams">%1$s g</string>
+    <string name="action_close">Chiudi</string>
+    <string name="action_cancel">Annulla</string>
+    <string name="action_save">Salva</string>
+    <string name="action_remove_entry">Rimuovi voce</string>
+    <string name="provenance_label_ocr">letto dall\'etichetta</string>
+    <string name="provenance_open_food_facts">Open Food Facts</string>
+    <string name="provenance_user_entered">inserito da te</string>
+    <string name="nav_nutrition">Alimentazione</string>
+    <string name="cd_icon_nutrition">Scheda Alimentazione</string>
+    <string name="scale_section">Bilancia Xiaomi (Bluetooth locale)</string>
+    <string name="scale_section_description">Fitness Hub ascolta localmente le trasmissioni cifrate della bilancia. Non viene usato alcun account Xiaomi e nulla viene inviato a server. Si possono acquisire solo le pesature da questo momento in poi.</string>
+    <string name="scale_bindkey_label">Bindkey della bilancia (32 caratteri esadecimali)</string>
+    <string name="scale_bindkey_supporting">Estraila dal tuo account Xiaomi con uno strumento della community, poi incollala qui. Viene conservata cifrata nell\'Android Keystore.</string>
+    <string name="scale_bindkey_saved">Bindkey salvata.</string>
+    <string name="scale_bindkey_invalid">Questa non è una bindkey esadecimale valida da 16 byte.</string>
+    <string name="scale_bindkey_remove">Rimuovi chiave</string>
+    <string name="scale_profile_title">Profilo per le stime</string>
+    <string name="scale_profile_description">Altezza, età e sesso servono per stimare la composizione corporea dal peso. Le stime indicano la formula utilizzata.</string>
+    <string name="scale_profile_height">Altezza (cm)</string>
+    <string name="scale_profile_age">Età</string>
+    <string name="sex_male">Uomo</string>
+    <string name="sex_female">Donna</string>
+    <string name="scale_bluetooth_unavailable">Il Bluetooth è disattivato. Accendilo per ricevere le pesature.</string>
+    <string name="scale_start_scanning">Inizia ad ascoltare le pesature</string>
+    <string name="scale_stop_scanning">Ferma l\'ascolto</string>
+    <string name="scale_scanning_hint">Sali sulla bilancia ora. Continuano a trasmettere per qualche secondo dopo che sei sceso, quindi allontanati finché l\'ascolto non si ferma.</string>
+    <string name="scale_last_measurement">Ultima pesatura</string>
+    <string name="scale_weight_reading">Peso: %1$s kg</string>
+    <string name="scale_impedance_reading">Impedenza: %1$s Ohm</string>
+    <string name="nav_workout">Allenamenti</string>
+    <string name="cd_icon_workout">Scheda Allenamenti</string>
+    <string name="workout_title">Allenamenti</string>
+    <string name="workout_start_session">Inizia sessione</string>
+    <string name="workout_end_session">Termina sessione</string>
+    <string name="workout_log_set">Registra una serie</string>
+    <string name="workout_reps">Ripetizioni</string>
+    <string name="workout_load_kg">Carico (kg)</string>
+    <string name="workout_rpe">RPE (sforzo percepito)</string>
+    <string name="workout_rpe_hint">da 1 a 10</string>
+    <string name="workout_rir">Ripetizioni in riserva</string>
+    <string name="workout_rir_hint">Quante ripetizioni avresti ancora potuto fare</string>
+    <string name="workout_warm_up">Riscaldamento</string>
+    <string name="workout_session_sets">Serie di questa sessione</string>
+    <string name="workout_set_summary">Serie %1$d · %2$s ripetizioni · %3$s kg</string>
+    <string name="workout_delete_set">Rimuovi serie</string>
+    <string name="workout_records">Record personali</string>
+    <string name="workout_record_one_rm">Singolo più pesante: %1$s kg x %2$s</string>
+    <string name="workout_record_three_rm">3RM stimato: %1$s kg</string>
+    <string name="workout_record_volume">Volume migliore: %1$s kg x %2$s</string>
+    <string name="workout_record_estimated">Stimato con %1$s</string>
+    <string name="workout_add_exercise">Aggiungi un esercizio personalizzato</string>
+    <string name="workout_exercise_name">Nome esercizio</string>
+    <string name="workout_unknown_exercise">Esercizio sconosciuto</string>
+    <string name="workout_rest_timer">Timer di riposo</string>
+    <string name="workout_rest_remaining">Riposo %1$d s</string>
+    <string name="workout_estimated_one_rm">Massima per una ripetizione stimata</string>
+    <string name="action_skip">Salta</string>
+    <string name="muscle_chest">Petto</string>
+    <string name="muscle_back">Dorso</string>
+    <string name="muscle_legs">Gambe</string>
+    <string name="muscle_shoulders">Spalle</string>
+    <string name="muscle_arms">Braccia</string>
+    <string name="muscle_core">Core</string>
+    <string name="muscle_full_body">Full body</string>
+    <string name="muscle_cardio">Cardio</string>
+    <!-- Insights e analisi cross-domain -->
+    <string name="insights_title">Approfondimenti</string>
+    <string name="insights_chart_title">Andamento di %1$s</string>
+    <string name="insights_sample_size">Basato su %1$d giorni con entrambi i valori</string>
+    <string name="insights_correlation_value">Correlazione con %4$s: %1$.2f (%2$s, con %3$s)</string>
+    <string name="insights_correlation_none">Non ci sono ancora abbastanza giorni in comune per confrontare queste due serie.</string>
+    <string name="insights_strength_strong">forte</string>
+    <string name="insights_strength_moderate">moderata</string>
+    <string name="insights_strength_none">nessuna relazione chiara</string>
+    <string name="insights_advisory">Queste due serie si muovono insieme nei giorni mostrati. È un\'associazione, non una causa: modificarne una non cambierebbe necessariamente l\'altra.</string>
+
+    <!-- Backup crittografato e ripristino -->
+    <string name="backup_title">Backup crittografato</string>
+    <string name="backup_description">I backup vengono crittografati sul dispositivo con la tua passphrase. Nulla viene caricato. Conserva la passphrase: senza di essa il backup non può essere ripristinato.</string>
+    <string name="backup_passphrase">Passphrase</string>
+    <string name="backup_create">Crea backup</string>
+    <string name="backup_created">Backup creato. Copia questo archivio in un posto sicuro.</string>
+    <string name="backup_archive">Archivio di backup</string>
+    <string name="backup_restore">Ripristina da archivio</string>
+    <string name="backup_restored">Ripristino completato: %1$d righe importate.</string>
+    <string name="backup_failed">Backup non riuscito (%1$s).</string>
+
+    <!-- Azioni comuni -->
+    <string name="action_dismiss">Ignora</string>
+    <string name="cd_navigate_back">Torna indietro</string>
+    <string name="insights_settings_description">Andamenti cross-domain, correlazioni e backup crittografati.</string>
+    <string name="insights_open">Apri approfondimenti e backup</string>
+    <!-- AI opzionale (chiave propria) -->
+    <string name="ai_section_title">AI opzionale</string>
+    <string name="ai_section_description">Disattivata inizialmente. Fornisci la tua chiave del provider: viene crittografata sul dispositivo e nulla viene inviato finché non controlli la richiesta esatta e non confermi.</string>
+    <string name="ai_enable_label">Attiva le funzioni AI</string>
+    <string name="ai_provider_label">Provider</string>
+    <string name="ai_provider_unset">Non impostato</string>
+    <string name="ai_api_key_label">Chiave API</string>
+    <string name="ai_save_key">Salva chiave</string>
+    <string name="ai_clear_key">Elimina chiave</string>
+    <string name="ai_prompt_label">Descrivi un pasto o un allenamento</string>
+    <string name="ai_review_payload">Controlla la richiesta</string>
+    <string name="ai_result_ok">Il provider ha risposto.</string>
+    <string name="ai_result_failed">Richiesta non riuscita (%1$s).</string>
+    <string name="ai_confirm_title">Inviare questa richiesta?</string>
+    <string name="ai_confirm_body">Questo è il contenuto esatto che lascierà il dispositivo. La tua chiave è mostrata mascherata. Nulla viene inviato finché non tocchi invia.</string>
+    <string name="ai_confirm_send">Invia</string>
+    <string name="ai_confirm_cancel">Annulla</string>
+</resources>
