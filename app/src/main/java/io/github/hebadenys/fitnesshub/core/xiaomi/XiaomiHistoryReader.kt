@@ -6,16 +6,12 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 
-/** Inject an authenticated read-only transport in FH-XIA-03. Tests use synthetic responses. */
+/** Authenticated read-only transport; tests use synthetic responses. */
 internal fun interface XiaomiPageSource {
     suspend fun fetch(request: XiaomiScaleRequest): String
 }
 
-/**
- * Must atomically commit the page and its checkpoint. Called outside network work.
- * This boundary makes restart replay safe once an idempotent store is connected;
- * it is not itself a Room implementation and does not claim durable storage.
- */
+/** Atomically commit the page and its checkpoint, outside network work. */
 internal fun interface XiaomiPageCommitter {
     suspend fun commit(scope: XiaomiScope, requestedBeforeMillis: Long, page: XiaomiScalePage)
 }
@@ -40,23 +36,18 @@ internal class XiaomiHistoryReader(
             val request = XiaomiScaleRequest.history(scope, cursor)
             val response = try {
                 source.fetch(request)
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (_: Exception) {
-                throw XiaomiProtocolException(XiaomiFailure.FETCH_FAILED)
-            }
+            } catch (cancelled: CancellationException) { throw cancelled
+            } catch (failure: XiaomiAccessException) { throw failure // Preserve safe auth/rate-limit/session codes.
+            } catch (_: Exception) { throw XiaomiProtocolException(XiaomiFailure.FETCH_FAILED) }
             currentCoroutineContext().ensureActive()
             val page = withContext(Dispatchers.Default) { protocol.parse(response, scope, cursor) }
             try {
                 committer.commit(scope, cursor, page)
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (_: Exception) {
-                throw XiaomiProtocolException(XiaomiFailure.COMMIT_FAILED)
-            }
+            } catch (cancelled: CancellationException) { throw cancelled
+            } catch (_: Exception) { throw XiaomiProtocolException(XiaomiFailure.COMMIT_FAILED) }
             rows += page.records.size
             val next = page.nextBeforeMillis ?: return XiaomiHistoryResult.Completed(index + 1, rows)
-            cursor = next // Only after successful commit. No timestamp -1 guess at tied boundaries.
+            cursor = next
         }
         return XiaomiHistoryResult.Paused(maxPages, rows, cursor)
     }

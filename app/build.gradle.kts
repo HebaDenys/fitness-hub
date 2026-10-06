@@ -4,7 +4,7 @@ plugins {
 }
 android {
  namespace="io.github.hebadenys.fitnesshub"; compileSdk=36
- defaultConfig { applicationId="io.github.hebadenys.fitnesshub"; minSdk=28; targetSdk=35; versionCode=5; versionName="0.3.3"; testInstrumentationRunner="androidx.test.runner.AndroidJUnitRunner" }
+ defaultConfig { applicationId="io.github.hebadenys.fitnesshub"; minSdk=28; targetSdk=35; versionCode=6; versionName="0.3.4"; testInstrumentationRunner="androidx.test.runner.AndroidJUnitRunner" }
  buildFeatures { compose=true }
  compileOptions { sourceCompatibility=JavaVersion.VERSION_17; targetCompatibility=JavaVersion.VERSION_17 }
  kotlin {
@@ -57,7 +57,6 @@ dependencies {
   testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.11.4")
   testImplementation("org.bouncycastle:bcprov-jdk18on:1.80")
   testImplementation("org.json:json:20250107")
-  // Vintage runs Robolectric alongside, not instead of, the existing Jupiter suite.
   testImplementation("junit:junit:4.13.2")
   testRuntimeOnly("org.junit.vintage:junit-vintage-engine:5.11.4")
   testImplementation("org.robolectric:robolectric:4.16.1")
