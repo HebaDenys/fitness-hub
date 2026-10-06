@@ -25,6 +25,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import io.github.hebadenys.fitnesshub.ui.state.ScreenState
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.heading
@@ -50,7 +51,9 @@ fun ScaleSettingsSection(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val bindkeyState by viewModel.bindkeyState.collectAsStateWithLifecycle()
+    val historyImportState by viewModel.historyImportState.collectAsStateWithLifecycle()
     val spacing = FitnessHubTheme.spacing
+    val context = LocalContext.current
 
     val scanPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
@@ -65,6 +68,20 @@ fun ScaleSettingsSection(
     var heightInput by remember { mutableStateOf("") }
     var ageInput by remember { mutableStateOf("") }
     var sex by remember { mutableStateOf<Sex?>(null) }
+    var historyUserFilter by remember { mutableStateOf("") }
+
+    val historyFileLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            runCatching {
+                context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { it.readText() }
+                    ?: error("Unable to open history file")
+            }.onSuccess { csv ->
+                viewModel.importHistoryCsv(csv, historyUserFilter.takeIf { it.isNotBlank() })
+            }
+        }
+    }
 
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
         Text(
@@ -78,6 +95,80 @@ fun ScaleSettingsSection(
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(spacing.md),
+                verticalArrangement = Arrangement.spacedBy(spacing.sm)
+            ) {
+                Text(
+                    text = stringResource(R.string.scale_history_title),
+                    style = MaterialTheme.typography.titleSmall
+                )
+                Text(
+                    text = stringResource(R.string.scale_history_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                OutlinedTextField(
+                    value = historyUserFilter,
+                    onValueChange = { historyUserFilter = it },
+                    label = { Text(stringResource(R.string.scale_history_user_filter)) },
+                    supportingText = { Text(stringResource(R.string.scale_history_user_filter_hint)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Button(
+                    onClick = {
+                        historyFileLauncher.launch(arrayOf("text/csv", "text/comma-separated-values", "text/plain", "*/*"))
+                    },
+                    enabled = historyImportState !is ScaleHistoryImportState.Working,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        stringResource(
+                            if (historyImportState is ScaleHistoryImportState.Working) {
+                                R.string.scale_history_importing
+                            } else {
+                                R.string.scale_history_import
+                            }
+                        )
+                    )
+                }
+                when (val result = historyImportState) {
+                    is ScaleHistoryImportState.Success -> Text(
+                        text = stringResource(
+                            R.string.scale_history_success,
+                            result.imported,
+                            result.duplicates,
+                            result.skipped
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    is ScaleHistoryImportState.MultipleUsers -> Text(
+                        text = stringResource(
+                            R.string.scale_history_multiple_users,
+                            result.users.joinToString(", ")
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    is ScaleHistoryImportState.Failure -> Text(
+                        text = stringResource(R.string.scale_history_failed, result.reason),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    ScaleHistoryImportState.Idle,
+                    ScaleHistoryImportState.Working -> Unit
+                }
+            }
+        }
 
         OutlinedTextField(
             value = bindkeyInput,
@@ -243,6 +334,40 @@ fun ScaleSettingsSection(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                        model.lastEstimate?.let { estimate ->
+                            estimate.bodyFatPercent?.let {
+                                Text(
+                                    text = stringResource(R.string.scale_body_fat_reading, it.toString()),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            estimate.bodyWaterPercent?.let {
+                                Text(
+                                    text = stringResource(R.string.scale_body_water_reading, it.toString()),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            estimate.visceralFatIndex?.let {
+                                Text(
+                                    text = stringResource(R.string.scale_visceral_fat_reading, it.toString()),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            Text(
+                                text = stringResource(
+                                    if (estimate.provenance == io.github.hebadenys.fitnesshub.core.scale.ScaleMeasurementEntity.PROVENANCE_IMPORTED) {
+                                        R.string.scale_provenance_imported
+                                    } else {
+                                        R.string.provenance_estimate
+                                    }
+                                ),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.tertiary
+                            )
+                        }
                     }
                 }
             }
