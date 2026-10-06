@@ -14,7 +14,7 @@ A local-first, privacy-focused Android application for health metrics, body comp
 Personal health data is routinely fragmented across proprietary apps and locked behind mandatory cloud accounts or subscriptions. Fitness Hub unifies this data into a single local analytical store under your control.
 
 - **Local-first & offline-first**: No mandatory accounts, cloud backends, advertisements, or tracking SDKs.
-- **Data sovereignty**: You own your health data; local import and export are a core requirement (planned, Phase 6).
+- **Data sovereignty**: You own your health data; encrypted backup/restore and CSV export are already available locally.
 - **Zero fabricated data**: Missing measurements remain `null` or unavailable; estimated values (e.g., body composition derived from impedance) are explicitly tagged with algorithm provenance.
 - **Isolated connectors**: Hardware and external services interface through decoupled adapters.
 - **Optional AI**: Any future machine learning or LLM assistance is strictly opt-in and never required for core operation.
@@ -28,13 +28,13 @@ Personal health data is routinely fragmented across proprietary apps and locked 
 | **Architecture Foundation** | Implemented | Single-module skeleton with Kotlin, Jetpack Compose, Material 3, Hilt, Room SQLite, and Navigation. |
 | **Health Connect Ingestion** | Partial (prototype) | Reads steps, distance, active/total calories, resting HR (latest), SpO2 (latest), weight, body fat, sleep duration, and exercise sessions with Health Connect deduplication. *M1 hardening fixes missing value handling (`null` vs `0`), granular permissions, midnight sleep attribution, HR series, and provenance.* |
 | **User Interface** | Partial (prototype) | Basic screens for Dashboard, Activity, Sleep, Body, and Settings. *M2 will introduce the complete Material 3 design system, charts, and metric breakdown cards.* |
-| **Background & Incremental Sync** | Planned | Periodic background sync via WorkManager and incremental ingestion using Health Connect Changes tokens (Milestone M1). |
-| **Xiaomi S400 Scale Connector** | Planned | Passive local BLE MiBeacon reception with AES-CCM bindkey decryption; no cloud dependency (Phase 4). |
-| **Nutrition Tracking** | Planned | Local food database, on-device barcode scanner, label OCR, and Open Food Facts connector (Phase 3). |
-| **Training & Workout Tracking** | Planned | Custom exercises, sets/reps/load, RPE, 1RM calculations, and strength progression (Phase 5). |
-| **Cross-Domain Analytics** | Planned | Rolling averages, caloric balance vs. weight, sleep vs. performance, and PDF/CSV reports (Phase 6). |
-| **Encrypted Backup & Restore** | Planned | On-device AES-GCM encrypted backup and JSON/CSV import/export (Phase 6). |
-| **Optional AI Estimations** | Planned | Natural language meal logging and photo-based meal estimation (Phase 7). |
+| **Background & Incremental Sync** | Implemented (prototype) | Periodic WorkManager sync plus Health Connect Changes-token ingestion with fallback synchronization. |
+| **Xiaomi S400 Scale Connector** | Partial (prototype) | Passive local BLE capture for future weigh-ins plus SmartScaleConnect-compatible CSV import for existing Xiaomi Home history. Multi-user CSVs require an explicit user filter. |
+| **Nutrition Tracking** | Implemented (prototype) | Local food database, CameraX barcode flow, on-device label OCR, manual entry, optional Open Food Facts lookup and local caching. |
+| **Training & Workout Tracking** | Implemented (prototype) | Custom exercises, sessions, sets/reps/load, RPE/RIR, rest timing, estimated 1RM and personal-record detection. |
+| **Cross-Domain Analytics** | Partial (prototype) | Rolling trends and cross-domain correlation cards for weight/calories and sleep/training volume. Correlation is explicitly not presented as causation. |
+| **Encrypted Backup & Restore** | Implemented (prototype) | Passphrase-derived AES-256-GCM backup/restore, Android file picker integration and CSV export. |
+| **Optional AI Estimations** | Partial (prototype) | BYOK provider configuration, encrypted API-key storage, payload review and opt-in request transport. Core app remains independent of AI. |
 
 ---
 
@@ -59,8 +59,10 @@ flowchart LR
 ```
 
 - **Xiaomi Mi Band**: Synchronizes activity, sleep, heart rate, and workouts via the official Mi Fitness app into Android Health Connect, which Fitness Hub imports locally.
-- **Xiaomi Body Composition Scale S400 (Planned)**: Passive local BLE reception of encrypted MiBeacon advertisements (AES-CCM). Does not require disconnecting the scale from Xiaomi Home, never contacts the Xiaomi cloud, and keeps credentials off the device. See [docs/connectors/xiaomi-s400.md](docs/connectors/xiaomi-s400.md).
-  - *Interim Workaround*: Third-party bridge utilities (e.g., *MiScale Sync*) can sync S400 weight and body fat into Health Connect, which Fitness Hub already reads today (unendorsed community option).
+- **Xiaomi Body Composition Scale S400** uses two complementary paths:
+  - **Existing history**: export Xiaomi Home data to CSV with [SmartScaleConnect](https://github.com/AlexxIT/SmartScaleConnect), then import the CSV from Fitness Hub Settings. Multiple users are never merged automatically.
+  - **Future/live weigh-ins**: passive local BLE reception of encrypted MiBeacon advertisements (AES-CCM), while Xiaomi Home remains usable.
+  - See [docs/connectors/xiaomi-s400.md](docs/connectors/xiaomi-s400.md) for protocol and privacy details.
 
 ---
 
@@ -132,12 +134,9 @@ Fitness Hub is designed for personal fitness tracking and wellness informational
 - **M0**: Rename, documentation overhaul, Gradle wrapper toolchain.
 - **M1**: Phase 2 hardening (null handling, granular permissions, midnight sleep attribution, HR series, provenance, KSP, Room schemas).
 - **M2**: UI foundation (Material 3 design system, Vico charts, trend cards).
-- **Phase 3**: Nutrition tracking *(requires explicit approval)*.
-- **Phase 4**: Xiaomi S400 local BLE connector *(requires explicit approval)*.
-- **Phase 5**: Workout and strength tracking *(requires explicit approval)*.
-- **Phase 6**: Cross-domain analytics, reports, and encrypted backups *(requires explicit approval)*.
-- **Phase 7**: Optional AI enhancements *(requires explicit approval)*.
-- **Phase 8**: Release readiness and security verification *(requires explicit approval)*.
+- **Implemented prototypes**: nutrition, S400 BLE + Xiaomi history import, workout tracking, cross-domain analytics, encrypted backup, CSV export, and optional BYOK AI.
+- **Current focus**: stabilization, real-device validation, data-integrity hardening, UX completion, and release-readiness/security verification.
+- **Future expansion**: additional device connectors, deeper analytics, richer report export, and direct vendor integrations only where licensing/privacy allow it.
 
 For detailed scope and completion criteria, consult [docs/ROADMAP.md](docs/ROADMAP.md).
 
