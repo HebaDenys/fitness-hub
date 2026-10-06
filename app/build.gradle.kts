@@ -21,6 +21,7 @@ dependencies {
  implementation("androidx.work:work-runtime-ktx:2.10.3")
  implementation("androidx.health.connect:connect-client:1.1.0")
  implementation("com.google.dagger:hilt-android:2.57.2"); kapt("com.google.dagger:hilt-compiler:2.57.2")
+ implementation("androidx.hilt:hilt-navigation-compose:1.3.0")
  testImplementation("junit:junit:4.13.2"); testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.10.2")
 }
 kapt { correctErrorTypes=true }
