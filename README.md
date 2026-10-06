@@ -2,160 +2,96 @@
 
 [![Android CI](https://github.com/HebaDenys/fitness-hub/actions/workflows/android.yml/badge.svg)](https://github.com/HebaDenys/fitness-hub/actions/workflows/android.yml)
 
-A local-first, privacy-focused Android application for health metrics, body composition, activity, sleep, nutrition, and workout analytics.
+App Android local-first per unificare salute, composizione corporea, alimentazione, attività, sonno, allenamenti, obiettivi, analytics e report.
 
-> [!WARNING]
-> **Early Test Build**: Fitness Hub is currently in active pre-alpha development. The application ID has changed to `io.github.hebadenys.fitnesshub`; if you previously installed an "Open Health Hub" build, please uninstall it prior to installing this version.
+**Stato: pre-alpha, build di test.** Codice e funzioni prototipali non equivalgono a compatibilità hardware verificata o a prodotto pronto per dati sensibili.
 
----
+## Piano e continuità del lavoro
 
-## Why
+- **[Piano completo](docs/MASTER_PLAN.md):** obiettivi, decisioni, architettura, backlog con ID e criteri verificabili, scenari di accettazione e rischi.
+- **[Stato operativo](docs/PROGRESS.md):** attività da riprendere, risultati, blocchi e prove effettive.
+- **[Roadmap](docs/ROADMAP.md):** ordine e dipendenze dei traguardi.
+- **[Istruzioni agenti](AGENTS.md):** cosa leggere e come avanzare in ogni sessione.
 
-Personal health data is routinely fragmented across proprietary apps and locked behind mandatory cloud accounts or subscriptions. Fitness Hub unifies this data into a single local analytical store under your control.
+Il prossimo incremento programmato è `FH-XIA-01`: contratti/parser Xiaomi eseguibili con fixture, senza credenziali reali. Il piano viene usato nelle sessioni avviate dall'utente; non attiva da solo esecuzioni automatiche.
 
-- **Local-first & offline-first**: No mandatory accounts, cloud backends, advertisements, or tracking SDKs.
-- **Data sovereignty**: You own your health data; encrypted backup/restore and CSV export are already available locally.
-- **Zero fabricated data**: Missing measurements remain `null` or unavailable; estimated values (e.g., body composition derived from impedance) are explicitly tagged with algorithm provenance.
-- **Isolated connectors**: Hardware and external services interface through decoupled adapters.
-- **Optional AI**: Any future machine learning or LLM assistance is strictly opt-in and never required for core operation.
+## Obiettivo
 
----
+Conservare il proprio hardware e usare una sola app come archivio e interfaccia di follow-up. Registrare pasti e allenamenti, importare dati autorizzati dalle fonti, ottenere grafici coerenti e report esportabili, poter recuperare l'archivio e condividere dati compatibili con Android Health Connect.
 
-## Features & Status
+Il core deve funzionare senza account Fitness Hub, backend obbligatorio, pubblicità, tracking o abbonamento necessario. Le integrazioni vendor e AI sono esplicite e facoltative. Quanto già archiviato rimane consultabile offline.
 
-| Feature / Component | Status | Details |
-|---|---|---|
-| **Architecture Foundation** | Implemented | Single-module skeleton with Kotlin, Jetpack Compose, Material 3, Hilt, Room SQLite, and Navigation. |
-| **Health Connect Ingestion** | Partial (prototype) | Reads steps, distance, active/total calories, resting HR (latest), SpO2 (latest), weight, body fat, sleep duration, and exercise sessions with Health Connect deduplication. *M1 hardening fixes missing value handling (`null` vs `0`), granular permissions, midnight sleep attribution, HR series, and provenance.* |
-| **User Interface** | Partial (prototype) | Basic screens for Dashboard, Activity, Sleep, Body, and Settings. *M2 will introduce the complete Material 3 design system, charts, and metric breakdown cards.* |
-| **Background & Incremental Sync** | Implemented (prototype) | Periodic WorkManager sync plus Health Connect Changes-token ingestion with fallback synchronization. |
-| **Xiaomi S400 Scale Connector** | Partial (prototype) | Passive local BLE capture for future weigh-ins plus SmartScaleConnect-compatible CSV import for existing Xiaomi Home history. Multi-user CSVs require an explicit user filter. |
-| **Nutrition Tracking** | Implemented (prototype) | Local food database, CameraX barcode flow, on-device label OCR, manual entry, optional Open Food Facts lookup and local caching. |
-| **Training & Workout Tracking** | Implemented (prototype) | Custom exercises, sessions, sets/reps/load, RPE/RIR, rest timing, estimated 1RM and personal-record detection. |
-| **Cross-Domain Analytics** | Partial (prototype) | Rolling trends and cross-domain correlation cards for weight/calories and sleep/training volume. Correlation is explicitly not presented as causation. |
-| **Encrypted Backup & Restore** | Implemented (prototype) | Passphrase-derived AES-256-GCM backup/restore, Android file picker integration and CSV export. |
-| **Optional AI Estimations** | Partial (prototype) | BYOK provider configuration, encrypted API-key storage, payload review and opt-in request transport. Core app remains independent of AI. |
+## Decisione Xiaomi aggiornata
 
----
+Il flusso principale **da implementare** è:
 
-## Supported Devices & Data Flows
-
-```mermaid
-flowchart LR
-    subgraph Wearables
-        MB["Xiaomi Mi Band"] --> MF["Mi Fitness App"]
-        MF --> HC["Health Connect"]
-    end
-
-    subgraph Scale ["Xiaomi S400 Scale"]
-        S400["S400 Scale"] -- "Encrypted BLE Advertisements" --> BLE["Fitness Hub BLE Connector<br/>(Passive / AES-CCM)"]
-        S400 -. "Normal weigh-in" .-> XH["Xiaomi Home App"]
-    end
-
-    HC --> FH["Fitness Hub Engine"]
-    BLE --> FH
-    FH --> ROOM[("Local Room DB<br/>(Analytical Store)")]
-    ROOM --> UI["Compose UI & Analytics"]
+```text
+S400 -> Xiaomi Home -> servizi Xiaomi -> connettore dentro Fitness Hub
+                                                  |
+                                                  v
+                                              Room locale
+                                                  |
+                                    UI / analytics / report / backup
+                                                  |
+                                      Health Connect opt-in
 ```
 
-- **Xiaomi Mi Band**: Synchronizes activity, sleep, heart rate, and workouts via the official Mi Fitness app into Android Health Connect, which Fitness Hub imports locally.
-- **Xiaomi Body Composition Scale S400** uses two complementary paths:
-  - **Existing history**: export Xiaomi Home data to CSV with [SmartScaleConnect](https://github.com/AlexxIT/SmartScaleConnect), then import the CSV from Fitness Hub Settings. Multiple users are never merged automatically.
-  - **Future/live weigh-ins**: passive local BLE reception of encrypted MiBeacon advertisements (AES-CCM), while Xiaomi Home remains usable.
-  - See [docs/connectors/xiaomi-s400.md](docs/connectors/xiaomi-s400.md) for protocol and privacy details.
+Nessun root, script, container, server o secondo APK ponte richiesto. Xiaomi Home resta installata; il nostro connettore sarà integrato nell'app. L'import CSV e il ricevitore BLE presenti rimangono opzioni secondarie, non il percorso principale richiesto.
 
----
+**La versione 0.3.1 non implementa ancora questo collegamento cloud.** [Strategia e limiti](docs/connectors/xiaomi-s400.md).
 
-## Install the Test APK
+Per la Mi Band il percorso previsto è companion compatibile -> Health Connect -> Fitness Hub. Modello/companion e metriche effettivamente condivise vanno verificati: non ogni dato mostrato nell'app del produttore è automaticamente esposto a HC.
 
-Automated test builds are generated on every push to the repository:
+## Stato verificato alla baseline 0.3.1
 
-1. Download the latest debug APK from the rolling [test-latest prerelease](https://github.com/HebaDenys/fitness-hub/releases/tag/test-latest).
-2. Install the APK on your Android device (ensure "Install unknown apps" permission is granted for your browser or file manager).
-3. If upgrading from an older "Open Health Hub" build, uninstall the old app first to accommodate the updated package identifier (`io.github.hebadenys.fitnesshub`).
+| Area | Stato e limiti |
+|---|---|
+| Fondazione | Kotlin/Compose/Material 3, Hilt, Room e un modulo Android. |
+| Health Connect | Lettura di 11 tipi, sync e permessi prototipali. Fasi sonno, tipi aggiuntivi, gestione completa dello storico e write-back da completare. |
+| Storico | Finestra HC applicativa di 30/365 giorni; non è l'intero archivio possibile. |
+| Bilancia | CSV SmartScaleConnect con controlli/transazioni e BLE sperimentale; nessun login cloud integrato. |
+| Nutrizione | Catalogo locale, diario, barcode/OCR e Open Food Facts prototipali. |
+| Training | Esercizi, sessioni, serie, RPE/RIR, stime 1RM/PR prototipali. |
+| Analytics | Grafici e correlazioni iniziali; canonicalizzazione comune a tutte le viste ancora da completare. |
+| Portabilità | Cifratura backup, file picker e CSV presenti; backup non ancora completo/lossless. |
+| AI | BYOK/configurazione/trasporto iniziali, non un sistema completo di riconoscimento pasti. |
+| Distribuzione | APK di test e checksum prodotti dalla CI; chiave pubblica test-only, non firma privata di produzione. |
 
----
+La [CI della baseline](https://github.com/HebaDenys/fitness-hub/actions/runs/37499457080) è passata. Questo non sostituisce prove Room, telefono, Xiaomi Cloud o hardware. Lo stato successivo è nel [registro operativo](docs/PROGRESS.md), non nelle promesse di questa tabella.
 
-## Setup
+## Installazione e protezione dei dati
 
-1. **Verify Health Connect**: Built into Android 14+. On Android 9 through 13, install [Health Connect](https://play.google.com/store/apps/details?id=com.google.android.apps.healthdata) from Google Play.
-2. **Configure Companion App**: In your wearable companion app (e.g., Mi Fitness), enable data synchronization to Health Connect.
-3. **Grant Permissions**: Open Fitness Hub, navigate to **Settings**, tap **Grant permissions**, and approve the requested read permissions.
-4. **Initial Sync**: Tap **Sync now** to perform your first health data import.
+L'APK di sviluppo è pubblicato nella [prerelease test-latest](https://github.com/HebaDenys/fitness-hub/releases/tag/test-latest). Controllare versione, commit e note della release prima dell'installazione.
 
----
+La chiave di firma di test presente nel repository è deliberatamente pubblica: consente continuità fra build di test compatibili, ma non autentica l'autore contro chi possiede la stessa chiave. Non è una chiave da usare per produzione. Installare soltanto APK provenienti dal repository e seguire i gate di sicurezza prima del normale utilizzo con credenziali sensibili.
 
-## Build from Source
+**Non disinstallare una vecchia build che contiene dati importanti soltanto per risolvere un errore di firma.** Il backup attuale non copre ancora tutti i dati. Il vecchio package Open Health Hub e `io.github.hebadenys.fitnesshub` sono identità distinte: non esiste una migrazione automatica dimostrata fra i due.
 
-**Requirements:**
-- JDK 21 (Gradle 8.13 does not support running on JDK 25)
-- Android SDK Platform 36 (Build-Tools 35.x or 36.x)
+## Architettura
+
+Room è l'archivio locale; Health Connect è l'interoperabilità Android, non l'unico database. Connettori isolati, provenienza per metrica, identità persona/sorgente, deduplicazione, controlli di qualità e repository canonici sono i confini da completare. [Architettura](docs/ARCHITECTURE.md).
+
+Mancante non significa zero. Importato non significa misurato. Una stima vendor resta una stima vendor e una correzione utente non falsifica la sorgente. I grafici devono dichiarare smoothing, copertura e assunzioni.
+
+## Build
+
+Baseline: JDK 21, Gradle Wrapper 8.13, compile SDK 36, target SDK 35, min SDK 28. Verificare le versioni nel codice prima di aggiornarle.
 
 ```bash
-# Linux / macOS
 ./gradlew testDebugUnitTest lintDebug assembleDebug
-
-# Windows (PowerShell)
-.\gradlew.bat testDebugUnitTest lintDebug assembleDebug
+python3 -m unittest discover -s ci -p 'test_*.py' -v
 ```
 
-The resulting debug APK is located at `app/build/outputs/apk/debug/app-debug.apk`.
+Su Windows usare `gradlew.bat`. L'APK locale è generato in `app/build/outputs/apk/debug/`. La CI verifica anche firma e checksum prima della pubblicazione. Un aggiornamento solo documentale non richiede una nuova versione APK.
 
----
+## Privacy e licenza
 
-## Architecture
+Nessun backend Fitness Hub obbligatorio o SDK di tracking. Le policy di accesso ai servizi vendor, consenso, storage, backup di sistema e trasferimento dati devono corrispondere a ciò che l'app fa realmente; il nuovo piano include la loro verifica prima del login Xiaomi.
 
-Fitness Hub is structured as a single Android Gradle module with strict internal package boundaries (`core/database`, `core/healthconnect`, `core/sync`, `core/model`, `feature/*`, `di`). Room serves as the local analytical data store, while Health Connect functions as an interoperability layer. External devices interact exclusively through decoupled connector interfaces.
+**Licenza del progetto: ancora da finalizzare.** La direzione approvata è uso personale privato gratuito e licenza commerciale separata. Non è una licenza OSI open source se limita l'uso commerciale, e il piano non concede automaticamente diritti o applica PolyForm/MIT/Apache al codice. Le dipendenze e l'eventuale codice upstream conservano le proprie licenze.
 
-For design patterns, data models, and idempotency guarantees, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+[Contributi](CONTRIBUTING.md) e [sostenibilità](docs/SUSTAINABILITY.md). Nessuna monetizzazione tramite vendita di dati sanitari o paywall obbligatorio sul core locale.
 
----
+## Limite sanitario
 
-## Privacy
-
-Fitness Hub contains:
-- No backend server
-- No user accounts or login systems
-- No advertising networks
-- No behavioral analytics or telemetry SDKs
-
-All health records reside strictly on your device. Future local secrets (such as the S400 BLE bindkey, Phase 4) will be stored encrypted via Android Keystore.
-
----
-
-## Medical Disclaimer
-
-Fitness Hub is designed for personal fitness tracking and wellness informational purposes only. It is not a medical device, does not provide medical diagnoses or treatment recommendations, and must not replace professional healthcare consultation. Statistical trends and correlations displayed by the app reflect mathematical associations, not clinical causation.
-
----
-
-## Roadmap
-
-- **M0**: Rename, documentation overhaul, Gradle wrapper toolchain.
-- **M1**: Phase 2 hardening (null handling, granular permissions, midnight sleep attribution, HR series, provenance, KSP, Room schemas).
-- **M2**: UI foundation (Material 3 design system, Vico charts, trend cards).
-- **Implemented prototypes**: nutrition, S400 BLE + Xiaomi history import, workout tracking, cross-domain analytics, encrypted backup, CSV export, and optional BYOK AI.
-- **Current focus**: stabilization, real-device validation, data-integrity hardening, UX completion, and release-readiness/security verification.
-- **Future expansion**: additional device connectors, deeper analytics, richer report export, and direct vendor integrations only where licensing/privacy allow it.
-
-For detailed scope and completion criteria, consult [docs/ROADMAP.md](docs/ROADMAP.md).
-
----
-
-## Contributing
-
-Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) for code standards, testing practices, and guidelines on architectural constraints.
-
----
-
-## License
-
-**License: TBD**
-
-The intended licensing model is source-available and free for personal, non-commercial use, with commercial usage governed by a separate license (evaluating PolyForm Noncommercial 1.0.0 and Business Source License 1.1). A Contributor License Agreement (CLA) will likely be required for external contributions. Until an explicit license file is published in the repository, all rights are reserved by default.
-
----
-
-## Sustainability
-
-Fitness Hub is committed to keeping core personal tracking completely free and local-first. For our planned sponsorship and sustainability framework, see [docs/SUSTAINABILITY.md](docs/SUSTAINABILITY.md).
+Fitness Hub è uno strumento personale di benessere e fitness, non una diagnosi o un dispositivo medico. Misure consumer, formule e associazioni statistiche non sono prove cliniche; correlazione non significa causalità.

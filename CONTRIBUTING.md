@@ -1,80 +1,47 @@
-# Contributing to Fitness Hub
+# Contribuire a Fitness Hub
 
-Thank you for your interest in contributing to Fitness Hub. This project is built on strict principles of privacy, data ownership, local-first computing, and engineering discipline.
+## Prima di iniziare
 
----
+Leggere [AGENTS.md](AGENTS.md), [piano completo](docs/MASTER_PLAN.md) e [stato operativo](docs/PROGRESS.md). Scegliere un task ID e verificare codice/issue/PR/CI reali. Le attività già previste nel piano sono la direzione approvata: non ripristinare i vecchi divieti di avviare Phase 3 o la strategia CSV obbligatoria.
 
-## 1. Development Setup
+I contributori esterni devono coordinarsi tramite issue/PR; l'autorizzazione al lavoro diretto su `main` riguarda il flusso del proprietario e dei suoi assistenti autorizzati, non concede accesso di scrittura pubblico.
 
-### Prerequisites
-- **JDK**: Java Development Kit 21. Gradle 8.13 cannot run on JDK 25 (`IllegalArgumentException: 25.0.1`); the build pins the toolchain to 21.
-- **Android SDK**:
-  - Compile SDK: `36`
-  - Target SDK: `35`
-  - Minimum SDK: `28`
-  - Android SDK Build-Tools: `35.x` or `36.x`
-- **IDE**: Android Studio (Ladybug / Meerkat or newer) or any editor configured with Kotlin and Gradle support.
+## Ambiente e verifiche
 
-### Command-Line Verification
-Before committing or submitting changes, ensure your local build compiles cleanly, passes all unit tests, and satisfies Android lint checks:
+Alla baseline: JDK 21, Gradle Wrapper 8.13, min SDK 28, target SDK 35 e compile SDK 36. Leggere Gradle/manifest correnti prima di modificare il toolchain.
 
 ```bash
-# Linux / macOS
 ./gradlew testDebugUnitTest lintDebug assembleDebug
-
-# Windows (PowerShell)
-.\gradlew.bat testDebugUnitTest lintDebug assembleDebug
+python3 -m unittest discover -s ci -p 'test_*.py' -v
 ```
 
----
+Per cambiamenti solo documentali verificare link, riferimenti, ID e diff. Non dichiarare eseguiti test Android non eseguiti. Non saltare test/lint su cambiamenti di codice per ottenere un badge verde.
 
-## 2. Core Engineering Principles
+## Principi
 
-All contributions must strictly respect the rules defined in [AGENTS.md](AGENTS.md):
+- Local-first: nessun backend o account Fitness Hub obbligatorio. Connettori vendor facoltativi approvati, isolati e dichiarati.
+- Un solo APK nostro; no root, exploit o app modificate per estrarre dati privati.
+- Identità e provenienza per record/metrica. Trasporto import, misura e stima sono concetti separati.
+- Dati mancanti nullable/stati espliciti; niente valori finti in produzione.
+- Deduplicazione, aggiornamenti e cancellazioni reversibili/documentati; niente fusioni sulla sola somiglianza dei numeri.
+- Migrazioni e backup aggiornati insieme ai modelli persistenti; test Room reali oltre ai mock.
+- Nessuna credenziale, chiave privata, dato sanitario reale o identificativo personale in fixture/log/repository.
+- AI opzionale e revisionabile; rispetto delle API e dei termini del provider.
 
-1. **Local-First & Privacy-First**: No remote backend, authentication server, advertising network, or tracking SDK may be added without explicit approval.
-2. **Never Fabricate Health Measurements**:
-   - Missing or permission-denied values must be recorded as `null`, never default to `0` or placeholder values.
-   - Any derived body composition indices calculated from impedance must be explicitly marked as `ESTIMATE` and include algorithm provenance.
-3. **Connector Isolation**: External hardware (e.g., scales, trackers) and external services must reside behind decoupled connector interfaces. Connectors must never write directly to presentation layers.
-4. **Idempotency & Data Provenance**: Every sync must be idempotent. Always record the source package or hardware identifier (`dataOrigin`) and preserve original measurement timestamps.
-5. **Security & Zero Secrets**: Never commit personal health data exports, API keys, bindkeys, or credentials to version control.
-6. **No Health Data in Logs**: System logs must **never** include health values (steps, weight, heart rate, sleep). Log only operation counts, elapsed time, and error types.
-7. **Phased Development**: Do not begin implementation of Phase 3 or later phases without explicit project authorization.
+## Commit e criteri di completamento
 
----
+Usare commit atomici e descrittivi, per esempio `feat(xiaomi): FH-XIA-01 parse scale history response`. Un incremento deve chiudere un percorso o un prerequisito eseguibile, con error handling e test; una classe stub o un bottone senza effetto non completano un task.
 
-## 3. Commit Guidelines
+Nella PR o nel registro del lavoro indicare ID, file/commit, test eseguiti, limiti, eventuale prova dispositivo ancora necessaria e prossimo passo. Non confondere unit test con validazione hardware o rilasciabilità in produzione.
 
-We follow the [Conventional Commits](https://www.conventionalcommits.org/) specification to keep the repository history clean and traceable:
+## Licenze e diritti
 
-- `feat:` A new feature or user-facing enhancement.
-- `fix:` A bug fix.
-- `docs:` Documentation changes only.
-- `refactor:` Code changes that neither fix a bug nor add a feature.
-- `test:` Adding missing tests or correcting existing tests.
-- `chore:` Toolchain, Gradle configuration, or build workflow updates.
+La licenza definitiva del progetto non è ancora stata scelta. La direzione è source-available per uso personale/noncommerciale, con licenza separata per uso commerciale; la definizione precisa deve essere approvata dal proprietario.
 
-**Example:**
-```
-feat(healthconnect): add granular permission checks for vitals
-fix(sleep): attribute cross-midnight sessions to waking date
-docs(s400): document passive BLE protocol and bindkey storage
-```
+Non copiare codice con licenze incompatibili e non applicare automaticamente una nuova licenza al progetto. SmartScaleConnect è un riferimento MIT: mantenere attribuzione e avviso sui file riutilizzati. Dati/immagini Open Food Facts e librerie OCR possono avere condizioni diverse dal codice dell'app.
 
-Keep commits atomic, well-described, and self-contained.
+Prima di integrare contributi esterni destinati al dual licensing definire diritti e accordo appropriato. Un DCO non va considerato automaticamente un CLA di relicensing. Nessun testo di questa guida sostituisce la futura scelta legale.
 
----
+## Sicurezza
 
-## 4. Testing Standards
-
-- **JVM Unit Tests**: Implement tests for all business logic, mappers, conflict resolution strategies, and calculation engines using **JUnit 5** and **mockito-kotlin**.
-- Avoid tests with no assertions or synthetic logic. Validate realistic edge cases (such as midnight daylight-saving transitions, partial permission denials, and empty dataset handling).
-
----
-
-## 5. Licensing & Contributor Agreement (CLA) Notice
-
-- The repository's formal license is currently **TBD** (intended model: source-available, free for personal and non-commercial use, with separate commercial licensing).
-- Until an explicit license file is committed to the repository, all rights remain reserved by default.
-- External code contributions will likely require signing a **Contributor License Agreement (CLA)** to ensure that contributions can be distributed under the project's eventual licensing framework.
+La chiave CI pubblica test-only non è una credenziale personale, ma non deve essere riutilizzata per produzione. Chiavi private di firma e sessioni Xiaomi richiedono un percorso separato e protetto. Segnalazioni di sicurezza non devono contenere segreti o esportazioni sanitarie in issue pubbliche.

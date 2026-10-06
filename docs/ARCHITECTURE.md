@@ -1,147 +1,87 @@
-# Fitness Hub — System Architecture
+# Fitness Hub — Architettura attuale e obiettivo
 
-This document describes the architectural principles, module structure, data flows, and security guidelines governing Fitness Hub.
+**Specifica di riferimento:** [MASTER_PLAN.md](MASTER_PLAN.md), sezioni 3–5.  
+**Stato verificato:** [PROGRESS.md](PROGRESS.md).  
+**Aggiornamento:** 6 ottobre 2026.
 
----
+## 1. Vincoli
 
-## 1. Architectural Strategy
+Una sola applicazione Android Kotlin/Compose, Hilt e Room, con Health Connect per l'interoperabilità. Il database dell'app conserva i dati usati da UI/analytics/export. Nessun account Fitness Hub, backend obbligatorio o infrastruttura server da far installare all'utente.
 
-Fitness Hub adheres to a **local-first**, **privacy-first** design. Key architectural constraints include:
+Local-first non vieta una connessione vendor facoltativa. La nuova integrazione Xiaomi diretta è approvata e deve vivere nello stesso APK. Xiaomi Home resta l'app normale della bilancia; la companion della band continua a gestire il wearable.
 
-- **Single Gradle Module**: The application intentionally uses a single Android Gradle module (`app`) to avoid premature multi-module build overhead and complex dependency graphs during early development.
-- **Strict Package Boundaries**: Architectural layering is enforced through directory and package isolation rather than separate build modules.
-- **Room as the Source of Truth**: The local Room SQLite database serves as the primary analytical store. All analytics, history, and user interfaces read directly from Room.
-- **Health Connect as an Interoperability Layer**: Android Health Connect is treated as an external shared data bus for synchronizing across apps and devices—not as the application's sole persistence mechanism.
+## 2. Baseline implementata
 
----
+Alla baseline 0.3.1 (`addbc7dd003b691dabcbe2d671dd646c2f73930b`) esistono:
 
-## 2. Package Boundaries & Layering
+- un modulo `app`, package `io.github.hebadenys.fitnesshub`;
+- `core/database`, gateway HC e coordinamento sync;
+- database v5 con migrazioni e schema esportato;
+- nutrizione, scala CSV/BLE, workout, analytics, backup e AI prototipali;
+- feature Compose separate e componenti grafici.
 
-The codebase is structured around core infrastructure and domain-specific features:
+Non esiste ancora un connettore Xiaomi Cloud integrato. Il gateway HC legge un sottoinsieme di tipi e non implementa write-back. Il merge delle misure bilancia in Corpo non è ancora una vista canonica riusata ovunque. Il backup non preserva ancora l'intero archivio.
 
-```
-io.github.hebadenys.fitnesshub
-├── core
-│   ├── database          # Room database, DAOs, entities, converters, migrations
-│   ├── healthconnect     # Health Connect API gateway, permission contracts, mappers
-│   ├── sync              # Synchronization coordinators, WorkManager jobs, change tokens
-│   └── model             # Target structure (M1): Pure domain entities (DailySummary, etc.)
-├── feature               # Target structure (M1): UI screens and ViewModels
-│   ├── dashboard         # Unified daily status card views
-│   ├── activity          # Steps, distance, and active calorie breakdowns
-│   ├── sleep             # Sleep stages, nocturnal sessions, and resting HR
-│   ├── body              # Weight, impedance, body composition trends
-│   └── settings          # Health Connect permissions, sync options, hardware keys
-└── di                    # Hilt dependency injection modules
-```
+Non citare come implementate tabelle o classi presenti solo nella vecchia documentazione: il modello definitivo deriva dal codice e dalle migrazioni eseguite nei test.
 
-> [!NOTE]
-> **Target Structure (M1)**: The prototype housed minimal screens within `MainActivity.kt`. Milestone M1 separates presentation into dedicated `feature/*` packages and decouples UI state from database entities via pure `core/model` domain models.
+## 3. Flusso obiettivo, non ancora completo
 
----
-
-## 3. Data Flow Architecture
-
-```mermaid
-flowchart TD
-    subgraph External Sources
-        WB["Wearables (e.g., Mi Band)"] --> MF["Companion App (Mi Fitness)"]
-        MF --> HC["Android Health Connect"]
-        SC["Smart Scales (e.g., S400)"] -->|"Passive BLE Advertisements"| BLE["Fitness Hub BLE Connector"]
-    end
-
-    subgraph Fitness Hub Ingestion
-        HC --> HCG["HealthConnectGateway"]
-        HCG --> SYNC["HealthSyncRepository / SyncWorker"]
-        BLE --> DECRYPT["AES-CCM Decryption Engine"]
-        DECRYPT --> SYNC
-    end
-
-    subgraph Local Analytical Store
-        SYNC -->|"Normalized Domain Entities"| ROOM[("Room SQLite Database")]
-    end
-
-    subgraph Presentation & Analytics
-        ROOM --> VM["Feature ViewModels"]
-        VM --> COMPOSE["Jetpack Compose UI"]
-        ROOM -.->|"Optional Export"| HC
-    end
+```text
+Companion band -> Health Connect gateway --+
+                                           |
+Xiaomi Home -> Xiaomi Cloud connector ------+-> ingestione/staging
+                                           |        |
+Barcode/OCR/manuale/workout ----------------+        v
+                                         identità + normalizzazione
+                                                    |
+                                     validazione + riconciliazione
+                                                    |
+                                          Room e checkpoint
+                                                    |
+                          +-------------------------+-------------------+
+                          |                         |                   |
+                   repository canonici       outbox HC opt-in    backup/export
+                          |
+                 UI / obiettivi / analytics / report
 ```
 
-1. **Ingestion**: Raw external inputs arrive through Health Connect or direct device connectors (e.g., BLE).
-2. **Normalization**: Connectors transform vendor-specific or platform-specific records into normalized domain data structures.
-3. **Persistence**: Ingestion repositories write to Room utilizing conflict resolution strategies.
-4. **Presentation**: Compose UI components reactively observe Room queries via Kotlin Coroutines `Flow`.
+## 4. Confini proposti
 
----
+- **Protocollo:** HTTP, autenticazione, paginazione e parsing, isolati per vendor. Il parsing puro non dipende dalla UI.
+- **Session storage:** credenziali/sessioni tramite componente dedicato e Keystore, separato dall'archivio sanitario e dai backup.
+- **Ingestione:** associa persona/connessione, preserva unità/tempi/origini, applica validatori e salva transazionalmente.
+- **Modello sanitario:** tabelle tipizzate con envelope comune e campi vendor versionati; niente refactor EAV globale preventivo.
+- **Riconciliazione:** collegamenti fra copie e scelta per metrica, senza distruggere gli originali.
+- **Repository canonici:** unica sorgente di numeri per Dashboard, Corpo, Insights e report.
+- **Outbox:** export HC opt-in con identità/revisioni/retry; non reinserisce ogni dato appena importato da HC.
+- **Presentazione:** stato leggibile, nessun I/O pesante nei callback Compose, revisione di correzioni e bozze.
 
-## 4. Idempotency & Deduplication
+Estrarre nuovi moduli Gradle solo se riduce un problema reale di build, dipendenze o manutenibilità.
 
-To prevent duplicate records and corrupted statistics during recurring synchronizations, Fitness Hub enforces strict idempotency:
+## 5. Identità e provenienza
 
-| Data Type | Primary / Unique Key | Conflict Strategy |
-|---|---|---|
-| **Daily Aggregates** (`DailyHealthEntity`) | Calendar Date (`LocalDate` formatted as `YYYY-MM-DD`) | `OnConflictStrategy.REPLACE` (upsert based on latest sync). |
-| **Exercise Sessions** (`ExerciseEntity`) | Health Connect record ID (`externalId` UUID) | `OnConflictStrategy.IGNORE` (prevent duplicate insertions). |
-| **Sleep Sessions** (`SleepSessionEntity`) | Source metadata ID or start timestamp | Session attributed to wake day; unique on external ID. |
-| **Direct Scale Readings** | Hardware MAC + epoch measurement timestamp | Unique index; duplicate broadcasts discarded immediately. |
+Le chiavi includono profilo locale, connessione sorgente, subject vendor, tipo e identificativo esterno. Nome utente e indirizzo hardware non sono sostituti universali di un ID persona.
 
----
+Separare trasporto e metodo: `IMPORTED` non significa `MEASURED`. Una percentuale di grasso calcolata dal vendor resta una stima vendor; un peso hardware importato resta un peso hardware. Provenienza, algoritmo e stato qualità vanno per metrica, non soltanto sulla giornata.
 
-## 5. Data Provenance & Integrity Model
+Preservare più misure nello stesso giorno, timestamp/offset originali e assunzioni. Normalizzazione e smoothing non sovrascrivono i dati originali.
 
-To uphold the core rule: **Never fabricate health measurements**:
+## 6. Affidabilità sync
 
-1. **Nullability over Placeholders**: Missing values or metrics for which permissions are denied are represented as `null`. They are never defaulted to `0` or synthetic values.
-2. **Origin Tracking**: Every stored record and aggregate captures its provenance via `dataOrigin` (e.g., `com.mi.health`, `s400_ble_direct`, `user_manual`).
-3. **Algorithm Provenance for Estimates**: Physical scales often measure only raw weight and impedance. Derived body composition indices (body fat %, lean mass, water %) must be calculated using published community formulas and tagged explicitly:
-   - `provenance = ESTIMATE`
-   - `algorithm = "openScale_v1"` or `"bodymiscale_v1"`
-   - UI views display an "Estimate" badge alongside any computed metrics.
+Fetch fuori da transazioni lunghe, staging limitato, commit della pagina prima del checkpoint, replay idempotente. Token HC separati per scope quando necessario; metadati e ID conservati per gestire cancellazioni e cambi di data. Mutua esclusione delle sincronizzazioni della stessa connessione e retry con backoff limitato.
 
----
+Il connettore Xiaomi rimane read-only verso il vendor. Non dedurre cancellazioni da una pagina incompleta o da un errore di rete. Non confondere `NO_DATA` con `TEMPORARY_ERROR`.
 
-## 6. Connector Contract
+## 7. Sicurezza e portabilità
 
-Every external hardware device or platform integration must adhere to the isolated Connector Contract:
+I payload sanitari selezionati possono essere mantenuti localmente per preservare i campi non mappati; cookie/header/password/token non appartengono a quei payload. Segreti mai in log, test reali, repository o report CI.
 
-- **Interface Isolation**: Connectors must implement a decoupled interface (e.g., `HealthSourceConnector`). No connector may access the UI or ViewModel layer directly.
-- **Normalization Boundary**: Connectors are responsible for sanitizing vendor payloads, verifying checksums, decrypting packets, and outputting normalized domain records with timestamps and source origins.
-- **Local Autonomy**: Connectors must not require third-party cloud accounts or external backend infrastructure unless explicitly approved and architecturally isolated.
+Impostare esplicitamente policy Android Auto Backup e device transfer. Distinguere sandbox, cifratura OS, eventuale cifratura del DB, Keystore e backup portabile con passphrase: non sono sinonimi e hanno proprietà di recupero diverse.
 
----
+La chiave CI pubblica attuale è deliberatamente test-only: non autentica il publisher. Prima del normale utilizzo con login sensibili serve un canale con firma privata e una migrazione controllata. Non sostituire la firma o l'app ID senza discutere gli effetti sui dati già installati.
 
-## 7. Xiaomi S400 BLE Connector Flow
+Backup completo, relazioni, migrazioni e test di restore sono parte del modello, non un'aggiunta finale. Nessun suggerimento di disinstallazione basato sul backup prototipale.
 
-The planned Xiaomi S400 integration operates entirely locally through passive Bluetooth Low Energy (BLE) scanning:
+## 8. Tracciamento del lavoro
 
-```mermaid
-sequenceDiagram
-    participant S400 as Xiaomi S400 Scale
-    participant BLE as BLE Scanner (Fitness Hub)
-    participant KS as Android Keystore
-    participant DEC as Decryption Engine
-    participant DB as Room Database
-
-    Note over S400: User steps on scale
-    S400-)BLE: Broadcasts encrypted MiBeacon (AES-CCM)
-    BLE->>KS: Retrieve encrypted bindkey
-    KS-->>BLE: Decrypted 16-byte bindkey
-    BLE->>DEC: Pass advertisement payload + bindkey
-    DEC-->>BLE: Raw metrics: Weight, Impedance, Heart Rate
-    BLE->>DB: Store raw physical measurements
-    Note over DB: Compute estimates (flagged with algorithm ID)
-```
-
-- **Zero Pairing Conflict**: The scale continues normal operation with Xiaomi Home because Fitness Hub does not establish an exclusive GATT connection.
-- **Keystore Security**: The user's 16-byte `bindkey` is stored encrypted via the Android Keystore (AES-256-GCM). The app never solicits or stores Xiaomi cloud login credentials.
-
----
-
-## 8. Privacy & Logging Standards
-
-Health metrics represent sensitive personal data. The application enforces strict operational boundaries:
-
-- **No Remote Telemetry**: No telemetry, analytics, or behavioral tracking SDKs are integrated into the codebase.
-- **No Health Data in Logs**: System logs (`android.util.Log` or internal wrappers like `AppLogger`) must **never** record actual health values (such as weight, steps, heart rate, or sleep hours).
-- **Structured Operation Logs**: Logging is restricted to operational lifecycle events, synchronization durations, record counts, and sanitized error classes, contextualized by a unique `syncId` correlation token.
+I task `FH-DATA-*`, `FH-REC-*`, `FH-HC-*`, `FH-XIA-*` e `FH-PORT-*` del master contengono i criteri verificabili. Questa pagina descrive confini e direzione; lo stato di avanzamento vive soltanto in `PROGRESS.md`.

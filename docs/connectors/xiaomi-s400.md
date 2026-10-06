@@ -1,219 +1,82 @@
-# Xiaomi Body Composition Scale S400 — Integration Strategy
+# Xiaomi S400 — Connettore integrato, storico e dati nuovi
 
-Fitness Hub supports a **dual-path strategy** for Xiaomi Body Composition Scale S400 data:
+**Decisione aggiornata:** 6 ottobre 2026.  
+**Piano completo:** [MASTER_PLAN.md](../MASTER_PLAN.md), workstream `FH-XIA-*`.  
+**Prossima attività:** [PROGRESS.md](../PROGRESS.md).
 
-1. **Historical measurements already stored in Xiaomi Home** are imported from a local CSV exported by SmartScaleConnect.
-2. **Future/live weigh-ins** can be captured locally through the experimental passive BLE connector.
+## 1. Decisione del proprietario
 
-The objective is to keep Xiaomi Home usable while also maintaining a complete local Fitness Hub history.
-
----
-
-## 1. Why two paths
-
-A BLE listener can only observe measurements that occur while Fitness Hub is listening. It cannot reconstruct months of existing Xiaomi Home history.
-
-Conversely, importing historical Xiaomi data once does not provide an automatic local path for future weigh-ins.
-
-The two paths therefore solve different problems:
+Il flusso principale da costruire è:
 
 ```text
-Existing history:
-S400 -> Xiaomi Home -> SmartScaleConnect export -> CSV -> Fitness Hub
-
-Future/live:
-S400 -> encrypted BLE advertisement -> Fitness Hub local connector
-                                      \-> Xiaomi Home remains usable
+Bilancia -> Xiaomi Home -> servizi Xiaomi
+                              |
+                              v
+                 connettore dentro Fitness Hub
+                              |
+                       database sul telefono
+                              |
+                storico / grafici / analytics / export
+                              |
+                 Health Connect, solo tipi compatibili
 ```
 
-Fitness Hub does **not** require the user to abandon Xiaomi Home.
+Un solo APK nostro, nessun root, backend/server o script esterno. Xiaomi Home continua a funzionare normalmente. L'accesso ai servizi Xiaomi serve a importare le informazioni già presenti e le nuove misurazioni; quanto salvato rimane disponibile offline.
 
----
+**Questa integrazione non è ancora implementata nella 0.3.1.** Il progetto ha un importer CSV e un ricevitore BLE sperimentale: non vanno presentati come login o sincronizzazione Xiaomi Cloud.
 
-## 2. Historical import
+## 2. Perché cambia la strategia
 
-### Current supported workflow
+Il CSV manuale non soddisfa il requisito di sincronizzazione automatica. Il BLE non recupera lo storico vendor e può richiedere formule locali per valori non restituiti dal dispositivo. Leggere i file privati di Xiaomi Home non è il percorso previsto su un telefono non rooted.
 
-Fitness Hub imports the CSV format produced by:
+La decisione sostituisce esplicitamente la precedente scelta «storico CSV + live BLE». Local-first non vieta servizi del produttore autorizzati dall'utente: vieta rendere obbligatorio un nostro backend e perdere il controllo dell'archivio locale.
 
-- [SmartScaleConnect](https://github.com/AlexxIT/SmartScaleConnect)
+## 3. Riferimento tecnico
 
-SmartScaleConnect is an independent MIT-licensed project that supports Xiaomi Home scale history, including the Xiaomi S400 EU model.
+[SmartScaleConnect](https://github.com/AlexxIT/SmartScaleConnect) documenta lettura Xiaomi Home e supporto per S400 EU, con differenze tra regioni/modelli. [Client](https://github.com/AlexxIT/SmartScaleConnect/blob/master/pkg/xiaomi/client.go), [autenticazione](https://github.com/AlexxIT/SmartScaleConnect/blob/master/pkg/xiaomi/auth.go), [licenza MIT](https://github.com/AlexxIT/SmartScaleConnect/blob/master/LICENSE).
 
-A normal exported CSV contains columns such as:
+Prima di adattare codice fissare il commit upstream, verificare licenza/attribuzione e protocollo. Non incorporare una CLI da far configurare a mano all'utente. La strada iniziale è un adattatore Kotlin isolato con test di contratto; eventuali altre opzioni devono comunque produrre lo stesso flusso in un APK.
 
-```text
-Date,Weight,BMI,BodyFat,BodyWater,BoneMass,MetabolicAge,MuscleMass,
-PhysiqueRating,ProteinMass,VisceralFat,BasalMetabolism,HeartRate,
-SkeletalMuscleMass,User,Source
-```
+Il modello riferito dall'utente come S400/S400 Pro, la regione account e la companion della band devono essere confermati. Il nome commerciale non prova la compatibilità di tutti i modelli. Non scegliere la regione in base alla posizione geografica del telefono.
 
-Fitness Hub currently imports the fields that map cleanly to its data model:
+## 4. Flusso utente richiesto
 
-- timestamp
-- weight
-- heart rate
-- body fat
-- body water
-- visceral fat
-- basal metabolism
-- source
-- user identity for import isolation
+1. Aprire Fonti -> Xiaomi e leggere quali connessioni/dati verranno usati.
+2. Autenticarsi attraverso un flusso realmente supportato; completare normalmente eventuali verifiche Xiaomi.
+3. Selezionare regione, dispositivo e proprio subject/profilo accessibile.
+4. Vedere anteprima, intervallo storico ottenibile e capacità.
+5. Importare lo storico paginato con progresso, annullamento e ripresa.
+6. Sincronizzare le nuove misurazioni manualmente, all'apertura e periodicamente nei limiti Android/vendor.
+7. Consultare localmente valori, campi estesi, unità, provenienza e qualità.
+8. Abilitare separatamente l'export dei tipi compatibili a Health Connect.
+9. Disconnettere l'account senza perdere silenziosamente i dati già importati.
 
-Unsupported columns are ignored rather than invented or approximated.
+Niente credenziali in chat o GitHub. Niente CAPTCHA/2FA aggirati e niente endpoint, OAuth o QR dichiarati supportati senza verifica.
 
-### Multi-user safety
+## 5. Persona e completezza
 
-A physical S400 may be shared by several Xiaomi users.
+Una bilancia condivisa non rende tutti i profili automaticamente accessibili da un account. Importare esclusivamente quelli autorizzati e selezionati. Il binding deve usare un'identità persistente, non soltanto il nome o un filtro sul singolo file.
 
-If an imported CSV contains more than one distinct `User`, Fitness Hub **refuses to import the file automatically**.
+Conservare tutti i campi sanitari disponibili, anche quelli non ancora tipizzati, con semantica/unità note o marcate come sconosciute. Non inventare unità e non scambiare massa muscolare con massa magra. Una stima Xiaomi importata resta una stima vendor, non un risultato clinico o una formula Fitness Hub.
 
-The user must first choose the exact profile name. This prevents measurements belonging to different people from being silently merged into one local health history.
+L'indicatore di completezza deve descrivere l'intervallo realmente letto e i campi disponibili: nessuna promessa di «tutto» se l'endpoint restituisce un sottoinsieme.
 
-### Data provenance
+## 6. Affidabilità e privacy
 
-Historical Xiaomi values are stored with:
+Sessione protetta, password non persistita se evitabile, segreti esclusi da backup/telemetria/log. Endpoint e redirect autorizzati, HTTPS verificato, risposte limitate, timeout/cancel e errori sanitizzati. Le policy di Auto Backup e firma privata vanno risolte prima del normale uso con credenziali sensibili.
 
-```text
-provenance = IMPORTED
-algorithm = smartscaleconnect_csv
-```
+Il connettore è read-only verso le misurazioni Xiaomi. Page commit e checkpoint coerenti; pagine ripetute e revisioni gestite; disconnessione cancella sessione e job. Una pagina assente durante un errore non prova che il vendor abbia cancellato i record.
 
-Vendor-provided body-composition values imported from history are not relabelled as Fitness Hub estimates.
+## 7. CSV e BLE esistenti
 
----
+Mantenerli come funzionalità secondarie compatibili con l'archivio, non ripiegarvi di nascosto al posto del connettore richiesto.
 
-## 3. Why Fitness Hub does not currently log into Xiaomi Cloud directly
+- CSV: import/migrazione; dati già presenti da riconciliare con le copie cloud senza distruggerli.
+- BLE: sperimentale; firmware, bindkey, permessi e attribuzione della persona richiedono test hardware. Niente formule locali al posto dei dati Xiaomi disponibili.
+- Rimozione di una connessione/chiave non cancella lo storico senza una scelta esplicita.
 
-Xiaomi does not provide a stable public consumer-scale API intended for third-party Android health applications.
+## 8. Gate di completamento
 
-Embedding Xiaomi credentials or long-lived reverse-engineered cloud tokens directly inside Fitness Hub would add:
+Il connettore non è VERIFIED finché login sul dispositivo, selezione del profilo, import storico, nuova pesata, ri-sync idempotente, correzioni e gestione degli errori non sono stati provati. Distinguere unit test, test Room, test del protocollo e prova reale dell'account/hardware.
 
-- credential-security risk;
-- vendor API fragility;
-- authentication/anti-bot maintenance;
-- additional privacy surface.
-
-For the current architecture, the CSV bridge keeps Xiaomi authentication outside Fitness Hub while still allowing historical data to be recovered.
-
-A direct Xiaomi-cloud connector may be evaluated later, but only if its authentication model, maintenance burden and licensing implications are acceptable.
-
-Do **not** copy code from integrations whose license prohibits reuse in another application.
-
----
-
-## 4. Passive BLE path for future weigh-ins
-
-The experimental local connector listens for Xiaomi BLE service advertisements and attempts to decode S400 frames using the configured bindkey.
-
-Current design:
-
-```mermaid
-flowchart LR
-    S400["Xiaomi S400"] -->|"BLE advertisements"| XH["Xiaomi Home"]
-    S400 -->|"same broadcasts"| SCAN["Fitness Hub BLE scanner"]
-    SCAN --> DEC["MiBeacon decryptor"]
-    DEC --> RAW["Measured weight / impedance / heart rate"]
-    RAW --> DB[("Room DB")]
-    DB --> EST["Explicitly labelled estimates"]
-```
-
-The scanner is passive and does not intentionally open an exclusive GATT connection.
-
-### Permissions
-
-- Android 12+ requires runtime `BLUETOOTH_SCAN`.
-- Older Android versions use the platform-required location permission for BLE scanning.
-
-Fitness Hub requests the required permission only when the user starts scale listening.
-
----
-
-## 5. Bindkey handling
-
-The experimental encrypted BLE path requires the scale's 16-byte bindkey.
-
-Rules:
-
-- Fitness Hub does not ask for Xiaomi username/password.
-- The bindkey is entered locally by the user.
-- It is encrypted at rest through Android Keystore-backed storage.
-- It must never be committed to source control or included in diagnostics.
-- Removing the bindkey disables encrypted BLE decoding but does not remove imported historical measurements.
-
----
-
-## 6. Raw measurements vs derived values
-
-Fitness Hub distinguishes between three origins:
-
-### Measured
-
-Values directly observed from hardware or Health Connect.
-
-```text
-provenance = MEASURED
-```
-
-### Imported
-
-Values exported from an existing source such as Xiaomi Home through the CSV bridge.
-
-```text
-provenance = IMPORTED
-```
-
-### Estimated
-
-Values mathematically derived by Fitness Hub from raw measurements and a local user profile.
-
-```text
-provenance = ESTIMATE
-algorithm = <explicit formula identifier>
-```
-
-Estimated values must never be shown as if Xiaomi or the hardware measured them directly.
-
----
-
-## 7. Current limitations
-
-The S400 integration remains a prototype and requires validation against real hardware/firmware.
-
-Known constraints:
-
-- BLE capture only covers future weigh-ins observed by the app.
-- Historical import is currently a manual CSV workflow.
-- Some Xiaomi metrics do not yet have first-class Fitness Hub fields.
-- BLE frame formats may vary by regional model or firmware.
-- Bindkey extraction still requires an external community tool.
-- Background BLE behavior is subject to Android power-management restrictions.
-- Direct Health Connect export of all scale-derived fields is not yet complete.
-
-These limitations should be documented rather than hidden.
-
----
-
-## 8. Validation checklist
-
-Before calling the connector production-ready:
-
-1. Validate BLE decoding on the actual target S400 hardware.
-2. Verify Xiaomi Home remains usable during/after passive scanning.
-3. Compare imported historical values against Xiaomi Home for multiple dates.
-4. Test a shared scale with multiple user profiles.
-5. Verify duplicate CSV imports remain idempotent.
-6. Verify no user A measurement can appear in user B history.
-7. Verify Android 12+ runtime Bluetooth permission behavior.
-8. Verify no bindkey or health value is emitted to logs.
-9. Test backup/restore of imported scale data.
-10. Validate all exported Health Connect mappings separately.
-
----
-
-## 9. Interoperability references
-
-- SmartScaleConnect: https://github.com/AlexxIT/SmartScaleConnect
-- Xiaomi MiBeacon ecosystem/protocol behavior should be treated as reverse-engineered and subject to firmware changes.
-
-Fitness Hub is not affiliated with Xiaomi or SmartScaleConnect.
+Riferimenti: task `FH-XIA-01..14`, `FH-DATA-01..04`, `FH-REC-01..08`, `FH-HC-11..12` e scenari ACC-02..11 del master. Il piano non introduce una garanzia di disponibilità permanente delle API non ufficiali Xiaomi.
