@@ -1,0 +1,1 @@
+These response fixtures are entirely synthetic. They model field layouts in SmartScaleConnect a9e5c04; no account, token, name, device identity or measurement was exported from a real user. CN/global denotes request region, not a guarantee that a fromSource value is unique to a region.
