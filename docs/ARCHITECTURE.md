@@ -1,30 +1,55 @@
 # Fitness Hub — Architettura attuale e obiettivo
 
-**Specifica di riferimento:** [MASTER_PLAN.md](MASTER_PLAN.md), sezioni 3–5.  
-**Stato verificato:** [PROGRESS.md](PROGRESS.md).  
-**Aggiornamento:** 6 ottobre 2026.
+**Specifica:** [MASTER_PLAN.md](MASTER_PLAN.md), sezioni 3–5.  
+**Stato/prove:** [PROGRESS.md](PROGRESS.md).  
+**Aggiornamento:** 6 ottobre 2026, incremento 0.3.5.
 
 ## 1. Vincoli
 
-Una sola applicazione Android Kotlin/Compose, Hilt e Room, con Health Connect per l'interoperabilità. Il database dell'app conserva i dati usati da UI/analytics/export. Nessun account Fitness Hub, backend obbligatorio o infrastruttura server da far installare all'utente.
+Una sola app Android Kotlin/Compose, Hilt, Room e Health Connect. Archivio proprio consultabile offline; nessun account Fitness Hub o backend obbligatorio. Integrazione vendor autorizzata facoltativa, senza sostituire Xiaomi Home o la companion della band.
 
-Local-first non vieta una connessione vendor facoltativa. La nuova integrazione Xiaomi diretta è approvata e deve vivere nello stesso APK. Xiaomi Home resta l'app normale della bilancia; la companion della band continua a gestire il wearable.
+Il prodotto non è ancora un hub completo: la presenza di componenti e test non dimostra compatibilità account/hardware.
 
-## 2. Baseline implementata
+## 2. Componenti attuali
 
-Alla baseline 0.3.1 (`addbc7dd003b691dabcbe2d671dd646c2f73930b`) esistono:
+Un modulo `app`, package `io.github.hebadenys.fitnesshub`, database Room 6 e migrazioni v1–v5→v6. Gateway HC e coordinamento sync, nutrizione, CSV/BLE, workout, analytics, backup e AI rimangono in fasi diverse di sviluppo.
 
-- un modulo `app`, package `io.github.hebadenys.fitnesshub`;
-- `core/database`, gateway HC e coordinamento sync;
-- database v5 con migrazioni e schema esportato;
-- nutrizione, scala CSV/BLE, workout, analytics, backup e AI prototipali;
-- feature Compose separate e componenti grafici.
+Xiaomi ha ora quattro confini eseguibili:
 
-Non esiste ancora un connettore Xiaomi Cloud integrato. Il gateway HC legge un sottoinsieme di tipi e non implementa write-back. Il merge delle misure bilancia in Corpo non è ancora una vista canonica riusata ovunque. Il backup non preserva ancora l'intero archivio.
+- **Protocollo:** parser puro/JSON limitato, contratti di scope e paginazione, metriche/unità/metodi/qualità.
+- **Accesso:** autenticazione normale, HTTP HTTPS limitato e read-only, sessione AES-GCM/Keystore fuori da Room/backup; challenge solo rilevati.
+- **Archivio:** identità locale, binding persona/device immutabile, snapshot sorgente e checkpoint nella stessa transazione.
+- **Presentazione:** `XiaomiSourceGateway`, repository e ViewModel; route Impostazioni -> Xiaomi Home con stato, discovery, selezione e storico offline. Hilt fornisce un solo runtime/client/store.
 
-Non citare come implementate tabelle o classi presenti solo nella vecchia documentazione: il modello definitivo deriva dal codice e dalle migrazioni eseguite nei test.
+Il runtime è bloccato da `AwaitingPrivateSigning`; la UI di test non richiede credenziali. Non è ancora una verifica automatica del certificato privato o un login operativo sul telefono.
 
-## 3. Flusso obiettivo, non ancora completo
+## 3. Flusso Xiaomi implementato dietro il gate
+
+```text
+XiaomiSourceScreen / ViewModel
+             |
+      XiaomiSourceGateway
+             |
+     XiaomiSourceRepository ---------> query Room paginata -> dettagli offline
+             |
+       XiaomiCloudClient
+        /          \
+ auth/sessione   richieste storico
+                     |
+             XiaomiDiscoveryReader -> candidati effimeri -> conferma esplicita
+                     |
+             XiaomiHistoryReader
+                     |
+             RoomXiaomiArchive -> binding + snapshot + checkpoint
+```
+
+Discovery usa lo storico del modello: non un endpoint famiglia inventato. Prima della conferma conserva solo metadati in memoria, non misure di altre persone. I nomi facoltativi servono come etichette, non chiavi; non sono aggiunti ai payload persistiti.
+
+Il repository fornisce soltanto metadati permessi all'interfaccia, mai serviceToken/ssecurity. I comandi sono serializzati, interrompibili e verificano di nuovo la sessione/binding quando necessario. Il logout non cancella archivio o associazione della persona.
+
+Le query locali mostrano pagine da 20 snapshot e un dettaglio per metrica. Un contenuto modificato può rappresentare la stessa pesata: il conteggio degli snapshot non è il numero di eventi canonici.
+
+## 4. Flusso obiettivo da completare
 
 ```text
 Companion band -> Health Connect gateway --+
@@ -45,43 +70,30 @@ Barcode/OCR/manuale/workout ----------------+        v
                  UI / obiettivi / analytics / report
 ```
 
-## 4. Confini proposti
+La vista sorgente Xiaomi non è il resolver condiviso. Dashboard, Corpo e Insights conservano ancora logiche diverse: il prossimo blocco FH-DATA-05/FH-BODY-02/FH-REC-03 deve unificarle senza riscrivere gli originali.
 
-- **Protocollo:** HTTP, autenticazione, paginazione e parsing, isolati per vendor. Il parsing puro non dipende dalla UI.
-- **Session storage:** credenziali/sessioni tramite componente dedicato e Keystore, separato dall'archivio sanitario e dai backup.
-- **Ingestione:** associa persona/connessione, preserva unità/tempi/origini, applica validatori e salva transazionalmente.
-- **Modello sanitario:** tabelle tipizzate con envelope comune e campi vendor versionati; niente refactor EAV globale preventivo.
-- **Riconciliazione:** collegamenti fra copie e scelta per metrica, senza distruggere gli originali.
-- **Repository canonici:** unica sorgente di numeri per Dashboard, Corpo, Insights e report.
-- **Outbox:** export HC opt-in con identità/revisioni/retry; non reinserisce ogni dato appena importato da HC.
-- **Presentazione:** stato leggibile, nessun I/O pesante nei callback Compose, revisione di correzioni e bozze.
+HC legge un sottoinsieme di tipi, con finestra applicativa 30/365; dettaglio fasi sonno e write-back restano incompleti. Nessun worker periodico Xiaomi è ancora registrato.
 
-Estrarre nuovi moduli Gradle solo se riduce un problema reale di build, dipendenze o manutenibilità.
+## 5. Identità, provenienza e tempo
 
-## 5. Identità e provenienza
+Chiavi comprendono persona, connessione, subject vendor, tipo e identità sorgente. Nomi/peso/giorno non sostituiscono un ID. Binding legacy HC/CSV/BLE non è automaticamente risolto dal nuovo binding cloud.
 
-Le chiavi includono profilo locale, connessione sorgente, subject vendor, tipo e identificativo esterno. Nome utente e indirizzo hardware non sono sostituti universali di un ID persona.
+Separare trasporto e metodo: importato non significa misurato; grasso corporeo stimato dal vendor rimane stima vendor. Conservare unità/originali e qualità per metrica, senza dedurre revisioni certe da campi non provati.
 
-Separare trasporto e metodo: `IMPORTED` non significa `MEASURED`. Una percentuale di grasso calcolata dal vendor resta una stima vendor; un peso hardware importato resta un peso hardware. Provenienza, algoritmo e stato qualità vanno per metrica, non soltanto sulla giornata.
+Più misure in un giorno restano più misure. L'ultimo peso mantiene la sua data anche se oggi arrivano soltanto passi. Intervalli dei grafici basati sul calendario, non numero di righe. Medie mobili/correzioni sono viste/derivati distinti dall'originale.
 
-Preservare più misure nello stesso giorno, timestamp/offset originali e assunzioni. Normalizzazione e smoothing non sovrascrivono i dati originali.
+## 6. Affidabilità e sicurezza
 
-## 6. Affidabilità sync
+Rete fuori dalle transazioni. Commit della pagina e cursore atomici, replay idempotente, generazioni impediscono a operazioni vecchie di avanzare un nuovo backfill. Errori non vengono convertiti in zero dati o completamento. Il limite per batch manuale non prova completezza del vendor.
 
-Fetch fuori da transazioni lunghe, staging limitato, commit della pagina prima del checkpoint, replay idempotente. Token HC separati per scope quando necessario; metadati e ID conservati per gestire cancellazioni e cambi di data. Mutua esclusione delle sincronizzazioni della stessa connessione e retry con backoff limitato.
+Sessione in AtomicFile/noBackupFilesDir con chiave Keystore separata. Nessun token/cookie nel database, backup, UI state o log. Schermata segreti con masking, niente stato ripristinabile e FLAG_SECURE mentre visibile. Queste protezioni non garantiscono cancellazione delle copie JVM o comportamento OEM.
 
-Il connettore Xiaomi rimane read-only verso il vendor. Non dedurre cancellazioni da una pagina incompleta o da un errore di rete. Non confondere `NO_DATA` con `TEMPORARY_ERROR`.
+La chiave test pubblica non autentica il publisher: firma privata/custodia/migrazione sono una decisione del proprietario prima del login reale. Il gate non va rimosso per dimostrare una schermata funzionante.
 
-## 7. Sicurezza e portabilità
+## 7. Portabilità e prove
 
-I payload sanitari selezionati possono essere mantenuti localmente per preservare i campi non mappati; cookie/header/password/token non appartengono a quei payload. Segreti mai in log, test reali, repository o report CI.
+Backup v2 contiene colonne/relazioni delle 19 tabelle dati registrate, con snapshot coerente e ripristino transazionale conservativo. Non comprende preferenze/media/credenziali/checkpoint; richiede schema identico, limite 32 MiB decifrati. V1 parziale solo su archivio salute vuoto. Nessuna disinstallazione basata su trasferimento completo non verificato.
 
-Impostare esplicitamente policy Android Auto Backup e device transfer. Distinguere sandbox, cifratura OS, eventuale cifratura del DB, Keystore e backup portabile con passphrase: non sono sinonimi e hanno proprietà di recupero diverse.
+Test Jupiter, Room/SQLite nativo e Compose sotto Robolectric verificano contratti, migrazioni, UI e rollback. Non sostituiscono device Redmi, account Xiaomi, BLE, TLS remoto, hardware Keystore o trasferimento tra telefoni. I risultati effettivi/SHA sono nel registro.
 
-La chiave CI pubblica attuale è deliberatamente test-only: non autentica il publisher. Prima del normale utilizzo con login sensibili serve un canale con firma privata e una migrazione controllata. Non sostituire la firma o l'app ID senza discutere gli effetti sui dati già installati.
-
-Backup completo, relazioni, migrazioni e test di restore sono parte del modello, non un'aggiunta finale. Nessun suggerimento di disinstallazione basato sul backup prototipale.
-
-## 8. Tracciamento del lavoro
-
-I task `FH-DATA-*`, `FH-REC-*`, `FH-HC-*`, `FH-XIA-*` e `FH-PORT-*` del master contengono i criteri verificabili. Questa pagina descrive confini e direzione; lo stato di avanzamento vive soltanto in `PROGRESS.md`.
+Estrarre nuovi moduli Gradle solo per un problema misurato. Nessuna infrastruttura server soltanto perché una feature potrebbe usarla.
