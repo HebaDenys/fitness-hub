@@ -4,7 +4,7 @@ plugins {
 }
 android {
  namespace="io.github.hebadenys.fitnesshub"; compileSdk=36
- defaultConfig { applicationId="io.github.hebadenys.fitnesshub"; minSdk=28; targetSdk=35; versionCode=1; versionName="0.2.0"; testInstrumentationRunner="androidx.test.runner.AndroidJUnitRunner" }
+ defaultConfig { applicationId="io.github.hebadenys.fitnesshub"; minSdk=28; targetSdk=35; versionCode=2; versionName="0.3.0"; testInstrumentationRunner="androidx.test.runner.AndroidJUnitRunner" }
  buildFeatures { compose=true }
  compileOptions { sourceCompatibility=JavaVersion.VERSION_17; targetCompatibility=JavaVersion.VERSION_17 }
   kotlin {
@@ -12,6 +12,23 @@ android {
     compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) }
   }
   testOptions { unitTests.all { it.useJUnitPlatform() }; unitTests.isReturnDefaultValues = true }
+
+  val ciKeystorePath = System.getenv("FITNESS_HUB_TEST_KEYSTORE")
+  if (!ciKeystorePath.isNullOrBlank()) {
+    signingConfigs {
+      create("ciDebug") {
+        storeFile = file(ciKeystorePath)
+        storePassword = System.getenv("FITNESS_HUB_TEST_KEYSTORE_PASSWORD")
+        keyAlias = System.getenv("FITNESS_HUB_TEST_KEY_ALIAS")
+        keyPassword = System.getenv("FITNESS_HUB_TEST_KEY_PASSWORD")
+      }
+    }
+    buildTypes {
+      getByName("debug") {
+        signingConfig = signingConfigs.getByName("ciDebug")
+      }
+    }
+  }
 }
 dependencies {
   implementation(platform("androidx.compose:compose-bom:2025.10.01"))
