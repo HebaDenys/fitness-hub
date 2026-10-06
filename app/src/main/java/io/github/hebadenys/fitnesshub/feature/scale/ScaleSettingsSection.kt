@@ -1,5 +1,7 @@
 package io.github.hebadenys.fitnesshub.feature.scale
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -49,6 +51,15 @@ fun ScaleSettingsSection(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val bindkeyState by viewModel.bindkeyState.collectAsStateWithLifecycle()
     val spacing = FitnessHubTheme.spacing
+
+    val scanPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { grants ->
+        if (grants.values.all { it }) {
+            viewModel.refreshBluetoothState()
+            viewModel.toggleScan()
+        }
+    }
 
     var bindkeyInput by remember { mutableStateOf("") }
     var heightInput by remember { mutableStateOf("") }
@@ -177,7 +188,13 @@ fun ScaleSettingsSection(
                 )
             }
             Button(
-                onClick = viewModel::toggleScan,
+                onClick = {
+                    if (viewModel.hasScanPermission()) {
+                        viewModel.toggleScan()
+                    } else {
+                        scanPermissionLauncher.launch(viewModel.requiredScanPermissions())
+                    }
+                },
                 enabled = model.isConfigured && model.bluetoothAvailable,
                 modifier = Modifier.fillMaxWidth()
             ) {
