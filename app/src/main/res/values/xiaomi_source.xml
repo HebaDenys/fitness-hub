@@ -8,7 +8,7 @@
     <string name="xiaomi_source_signed_out">No active Xiaomi session</string>
     <string name="xiaomi_source_needs_selection">Account connected; choose your person and scale before importing</string>
     <string name="xiaomi_source_ready">Account and selected source match</string>
-    <string name="xiaomi_source_mismatch">Account does not match the selected archive</string>
+    <string name="xiaomi_source_mismatch">Cloud synchronization is unavailable for this account/source</string>
     <string name="xiaomi_source_region">Xiaomi account region</string>
     <string name="xiaomi_source_region_hint">Use the server region configured in Xiaomi Home, not your current location.</string>
     <string name="xiaomi_source_account">Account ID: %1$s</string>
@@ -37,7 +37,7 @@
     <string name="xiaomi_source_sync_finished">The requested pass reached the source page boundary. This does not prove that Xiaomi exposed every historical record.</string>
     <string name="xiaomi_source_sync_paused">This batch is saved. Continue to download older pages from the saved checkpoint.</string>
     <string name="xiaomi_source_bound">Source selected. Start importing when ready.</string>
-    <string name="xiaomi_source_logged_in">Account connected. No measurements have been imported yet.</string>
+    <string name="xiaomi_source_logged_in">Account connected. Login does not start an automatic import.</string>
     <string name="xiaomi_source_cancelled">Operation stopped. Already committed pages remain saved.</string>
     <string name="xiaomi_source_logout">Disconnect account</string>
     <string name="xiaomi_source_logout_warning">Remove the service session and cancel its operations? Saved measurements and the selected archive owner will remain unchanged.</string>

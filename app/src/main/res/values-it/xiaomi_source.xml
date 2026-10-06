@@ -8,7 +8,7 @@
     <string name="xiaomi_source_signed_out">Nessuna sessione Xiaomi attiva</string>
     <string name="xiaomi_source_needs_selection">Account collegato; scegli persona e bilancia prima di importare</string>
     <string name="xiaomi_source_ready">Account e sorgente selezionata corrispondono</string>
-    <string name="xiaomi_source_mismatch">Account diverso da quello associato allo storico</string>
+    <string name="xiaomi_source_mismatch">Sincronizzazione cloud non disponibile per questo account/sorgente</string>
     <string name="xiaomi_source_region">Regione account Xiaomi</string>
     <string name="xiaomi_source_region_hint">Usa la regione server configurata in Xiaomi Home, non la tua posizione attuale.</string>
     <string name="xiaomi_source_account">ID account: %1$s</string>
@@ -37,7 +37,7 @@
     <string name="xiaomi_source_sync_finished">Il passaggio richiesto ha raggiunto il limite delle pagine della sorgente. Non prova che Xiaomi abbia esposto ogni dato storico.</string>
     <string name="xiaomi_source_sync_paused">Questo lotto è salvato. Continua a scaricare le pagine precedenti dal punto registrato.</string>
     <string name="xiaomi_source_bound">Sorgente selezionata. Avvia l’importazione quando sei pronto.</string>
-    <string name="xiaomi_source_logged_in">Account collegato. Nessuna misurazione è stata ancora importata.</string>
+    <string name="xiaomi_source_logged_in">Account collegato. Il login non avvia una importazione automatica.</string>
     <string name="xiaomi_source_cancelled">Operazione interrotta. Le pagine già confermate restano salvate.</string>
     <string name="xiaomi_source_logout">Disconnetti account</string>
     <string name="xiaomi_source_logout_warning">Rimuovere la sessione e annullare le sue operazioni? Le misurazioni salvate e il proprietario dello storico non cambieranno.</string>
