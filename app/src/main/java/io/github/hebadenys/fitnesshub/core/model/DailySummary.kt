@@ -24,5 +24,6 @@ data class DailySummary(
     companion object {
         const val PROVENANCE_MEASURED = "MEASURED"
         const val PROVENANCE_ESTIMATE = "ESTIMATE"
+        const val PROVENANCE_IMPORTED = "IMPORTED"
     }
 }
