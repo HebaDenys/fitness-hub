@@ -2,9 +2,9 @@
 
 **Piano completo:** [MASTER_PLAN.md](MASTER_PLAN.md).  
 **Punto da cui ripartire:** [PROGRESS.md](PROGRESS.md).  
-**Revisione:** 1, aggiornamento operativo 6 ottobre 2026.
+**Aggiornamento:** 6 ottobre 2026, consegna 0.3.3.
 
-Questa roadmap è un indice, non una seconda copia del backlog. Le vecchie Phase 1–7 e la strategia CSV storico/BLE principale sono state superate dalla decisione del proprietario: connettore Xiaomi Cloud integrato nello stesso APK, archivio locale completo, controlli cross-source e interoperabilità Health Connect.
+Questa roadmap è un indice, non una seconda copia del backlog. Le vecchie Phase 1–7 e il percorso CSV storico/BLE principale sono superati: Xiaomi Cloud integrato nello stesso APK, archivio locale completo, controlli cross-source e interoperabilità HC.
 
 ## Percorso principale
 
@@ -21,31 +21,31 @@ T0 Base verificabile e protezione dati
  -> T9 Rilascio responsabile
 ```
 
-Il backup e la sicurezza iniziano in T0/T1: la collocazione di T7 indica la prova completa di trasferimento, non il permesso di rimandare la protezione dei dati. QA e distribuzione sono attività continue. Parti indipendenti si possono completare quando una prova hardware è bloccata.
+Backup e sicurezza iniziano in T0/T1: T7 indica la prova completa di trasferimento, non il permesso di rimandare la protezione dei dati. QA e distribuzione sono continue. Parti indipendenti si possono completare quando una prova hardware è bloccata.
 
-| Traguardo | Risultato concreto | Workstream principali |
+| Traguardo | Risultato concreto | Workstream |
 |---|---|---|
 | T0 | Build identificabile, dati protetti, limiti dichiarati. | SAFE, QA, DIST, PORT iniziale. |
-| T1 | Login Xiaomi nell'app, proprio profilo, storico disponibile e nuova pesata senza export manuali. | XIA, DATA identità/persistenza, UX Fonti. |
-| T2 | Uno stesso dato in Dashboard/Corpo/Insights, copie e anomalie gestite. | DATA, REC, BODY. |
-| T3 | Tutti i tipi pertinenti disponibili, permessi corretti e write-back senza loop. | HC, REC, XIA export, QA. |
+| T1 | Login Xiaomi, proprio profilo, storico e nuova pesata senza export manuali. | XIA, DATA identità/persistenza, UX Fonti. |
+| T2 | Stesso dato in Dashboard/Corpo/Insights, copie e anomalie gestite. | DATA, REC, BODY. |
+| T3 | Tipi pertinenti disponibili, permessi corretti e write-back senza loop. | HC, REC, XIA export, QA integrazione. |
 | T4 | Prodotto sconosciuto -> barcode/etichetta -> revisione -> riuso offline e diario. | NUT, UX, HC nutrizione. |
 | T5 | Sessioni pesi/corpo libero/cardio registrabili, modificabili e riutilizzabili. | TRAIN, HC esercizio. |
 | T6 | Follow-up con obiettivi storici, dati coerenti e report esportabili. | GOAL, LIFE, ANA, PORT report. |
 | T7 | Backup -> altro dispositivo -> restore senza perdita di dati/relazioni. | PORT e QA Room/migrazioni. |
-| T8 | Foto/testo -> bozza confermabile, con core indipendente dall'AI. | AI, SAFE/privacy. |
+| T8 | Foto/testo -> bozza confermabile, core indipendente dall'AI. | AI, SAFE/privacy. |
 | T9 | Firma privata, licenza scelta, conformità e validazione reali. | DIST, LEGAL, QA. |
 
-## Incremento concluso e prossimo lavoro
+## Incrementi verificati, non traguardi completi
 
-`FH-XIA-01`: parser/contratti Xiaomi Kotlin e fixture eseguibili consegnati nella **0.3.2**, commit `b757f8e`, con CI verificata. Non è il login cloud. Iniziati i prerequisiti SAFE: allowlist logging ed esclusioni esplicite backup OS.
+0.3.2: parser/contratti Xiaomi e prerequisiti privacy. 0.3.3: binding persistente e archivio cloud con committer Room, migrazioni schema 6 e backup database v2 collegato a Insights. Test nativi SQLite e CI verificati nel registro.
 
-Seguono **`FH-DATA-01/02`**, binding persistente persona/sorgente e provenienza per metrica, transazioni/checkpoint con migrazioni e backup. I gate SAFE restano necessari prima delle credenziali reali. Lo stato preciso e le prove sono nel registro, non nei titoli dei traguardi.
+T1 non è ancora completo: mancano trasporto autenticato, sessione, onboarding e prova vendor. T7 non è completo: backup v2 copre righe DB, non preferenze/media, e il trasferimento fisico/cross-schema resta da verificare.
 
-## Regole di avanzamento
+## Prossimo incremento
 
-Un task inizia quando ha input e dipendenze sufficienti. Finisce solo con il percorso e le prove richieste; compilazione non equivale a funzionamento sul dispositivo. Nessuna percentuale globale gonfiata dal numero di file/test.
+`FH-XIA-02/03/04` con gate SAFE: ricerca autenticazione effettiva, trasporto HTTPS limitato e session store protetto, testabili senza credenziali reali. Usare il parser e il committer già presenti; non rifarli. Firma privata/custodia/migrazione da approvare prima dei login reali, non prima di ogni test con fixture.
 
-Non richiedere nuovamente approvazione per le attività tecniche già previste. Servono invece conferme per segreti, spese, cancellazioni, licenza, cambio identità/firma e distribuzione negli store. Non schedulare lavoro futuro senza richiesta distinta.
+## Regole
 
-**La 0.3.2 non contiene ancora il login Xiaomi Cloud o il write-back Health Connect.** Il piano descrive il lavoro da completare, non li dichiara implementati.
+Leggere codice/CI reali e completare percorsi verificabili. Non chiedere nuovamente approvazione per attività tecniche già previste. Conferme restano per segreti, spese, cancellazioni, licenza, identità/firma e store. Non schedulare lavoro futuro senza richiesta distinta.

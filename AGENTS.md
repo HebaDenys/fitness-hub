@@ -33,13 +33,15 @@ La precedente preferenza per CSV storico + BLE live è superata. Non rifiutare i
 - AI esclusivamente opzionale, autorizzata, revisionabile e disattivabile. Non riutilizzare sessioni consumer come API occulte.
 - Non pubblicare credenziali, token, chiavi private, dati sanitari, nomi dei soggetti sanitari o identificativi reali nei log/fixture/repository.
 - Le misurazioni Xiaomi sono read-only verso il vendor; nessuna modifica/cancellazione dell'archivio remoto.
-- Il backup portabile è incompleto: niente suggerimenti di disinstallazione/cancellazione basati sulla presunzione che ripristini tutto. Le regole OS non lo sostituiscono.
+- Backup v2 copre le tabelle dei dati, non preferenze/media/credenziali; restore stesso schema e senza conflitti. V1 resta parziale. Niente disinstallazioni/cancellazioni basate su recupero completo non provato. Le regole OS non sostituiscono un backup portabile.
 - La chiave CI pubblica esistente è TEST-ONLY e non autentica il publisher. Non usarla per produzione o considerarla una protezione per il normale uso con credenziali sensibili; seguire il gate SAFE.
 - Uso personale gratuito e commercial licensing sono la direzione. Non applicare una licenza al progetto senza decisione del proprietario; rispettare le licenze separate delle dipendenze.
 
 ## Come scegliere il lavoro
 
-Riprendere il task attivo o il primo pronto in `docs/PROGRESS.md`. Verificare dipendenze e accettazione nel master. `FH-XIA-01` è stato completato al livello parser/contratti nella 0.3.2: non ripartire da zero. Il prossimo passo registrato è `FH-DATA-01/02` con persistenza, binding e provenienza; verificare che il registro non sia cambiato nel frattempo.
+Riprendere il task attivo o il primo pronto in `docs/PROGRESS.md`. `FH-XIA-01` parser/contratti è nella 0.3.2; la 0.3.3 aggiunge persistenza/binding cloud, committer Room, schema 6 e backup DB v2 con test SQLite nativi. Non rifare questi incrementi da zero. I workstream DATA/PORT complessivi restano parziali: leggere i criteri residui nel registro.
+
+Il prossimo passo registrato è `FH-XIA-02/03/04` con SAFE: trasporto/autenticazione/sessione verificabili senza credenziali reali, poi integrazione UI. Il gate firma privata resta per i login reali, non deve bloccare tutti i test indipendenti. Verificare che il registro non sia cambiato nel frattempo.
 
 Il proprietario ha autorizzato le attività di questo piano per le sessioni che richiede e il lavoro diretto su `main`. Non richiedere di nuovo il consenso per «Phase 3» o altre fasi già incluse. Non rieseguire la pianificazione al posto dello sviluppo a ogni «continua».
 
@@ -50,10 +52,11 @@ Una sessione deve chiudere una vertical slice utile o un prerequisito eseguibile
 - Usare task ID nel commit e nel registro; mantenere commit multi-file atomici.
 - Rileggere HEAD prima di aggiornare `main`; se è cambiato, confrontare e integrare senza sovrascrivere. Mai force-push.
 - Eseguire test pertinenti e `./gradlew testDebugUnitTest lintDebug assembleDebug` per codice/config Android; anche `python3 -m unittest discover -s ci -p 'test_*.py' -v` quando pertinente.
-- Test Room/dispositivo non sostituibili con mock. Migrazioni, backup e outbox fanno parte di ogni cambiamento persistente.
-- Non disabilitare lint/test per ottenere verde e non dichiarare eseguito un comando non eseguito. Distinguere eventuali harness offline dalla suite JUnit/Android reale.
+- Test Room/dispositivo non sostituibili con mock. Mantenere i test Vintage/Robolectric nativi insieme alla suite Jupiter; non sostituiscono il test fisico. Migrazioni, backup e outbox fanno parte di ogni cambiamento persistente.
+- Conservare gli schemi Room generati da KSP, senza inventare identityHash. Se il toolchain genera output in CI, adottarlo dopo revisione, non modificare automaticamente main durante la build.
+- Non disabilitare lint/test per ottenere verde e non dichiarare eseguito un comando non eseguito. Distinguere harness offline, JUnit e dispositivo reale.
 - Per soli documenti verificare link, ID, dipendenze e diff. È consentito evitare la build Android quando nessun file eseguibile cambia e le regole di branch lo consentono; dichiararlo nel riepilogo.
-- Verificare SHA software e APK/release effettivi, non una run di una versione precedente. Un commit successivo solo documentale non richiede una nuova versione APK.
+- Verificare SHA software e APK/release effettivi, non una run di una versione precedente. Un commit successivo solo documentale o di adozione dell'esatto output schema già verificato non richiede un APK identico.
 - Aggiornare `docs/PROGRESS.md` con risultati, file/commit, test e livello di verifica, limiti e prossimo passo. Nessun task VERIFIED solo perché esiste una classe o la build compila.
 
 ## Limiti dell'autonomia
