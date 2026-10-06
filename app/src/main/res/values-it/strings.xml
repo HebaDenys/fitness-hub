@@ -287,4 +287,19 @@
     <string name="export_csv_description">Esporta l’andamento del peso in un file CSV standard per fogli di calcolo e analisi personali.</string>
     <string name="export_csv_saved">File CSV salvato.</string>
 
+
+    <string name="scale_history_title">Importa storico Xiaomi Home</string>
+    <string name="scale_history_description">Importa un CSV esportato da SmartScaleConnect da Xiaomi Home. In questo modo recuperi le vecchie pesature S400 senza fornire a Fitness Hub le credenziali Xiaomi.</string>
+    <string name="scale_history_user_filter">Nome utente (opzionale)</string>
+    <string name="scale_history_user_filter_hint">Se il file contiene più persone, inserisci il nome esatto del profilo Xiaomi per evitare di mischiare le misurazioni.</string>
+    <string name="scale_history_import">Scegli CSV dello storico</string>
+    <string name="scale_history_importing">Importazione storico…</string>
+    <string name="scale_history_success">Importate %1$d misurazioni; %2$d duplicati; %3$d righe ignorate.</string>
+    <string name="scale_history_multiple_users">Trovati più utenti: %1$s. Inserisci un nome utente qui sopra e importa nuovamente lo stesso file.</string>
+    <string name="scale_history_failed">Importazione storico non riuscita (%1$s).</string>
+    <string name="scale_body_fat_reading">Massa grassa: %1$s%%</string>
+    <string name="scale_body_water_reading">Acqua corporea: %1$s%%</string>
+    <string name="scale_visceral_fat_reading">Grasso viscerale: %1$s</string>
+    <string name="scale_provenance_imported">IMPORTATO DALLO STORICO XIAOMI</string>
+
 </resources>
