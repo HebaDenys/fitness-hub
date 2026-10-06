@@ -1,6 +1,6 @@
 <resources>
     <string name="backup_coverage_v2">Copia cifrada de las 19 tablas de datos: comidas, alimentos, entrenamientos, composición corporal y nuevo archivo Xiaomi. Excluye credenciales, preferencias, imágenes y cursores de sincronización. Tamaño descifrado máximo: 32 MiB. Falta verificar la transferencia entre teléfonos físicos.</string>
-    <string name="backup_merge_policy_v2">La restauración agrega filas faltantes y omite las idénticas. Un conflicto cancela toda la restauración sin sobrescribir datos. El formato 2 requiere el mismo esquema de base de datos. Los archivos antiguos de formato 1 siguen siendo parciales.</string>
+    <string name="backup_merge_policy_v2">Formato 2: agrega filas faltantes y omite las idénticas. Un conflicto cancela todo sin sobrescribir datos. Requiere el mismo esquema de base de datos. El formato 1 es parcial y solo se restaura en un archivo de salud vacío; conserva el catálogo de ejercicios y la configuración del perfil local.</string>
     <string name="backup_restored_v2">Se agregaron %1$d filas; %2$d filas idénticas ya estaban presentes.</string>
     <string name="backup_legacy_partial_v2">Copia antigua y parcial: esta restauración no recupera los datos que nunca se incluyeron en el formato anterior.</string>
     <string name="backup_conflict_v2">La copia entra en conflicto con datos existentes. No se importó ni sobrescribió nada. Conservá ambas copias: los conflictos no se resuelven automáticamente.</string>

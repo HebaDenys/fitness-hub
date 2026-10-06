@@ -50,7 +50,13 @@ class DatabaseBackupService @Inject constructor(private val database: HealthData
             val root = JSONObject(text)
             when (exactInteger(root.get("payloadVersion"))) {
                 1L -> database.withTransaction {
-                    // Compatibility with old partial files, not a claim of full/idempotent v1 recovery.
+                    // The old adapter lacks reliable identity/upsert semantics: never merge into health data.
+                    val sql = database.openHelper.writableDatabase
+                    for (table in DOMAIN_TABLES.filterNot { it == "exercises" || it == "user_profile" }) {
+                        sql.query("SELECT 1 FROM ${quote(table)} LIMIT 1").use {
+                            if (it.moveToFirst()) fail("legacy_requires_empty_archive")
+                        }
+                    }
                     val legacy = BackupService(database).restoreBackup(encoded, passphrase.copyOf())
                     RestoreResult(legacy.totalRows, legacyPartial = true)
                 }
@@ -148,7 +154,6 @@ class DatabaseBackupService @Inject constructor(private val database: HealthData
         db.query("PRAGMA foreign_key_check").use { if (it.moveToFirst()) fail("invalid_relationship") }
         validateBackupRelationships(db)
         XiaomiArchiveIntegrity.validate(database)
-        // Operational state is not portable: do not resume an obsolete cloud cursor after restore.
         database.xiaomiArchiveDao().resetCheckpoints()
         return RestoreResult(inserted, identical)
     }
@@ -162,14 +167,14 @@ class DatabaseBackupService @Inject constructor(private val database: HealthData
         db.query("SELECT name FROM sqlite_master WHERE type='table'").use { cursor ->
             while (cursor.moveToNext()) actual += cursor.getString(0)
         }
-        if ((actual - SYSTEM_TABLES - DOMAIN_TABLES.toSet()).isNotEmpty()) fail("unregistered_database_table")
+        if ((actual - SYSTEM_TABLES - DOMAIN_TABLES.toSet()).any { !it.startsWith("sqlite_") }) fail("unregistered_database_table")
         if (!actual.containsAll(DOMAIN_TABLES)) fail("missing_database_table")
         return DOMAIN_TABLES.map { name ->
             val columns = mutableListOf<Column>()
             db.query("PRAGMA table_info(${quote(name)})").use { cursor ->
                 while (cursor.moveToNext()) columns += Column(cursor.getString(1), cursor.getString(2), cursor.getInt(3) != 0, cursor.getInt(5))
             }
-            // Physical column order can differ after ALTER TABLE; use a portable canonical order.
+            // Physical order may differ after ALTER TABLE; canonical order is portable.
             Table(name, columns.sortedBy { it.name }).also { if (it.keys.isEmpty()) fail("missing_primary_key") }
         }
     }

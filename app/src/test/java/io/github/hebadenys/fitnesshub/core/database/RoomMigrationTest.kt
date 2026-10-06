@@ -2,6 +2,7 @@ package io.github.hebadenys.fitnesshub.core.database
 
 import android.app.Application
 import android.database.sqlite.SQLiteDatabase
+import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test
@@ -37,11 +38,12 @@ class RoomMigrationTest {
                 val entity = entities.getJSONObject(index)
                 val table = entity.getString("tableName")
                 raw.execSQL(entity.getString("createSql").replace("\${TABLE_NAME}", table))
-                val indices = entity.getJSONArray("indices")
+                // Older checked-in schema exports omit `indices` for a table with none.
+                val indices = entity.optJSONArray("indices") ?: JSONArray()
                 for (i in 0 until indices.length()) raw.execSQL(indices.getJSONObject(i).getString("createSql").replace("\${TABLE_NAME}", table))
                 val fields = entity.getJSONArray("fields")
                 val columns = (0 until fields.length()).map { fields.getJSONObject(it) }
-                val values = columns.map { field ->
+                val values: List<Any> = columns.map { field ->
                     when (field.getString("affinity")) {
                         "INTEGER" -> 1L
                         "REAL" -> 1.25

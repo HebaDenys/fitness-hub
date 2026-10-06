@@ -17,6 +17,7 @@ android {
         it.systemProperty("fitnesshub.schemas", "$projectDir/schemas")
         it.systemProperty("robolectric.dependency.repo.url", "https://repo.maven.apache.org/maven2")
         it.maxHeapSize = "2g"
+        it.testLogging.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
     }
     unitTests.isReturnDefaultValues = true
     unitTests.isIncludeAndroidResources = true
@@ -56,7 +57,7 @@ dependencies {
   testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.11.4")
   testImplementation("org.bouncycastle:bcprov-jdk18on:1.80")
   testImplementation("org.json:json:20250107")
-  // JUnit Vintage executes Robolectric alongside the existing Jupiter suite, not instead of it.
+  // Vintage runs Robolectric alongside, not instead of, the existing Jupiter suite.
   testImplementation("junit:junit:4.13.2")
   testRuntimeOnly("org.junit.vintage:junit-vintage-engine:5.11.4")
   testImplementation("org.robolectric:robolectric:4.16.1")

@@ -10,7 +10,7 @@ import java.util.UUID
 internal fun testDatabase(name: String = UUID.randomUUID().toString()): HealthDatabase =
     Room.databaseBuilder(RuntimeEnvironment.getApplication(), HealthDatabase::class.java, name)
         .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
-        .allowMainThreadQueries() // Test helper only. Production still uses Room's suspend transactions.
+        .allowMainThreadQueries()
         .build().also { it.openHelper.writableDatabase }
 
 /** Seed synthetic values in every legacy domain table, including optional columns and relations. */
@@ -20,7 +20,7 @@ internal fun seedLegacyTables(db: SupportSQLiteDatabase) {
         db.query("PRAGMA table_info(`$table`)").use { cursor ->
             while (cursor.moveToNext()) columns += cursor.getString(1) to cursor.getString(2)
         }
-        val values = columns.map { (name, type) ->
+        val values: List<Any> = columns.map { (name, type) ->
             when (type) {
                 "INTEGER" -> 1L
                 "REAL" -> 12.5
