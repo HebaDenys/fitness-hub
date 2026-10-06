@@ -1,8 +1,8 @@
-package com.openhealthhub.app.di
+package io.github.hebadenys.fitnesshub.di
 import android.content.Context
-import com.openhealthhub.app.core.database.HealthDatabase
-import com.openhealthhub.app.core.healthconnect.HealthConnectManager
-import com.openhealthhub.app.core.sync.HealthSyncRepository
+import io.github.hebadenys.fitnesshub.core.database.HealthDatabase
+import io.github.hebadenys.fitnesshub.core.healthconnect.HealthConnectManager
+import io.github.hebadenys.fitnesshub.core.sync.HealthSyncRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

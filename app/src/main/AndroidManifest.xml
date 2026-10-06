@@ -10,7 +10,7 @@
  <uses-permission android:name="android.permission.health.READ_SLEEP"/>
  <uses-permission android:name="android.permission.health.READ_WEIGHT"/>
  <uses-permission android:name="android.permission.health.READ_BODY_FAT"/>
- <application android:name=".OpenHealthHubApp" android:theme="@style/Theme.OpenHealthHub" android:label="Open Health Hub">
+ <application android:name=".FitnessHubApp" android:theme="@style/Theme.FitnessHub" android:label="Fitness Hub">
   <activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>
  </application>
  <queries><package android:name="com.google.android.apps.healthdata"/></queries>

@@ -3,8 +3,8 @@ plugins {
  id("org.jetbrains.kotlin.kapt"); id("com.google.dagger.hilt.android")
 }
 android {
- namespace="com.openhealthhub.app"; compileSdk=36
- defaultConfig { applicationId="com.openhealthhub.app"; minSdk=28; targetSdk=35; versionCode=1; versionName="0.2.0"; testInstrumentationRunner="androidx.test.runner.AndroidJUnitRunner" }
+ namespace="io.github.hebadenys.fitnesshub"; compileSdk=36
+ defaultConfig { applicationId="io.github.hebadenys.fitnesshub"; minSdk=28; targetSdk=35; versionCode=1; versionName="0.2.0"; testInstrumentationRunner="androidx.test.runner.AndroidJUnitRunner" }
  buildFeatures { compose=true }
  compileOptions { sourceCompatibility=JavaVersion.VERSION_17; targetCompatibility=JavaVersion.VERSION_17 }
  kotlinOptions { jvmTarget="17" }

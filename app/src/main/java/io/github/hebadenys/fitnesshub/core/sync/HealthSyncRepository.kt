@@ -1,6 +1,6 @@
-package com.openhealthhub.app.core.sync
-import com.openhealthhub.app.core.database.*
-import com.openhealthhub.app.core.healthconnect.HealthConnectManager
+package io.github.hebadenys.fitnesshub.core.sync
+import io.github.hebadenys.fitnesshub.core.database.*
+import io.github.hebadenys.fitnesshub.core.healthconnect.HealthConnectManager
 import kotlinx.coroutines.flow.Flow
 import java.time.*
 

@@ -1,4 +1,4 @@
-package com.openhealthhub.app.core.healthconnect
+package io.github.hebadenys.fitnesshub.core.healthconnect
 import android.content.Context
 import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.PermissionController

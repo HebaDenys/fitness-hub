@@ -14,20 +14,21 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Install Gradle
-        run: |
-          wget -q https://services.gradle.org/distributions/gradle-8.13-bin.zip
-          unzip -q gradle-8.13-bin.zip
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
       - name: Test lint and build APK
-        run: ./gradle-8.13/bin/gradle testDebugUnitTest lintDebug assembleDebug --stacktrace
+        run: ./gradlew testDebugUnitTest lintDebug assembleDebug --stacktrace
+      - name: Extract version
+        id: version
+        run: echo "name=$(grep -oP 'versionName=\"\K[^\"]+' app/build.gradle.kts)" >> "$GITHUB_OUTPUT"
       - name: Rename APK
         if: success()
-        run: cp app/build/outputs/apk/debug/app-debug.apk OpenHealthHub-v0.2.0-debug.apk
+        run: cp app/build/outputs/apk/debug/app-debug.apk FitnessHub-v${{ steps.version.outputs.name }}-debug.apk
       - uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: OpenHealthHub-v0.2.0-debug
-          path: OpenHealthHub-v0.2.0-debug.apk
+          name: FitnessHub-v${{ steps.version.outputs.name }}-debug
+          path: FitnessHub-v${{ steps.version.outputs.name }}-debug.apk
           retention-days: 30
       - name: Publish rolling test release
         if: success() && github.event_name == 'push'
@@ -35,4 +36,4 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete test-latest --cleanup-tag -y || true
-          gh release create test-latest OpenHealthHub-v0.2.0-debug.apk --target "$GITHUB_SHA" --title "Open Health Hub v0.2.0 Test" --notes "Automatic test build of Phase 1 + Phase 2. Debug APK for direct Android installation." --prerelease
+          gh release create test-latest FitnessHub-v${{ steps.version.outputs.name }}-debug.apk --target "$GITHUB_SHA" --title "Fitness Hub v${{ steps.version.outputs.name }} Test" --notes 'Automatic debug test build. Uninstall any previous "Open Health Hub" build first (application id changed).' --prerelease

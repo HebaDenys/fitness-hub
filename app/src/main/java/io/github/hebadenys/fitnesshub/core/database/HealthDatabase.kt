@@ -1,4 +1,4 @@
-package com.openhealthhub.app.core.database
+package io.github.hebadenys.fitnesshub.core.database
 import android.content.Context
 import androidx.room.*
 import kotlinx.coroutines.flow.Flow
@@ -39,5 +39,5 @@ data class ExerciseEntity(
 @Database(entities=[DailyHealthEntity::class,ExerciseEntity::class],version=1,exportSchema=false)
 abstract class HealthDatabase:RoomDatabase(){
  abstract fun healthDao():HealthDao
- companion object { fun create(context:Context)=Room.databaseBuilder(context,HealthDatabase::class.java,"open-health-hub.db").build() }
+ companion object { fun create(context:Context)=Room.databaseBuilder(context,HealthDatabase::class.java,"fitness-hub.db").build() }
 }

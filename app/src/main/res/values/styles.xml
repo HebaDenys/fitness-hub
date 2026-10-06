@@ -1,1 +1,1 @@
-<resources><style name="Theme.OpenHealthHub" parent="android:style/Theme.Material.Light.NoActionBar"><item name="android:fontFamily">sans</item></style></resources>
+<resources><style name="Theme.FitnessHub" parent="android:style/Theme.Material.Light.NoActionBar"><item name="android:fontFamily">sans</item></style></resources>

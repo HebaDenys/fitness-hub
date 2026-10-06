@@ -1,4 +1,4 @@
-package com.openhealthhub.app
+package io.github.hebadenys.fitnesshub
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -14,9 +14,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.*
-import com.openhealthhub.app.core.database.DailyHealthEntity
-import com.openhealthhub.app.core.healthconnect.HealthConnectManager
-import com.openhealthhub.app.core.sync.HealthSyncRepository
+import io.github.hebadenys.fitnesshub.core.database.DailyHealthEntity
+import io.github.hebadenys.fitnesshub.core.healthconnect.HealthConnectManager
+import io.github.hebadenys.fitnesshub.core.sync.HealthSyncRepository
 import dagger.hilt.android.AndroidEntryPoint
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -24,14 +24,14 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @AndroidEntryPoint class MainActivity:ComponentActivity(){
- override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);setContent{MaterialTheme{OpenHealthHubUi()}}}
+ override fun onCreate(savedInstanceState:Bundle?){super.onCreate(savedInstanceState);setContent{MaterialTheme{FitnessHubUi()}}}
 }
 @HiltViewModel class MainViewModel @Inject constructor(val health:HealthConnectManager,private val repo:HealthSyncRepository):ViewModel(){
  val days=repo.observeDaily().stateIn(viewModelScope,SharingStarted.WhileSubscribed(5000),emptyList())
  var status by mutableStateOf<String?>(null); private set
  fun sync(){viewModelScope.launch{status=repo.sync().fold({"Synchronization complete"},{"Sync failed: "+(it.message?:"unknown error")})}}
 }
-@Composable fun OpenHealthHubUi(vm:MainViewModel=hiltViewModel()){
+@Composable fun FitnessHubUi(vm:MainViewModel=hiltViewModel()){
  val nav=rememberNavController(); val routes=listOf("dashboard","activity","sleep","body","settings")
  Scaffold(bottomBar={NavigationBar{routes.forEach{route->NavigationBarItem(selected=false,onClick={nav.navigate(route){launchSingleTop=true}},icon={},label={Text(route.replaceFirstChar{it.uppercase()})})}}}){padding->
   NavHost(navController=nav,startDestination="dashboard",modifier=Modifier.padding(padding)){
@@ -46,7 +46,7 @@ import javax.inject.Inject
 @Composable private fun Dashboard(vm:MainViewModel){
  val days by vm.days.collectAsStateWithLifecycle(); val d=days.firstOrNull()
  Column(Modifier.fillMaxSize().padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
-  Text("Open Health Hub",style=MaterialTheme.typography.headlineMedium)
+  Text("Fitness Hub",style=MaterialTheme.typography.headlineMedium)
   if(d==null) Text("No health data imported yet.") else { Text("Today",style=MaterialTheme.typography.titleLarge);Text("Steps: "+d.steps);Text("Active calories: "+String.format("%.0f",d.activeCalories)+" kcal");Text("Sleep: "+(d.sleepMinutes?:0)+" min");Text("Weight: "+(d.weightKg?.let{String.format("%.1f kg",it)}?:"Unavailable"));Text("Resting HR: "+(d.restingHeartRate?.let{it.toString()+" bpm"}?:"Unavailable")) }
   vm.status?.let{Text(it)}
  }
