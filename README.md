@@ -1,332 +1,162 @@
-# Open Health Hub
+# Fitness Hub
 
-Open Health Hub is a privacy-first, local-first Android application designed to become a single personal hub for health, body composition, nutrition, activity, sleep, workouts, goals, analytics and reports.
+[![Android CI](https://github.com/HebaDenys/fitness-hub/actions/workflows/android.yml/badge.svg)](https://github.com/HebaDenys/fitness-hub/actions/workflows/android.yml)
 
-The project is being built first around a real-world Xiaomi setup, but the architecture is intentionally generic so additional devices, services and contributors can be supported later.
+A local-first, privacy-focused Android application for health metrics, body composition, activity, sleep, nutrition, and workout analytics.
 
-## Goal
+> [!WARNING]
+> **Early Test Build**: Fitness Hub is currently in active pre-alpha development. The application ID has changed to `io.github.hebadenys.fitnesshub`; if you previously installed an "Open Health Hub" build, please uninstall it prior to installing this version.
 
-The long-term goal is simple:
+---
 
-> Keep all personal health and fitness data in one application, normalize it into one local data model, make it useful through analytics and reports, and still interoperate with Android Health Connect.
+## Why
 
-Today health data is fragmented across multiple apps. A wearable may store activity and sleep in one app, a smart scale may keep body composition in another, nutrition may live in a third app, and workout history somewhere else.
+Personal health data is routinely fragmented across proprietary apps and locked behind mandatory cloud accounts or subscriptions. Fitness Hub unifies this data into a single local analytical store under your control.
 
-Open Health Hub aims to unify all of that.
+- **Local-first & offline-first**: No mandatory accounts, cloud backends, advertisements, or tracking SDKs.
+- **Data sovereignty**: You own your health data; local import and export are a core requirement (planned, Phase 6).
+- **Zero fabricated data**: Missing measurements remain `null` or unavailable; estimated values (e.g., body composition derived from impedance) are explicitly tagged with algorithm provenance.
+- **Isolated connectors**: Hardware and external services interface through decoupled adapters.
+- **Optional AI**: Any future machine learning or LLM assistance is strictly opt-in and never required for core operation.
 
-## Principles
+---
 
-- Free for personal/non-commercial use.
-- Source available and community-friendly.
-- No advertisements.
-- No subscriptions required for core functionality.
-- No mandatory cloud account.
-- No mandatory backend.
-- Local-first and offline-first wherever practical.
-- No behavioral tracking or analytics SDKs.
-- User owns the data.
-- Import/export must be possible.
-- External AI is optional, never required for core operation.
-- Health data must never be fabricated.
-- Device integrations should remain isolated behind connector interfaces.
+## Features & Status
 
-## Initial real-world setup
+| Feature / Component | Status | Details |
+|---|---|---|
+| **Architecture Foundation** | Implemented | Single-module skeleton with Kotlin, Jetpack Compose, Material 3, Hilt, Room SQLite, and Navigation. |
+| **Health Connect Ingestion** | Partial (prototype) | Reads steps, distance, active/total calories, resting HR (latest), SpO2 (latest), weight, body fat, sleep duration, and exercise sessions with Health Connect deduplication. *M1 hardening fixes missing value handling (`null` vs `0`), granular permissions, midnight sleep attribution, HR series, and provenance.* |
+| **User Interface** | Partial (prototype) | Basic screens for Dashboard, Activity, Sleep, Body, and Settings. *M2 will introduce the complete Material 3 design system, charts, and metric breakdown cards.* |
+| **Background & Incremental Sync** | Planned | Periodic background sync via WorkManager and incremental ingestion using Health Connect Changes tokens (Milestone M1). |
+| **Xiaomi S400 Scale Connector** | Planned | Passive local BLE MiBeacon reception with AES-CCM bindkey decryption; no cloud dependency (Phase 4). |
+| **Nutrition Tracking** | Planned | Local food database, on-device barcode scanner, label OCR, and Open Food Facts connector (Phase 3). |
+| **Training & Workout Tracking** | Planned | Custom exercises, sets/reps/load, RPE, 1RM calculations, and strength progression (Phase 5). |
+| **Cross-Domain Analytics** | Planned | Rolling averages, caloric balance vs. weight, sleep vs. performance, and PDF/CSV reports (Phase 6). |
+| **Encrypted Backup & Restore** | Planned | On-device AES-GCM encrypted backup and JSON/CSV import/export (Phase 6). |
+| **Optional AI Estimations** | Planned | Natural language meal logging and photo-based meal estimation (Phase 7). |
 
-The first supported setup is:
+---
 
-### Xiaomi Mi Band
+## Supported Devices & Data Flows
 
-Primary data flow:
+```mermaid
+flowchart LR
+    subgraph Wearables
+        MB["Xiaomi Mi Band"] --> MF["Mi Fitness App"]
+        MF --> HC["Health Connect"]
+    end
 
-```
-Mi Band
-  -> Mi Fitness
-  -> Android Health Connect
-  -> Open Health Hub
-  -> local Room database
-```
+    subgraph Scale ["Xiaomi S400 Scale"]
+        S400["S400 Scale"] -- "Encrypted BLE Advertisements" --> BLE["Fitness Hub BLE Connector<br/>(Passive / AES-CCM)"]
+        S400 -. "Normal weigh-in" .-> XH["Xiaomi Home App"]
+    end
 
-The application should read whichever metrics Mi Fitness actually exposes through Health Connect, such as:
-
-- steps
-- distance
-- active calories
-- exercise sessions
-- heart rate
-- resting heart rate
-- SpO2
-- sleep
-- sleep stages
-- weight/body metrics when available
-
-The app must handle missing metrics gracefully instead of inventing values.
-
-### Xiaomi Body Composition Scale S400
-
-Desired future data flow:
-
-```
-Xiaomi S400
-  -> Xiaomi Home
-  -> Xiaomi services/cloud
-  -> Open Health Hub Xiaomi connector
-  -> local database
-  -> optional Health Connect export
+    HC --> FH["Fitness Hub Engine"]
+    BLE --> FH
+    FH --> ROOM[("Local Room DB<br/>(Analytical Store)")]
+    ROOM --> UI["Compose UI & Analytics"]
 ```
 
-The objective is to KEEP Xiaomi Home as the normal scale application while importing existing and future measurements into Open Health Hub.
+- **Xiaomi Mi Band**: Synchronizes activity, sleep, heart rate, and workouts via the official Mi Fitness app into Android Health Connect, which Fitness Hub imports locally.
+- **Xiaomi Body Composition Scale S400 (Planned)**: Passive local BLE reception of encrypted MiBeacon advertisements (AES-CCM). Does not require disconnecting the scale from Xiaomi Home, never contacts the Xiaomi cloud, and keeps credentials off the device. See [docs/connectors/xiaomi-s400.md](docs/connectors/xiaomi-s400.md).
+  - *Interim Workaround*: Third-party bridge utilities (e.g., *MiScale Sync*) can sync S400 weight and body fat into Health Connect, which Fitness Hub already reads today (unendorsed community option).
 
-The S400 connector is not implemented yet.
+---
 
-## Product scope
+## Install the Test APK
 
-Open Health Hub is intended to evolve into a complete health and fitness application with these main areas:
+Automated test builds are generated on every push to the repository:
 
-### Dashboard
+1. Download the latest debug APK from the rolling [test-latest prerelease](https://github.com/HebaDenys/fitness-hub/releases/tag/test-latest).
+2. Install the APK on your Android device (ensure "Install unknown apps" permission is granted for your browser or file manager).
+3. If upgrading from an older "Open Health Hub" build, uninstall the old app first to accommodate the updated package identifier (`io.github.hebadenys.fitnesshub`).
 
-A unified daily view of:
+---
 
-- weight/body composition
-- calories and macros
-- steps/activity
-- sleep
-- heart/vitals
-- recent workouts
-- goals and progress
+## Setup
 
-### Body composition
+1. **Verify Health Connect**: Built into Android 14+. On Android 9 through 13, install [Health Connect](https://play.google.com/store/apps/details?id=com.google.android.apps.healthdata) from Google Play.
+2. **Configure Companion App**: In your wearable companion app (e.g., Mi Fitness), enable data synchronization to Health Connect.
+3. **Grant Permissions**: Open Fitness Hub, navigate to **Settings**, tap **Grant permissions**, and approve the requested read permissions.
+4. **Initial Sync**: Tap **Sync now** to perform your first health data import.
 
-History and trends for:
+---
 
-- weight
-- BMI
-- body-fat percentage
-- lean/muscle mass
-- body water
-- visceral fat
-- bone mass
-- BMR
-- other supported measurements
+## Build from Source
 
-### Nutrition
+**Requirements:**
+- JDK 17 (e.g., Eclipse Temurin 17)
+- Android SDK Platform 36 (Build-Tools 35.x or 36.x)
 
-Planned functionality includes:
+```bash
+# Linux / macOS
+./gradlew testDebugUnitTest lintDebug assembleDebug
 
-- calorie and macro tracking
-- meals and recipes
-- custom foods
-- barcode scanning
-- Open Food Facts integration
-- nutrition-label OCR
-- local food cache/database
-- optional photo-based AI meal estimation
-- optional natural-language meal entry
+# Windows (PowerShell)
+.\gradlew.bat testDebugUnitTest lintDebug assembleDebug
+```
 
-Unknown products should be learnable locally: scan barcode, photograph the label, confirm parsed values, then reuse the product later without depending on a commercial database.
+The resulting debug APK is located at `app/build/outputs/apk/debug/app-debug.apk`.
 
-### Training
-
-Planned support includes:
-
-- gym training
-- powerlifting
-- bodybuilding
-- calisthenics
-- cardio
-- custom exercises
-- sets/reps/load
-- RPE/RIR
-- personal records
-- estimated 1RM
-- volume/progression analytics
-
-### Sleep and activity
-
-Health Connect will be used as the main Android interoperability layer for wearable data.
-
-### Analytics
-
-A major goal of the project is cross-domain analytics, including:
-
-- calorie intake vs weight change
-- body-fat trends
-- rolling weight averages
-- sleep consistency
-- steps/activity trends
-- training volume and strength progression
-- sleep vs workout performance
-- bodyweight vs strength
-- protein intake vs training/body-composition trends
-
-Correlation must not be presented as causation, and the application is not intended to provide medical diagnosis.
+---
 
 ## Architecture
 
-Current architecture:
+Fitness Hub is structured as a single Android Gradle module with strict internal package boundaries (`core/database`, `core/healthconnect`, `core/sync`, `core/model`, `feature/*`, `di`). Room serves as the local analytical data store, while Health Connect functions as an interoperability layer. External devices interact exclusively through decoupled connector interfaces.
 
-```
-External sources
-      |
-      v
-Health Connect <------> Open Health Hub
-                           |
-                           v
-                        Room DB
-                           |
-                           v
-                     Analytics / UI
-```
+For design patterns, data models, and idempotency guarantees, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-Room/SQLite is the local analytical store.
-
-Health Connect is an interoperability layer, not the application's only database.
-
-Current package responsibilities include:
-
-- local Room persistence
-- Health Connect integration
-- synchronization/deduplication
-- Compose UI
-- future isolated connectors
-
-The project currently uses a single Android Gradle module to avoid premature multi-module complexity.
-
-## Current status
-
-### Phase 1 — Foundation
-
-Implemented:
-
-- Kotlin
-- Jetpack Compose
-- Material 3
-- Hilt
-- Room
-- navigation
-- local-first architecture
-- initial tests
-- CI pipeline
-- APK generation
-
-### Phase 2 — Health Connect
-
-Implemented foundation for:
-
-- Health Connect availability
-- granular read permissions
-- activity import
-- sleep import
-- heart/vitals import
-- weight/body-fat import
-- daily aggregation
-- exercise-session import
-- idempotent daily synchronization
-- exercise deduplication
-- Dashboard
-- Activity
-- Sleep
-- Body
-- Settings
-
-This is still an early test build and must be validated on real devices and real Mi Fitness data.
-
-### Next planned phases
-
-Phase 3:
-- nutrition tracker
-- food database
-- Open Food Facts
-- barcode scanner
-- OCR nutrition labels
-
-Phase 4:
-- Xiaomi S400 cloud connector
-- historical import
-- incremental synchronization
-- body-composition mapping
-
-Phase 5:
-- workout/training tracker
-- exercise history
-- strength analytics
-
-Phase 6:
-- advanced analytics
-- goals
-- reports
-- cross-domain correlations
-
-Phase 7:
-- optional AI features
+---
 
 ## Privacy
 
-There is currently:
+Fitness Hub contains:
+- No backend server
+- No user accounts or login systems
+- No advertising networks
+- No behavioral analytics or telemetry SDKs
 
-- no backend
-- no account system
-- no advertising SDK
-- no behavioral telemetry
-- no mandatory cloud storage
+All health records reside strictly on your device. Future local secrets (such as the S400 BLE bindkey, Phase 4) will be stored encrypted via Android Keystore.
 
-Health data is stored locally.
+---
 
-Any future external AI/cloud integration must be optional and must clearly disclose which data leaves the device.
+## Medical Disclaimer
 
-## APK test builds
+Fitness Hub is designed for personal fitness tracking and wellness informational purposes only. It is not a medical device, does not provide medical diagnoses or treatment recommendations, and must not replace professional healthcare consultation. Statistical trends and correlations displayed by the app reflect mathematical associations, not clinical causation.
 
-GitHub Actions automatically builds a debug APK from the current development branch.
+---
 
-The latest test APK is published in the GitHub Releases section under the `test-latest` prerelease.
+## Roadmap
 
-These builds are for development/testing and are not production releases.
+- **M0**: Rename, documentation overhaul, Gradle wrapper toolchain.
+- **M1**: Phase 2 hardening (null handling, granular permissions, midnight sleep attribution, HR series, provenance, KSP, Room schemas).
+- **M2**: UI foundation (Material 3 design system, Vico charts, trend cards).
+- **Phase 3**: Nutrition tracking *(requires explicit approval)*.
+- **Phase 4**: Xiaomi S400 local BLE connector *(requires explicit approval)*.
+- **Phase 5**: Workout and strength tracking *(requires explicit approval)*.
+- **Phase 6**: Cross-domain analytics, reports, and encrypted backups *(requires explicit approval)*.
+- **Phase 7**: Optional AI enhancements *(requires explicit approval)*.
+- **Phase 8**: Release readiness and security verification *(requires explicit approval)*.
 
-## Licensing direction
+For detailed scope and completion criteria, consult [docs/ROADMAP.md](docs/ROADMAP.md).
 
-The project is intended to be source-available and free for personal/non-commercial use.
+---
 
-The intended model is:
+## Contributing
 
-- personal/non-commercial use: free
-- community contributions: allowed under compatible project terms
-- commercial use or monetization: requires a separate commercial license
+Contributions are welcome. Please read [CONTRIBUTING.md](CONTRIBUTING.md) for code standards, testing practices, and guidelines on architectural constraints.
 
-This means the final license will likely NOT be a standard OSI open-source license such as MIT or Apache 2.0.
+---
 
-The exact license terms still need final review before a public production release.
+## License
 
-## Potential sustainability
+**License: TBD**
 
-The project may eventually be supported through:
+The intended licensing model is source-available and free for personal, non-commercial use, with commercial usage governed by a separate license (evaluating PolyForm Noncommercial 1.0.0 and Business Source License 1.1). A Contributor License Agreement (CLA) will likely be required for external contributions. Until an explicit license file is published in the repository, all rights are reserved by default.
 
-- GitHub Sponsors
-- individual donations
-- corporate sponsorship
-- sponsored development of connectors/features
-- commercial licensing
-- enterprise integration/support
-- optional hosted/cloud services
+---
 
-The core local application should remain useful without paid services.
+## Sustainability
 
-## Build
-
-Requirements:
-
-- JDK 17
-- Android SDK with API 36
-- Android Studio or Gradle
-
-The CI pipeline runs:
-
-- unit tests
-- lint
-- debug APK build
-- artifact upload
-- rolling prerelease publication
-
-## Development rules
-
-See [AGENTS.md](AGENTS.md) and [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
-
-The project should remain compilable after each milestone, and new phases should be implemented incrementally rather than as one large rewrite.
+Fitness Hub is committed to keeping core personal tracking completely free and local-first. For our planned sponsorship and sustainability framework, see [docs/SUSTAINABILITY.md](docs/SUSTAINABILITY.md).
