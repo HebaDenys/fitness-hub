@@ -22,6 +22,7 @@ import io.github.hebadenys.fitnesshub.core.nutrition.NutritionRepository
 import io.github.hebadenys.fitnesshub.core.nutrition.OpenFoodFactsConnector
 import io.github.hebadenys.fitnesshub.core.scale.BindkeyStore
 import io.github.hebadenys.fitnesshub.core.scale.S400ScaleConnector
+import io.github.hebadenys.fitnesshub.core.scale.ScaleHistoryCsvImporter
 import io.github.hebadenys.fitnesshub.core.scale.ScaleDao
 import io.github.hebadenys.fitnesshub.core.sync.AppLogger
 import io.github.hebadenys.fitnesshub.core.sync.DataStoreSyncTokenStore
@@ -53,6 +54,7 @@ object AppModule {
     @Provides fun scaleDao(db: HealthDatabase): ScaleDao = db.scaleDao()
     @Provides @Singleton fun bindkeyStore(@ApplicationContext context: Context) = BindkeyStore(context)
     @Provides @Singleton fun scaleConnector(dao: ScaleDao, bindkeyStore: BindkeyStore) = S400ScaleConnector(dao, bindkeyStore)
+    @Provides @Singleton fun scaleHistoryImporter(dao: ScaleDao) = ScaleHistoryCsvImporter(dao)
 
     @Provides fun workoutDao(db: HealthDatabase): WorkoutDao = db.workoutDao()
     @Provides @Singleton fun workoutRepository(dao: WorkoutDao) = WorkoutRepository(dao)
