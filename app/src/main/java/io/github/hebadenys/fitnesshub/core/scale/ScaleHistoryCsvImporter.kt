@@ -1,84 +1,68 @@
 package io.github.hebadenys.fitnesshub.core.scale
 
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.time.Instant
 import java.time.LocalDateTime
+import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.format.ResolverStyle
 
-/**
- * Imports historical scale data exported by SmartScaleConnect.
- *
- * SmartScaleConnect can read Xiaomi Home S400 history and export it as CSV.
- * Fitness Hub intentionally imports the resulting local file instead of asking
- * for Xiaomi credentials itself. This keeps the Android app local-first while
- * still covering measurements that predate the BLE listener.
- */
+/** Local SmartScaleConnect CSV import. Xiaomi credentials never enter this class. */
 class ScaleHistoryCsvImporter(
     private val dao: ScaleDao,
     private val zoneId: ZoneId = ZoneId.systemDefault()
 ) {
-
-    suspend fun import(csv: String, selectedUser: String? = null): ScaleHistoryImportResult {
-        val table = runCatching { parse(csv) }
-            .getOrElse { return ScaleHistoryImportResult.Failure("invalid_csv") }
-
-        if ("Date" !in table.header || "Weight" !in table.header) {
-            return ScaleHistoryImportResult.Failure("unsupported_format")
-        }
-
-        val users = table.rows
-            .mapNotNull { it["User"]?.trim()?.takeIf(String::isNotEmpty) }
-            .distinct()
-            .sorted()
-
-        val filter = selectedUser?.trim()?.takeIf(String::isNotEmpty)
-        if (users.size > 1 && filter == null) {
-            return ScaleHistoryImportResult.MultipleUsers(users)
-        }
-        if (filter != null && users.isNotEmpty() && users.none { it.equals(filter, ignoreCase = true) }) {
-            return ScaleHistoryImportResult.Failure("user_not_found")
-        }
-
-        var imported = 0
-        var duplicates = 0
-        var skipped = 0
-
-        table.rows.forEach { row ->
-            val user = row["User"]?.trim().orEmpty()
-            if (filter != null && !user.equals(filter, ignoreCase = true)) return@forEach
-
-            val date = parseDate(row["Date"]) ?: run {
-                skipped++
-                return@forEach
+    suspend fun import(csv: String, selectedUser: String? = null): ScaleHistoryImportResult =
+        withContext(Dispatchers.IO) {
+            if (csv.length > MAX_CSV_CHARACTERS) {
+                return@withContext ScaleHistoryImportResult.Failure("file_too_large")
             }
-            val weight = parsePositive(row["Weight"]) ?: run {
-                skipped++
-                return@forEach
+            val table = try {
+                parse(csv)
+            } catch (_: IllegalArgumentException) {
+                return@withContext ScaleHistoryImportResult.Failure("invalid_csv")
             }
-            val measuredAt = date.atZone(zoneId).toInstant().toEpochMilli()
-            val source = row["Source"]?.trim().takeUnless { it.isNullOrBlank() } ?: SOURCE_ID
-
-            val inserted = dao.insertMeasurement(
-                ScaleMeasurementEntity(
-                    deviceAddress = source,
-                    measuredAtMillis = measuredAt,
-                    weightKg = weight,
-                    impedanceOhms = null,
-                    heartRateBpm = parsePositive(row["HeartRate"])?.toLong(),
-                    profileSlot = null,
-                    provenance = ScaleMeasurementEntity.PROVENANCE_IMPORTED,
-                    algorithm = FORMAT_ID
-                )
-            )
-            if (inserted == -1L) duplicates++ else imported++
-
-            val bodyFat = parsePositive(row["BodyFat"])
-            val bodyWater = parsePositive(row["BodyWater"])
-            val bmr = parsePositive(row["BasalMetabolism"])
-            val visceral = parsePositive(row["VisceralFat"])
-            if (bodyFat != null || bodyWater != null || bmr != null || visceral != null) {
-                dao.upsertEstimate(
+            if (!table.headers.containsAll(listOf("Date", "Weight"))) {
+                return@withContext ScaleHistoryImportResult.Failure("unsupported_format")
+            }
+            val users = table.rows.mapNotNull { it["User"]?.trim()?.takeIf(String::isNotEmpty) }
+                .distinct().sorted()
+            val requested = selectedUser?.trim()?.takeIf(String::isNotEmpty)
+            if (requested == null && users.size > 1) {
+                return@withContext ScaleHistoryImportResult.MultipleUsers(users)
+            }
+            if (requested != null && requested !in users) {
+                return@withContext ScaleHistoryImportResult.Failure("user_not_found")
+            }
+            // Exact matching matters: profiles named "Alex" and "alex" are not interchangeable.
+            val owner = requested ?: users.singleOrNull()
+            var skipped = 0
+            val rows = mutableListOf<ScaleHistoryRow>()
+            for (record in table.rows) {
+                val user = record["User"]?.trim().orEmpty()
+                if (owner != null && user != owner) {
+                    if (user.isEmpty()) skipped++
+                    continue
+                }
+                val timestamp = parseInstant(record["Date"])
+                val weight = record["Weight"]?.toNumber()?.takeIf { it > 0 }
+                if (timestamp == null || weight == null) {
+                    skipped++
+                    continue
+                }
+                val source = record["Source"]?.trim()?.takeIf(String::isNotEmpty) ?: SOURCE_ID
+                val bodyFat = record["BodyFat"]?.toNumber()?.takeIf { it in 0.0..100.0 }
+                val bodyWater = record["BodyWater"]?.toNumber()?.takeIf { it in 0.0..100.0 }
+                val bmr = record["BasalMetabolism"]?.toNumber()?.takeIf { it > 0 }
+                val visceral = record["VisceralFat"]?.toNumber()?.takeIf { it >= 0 }
+                val heartRate = record["HeartRate"]?.toNumber()
+                    ?.takeIf { it > 0 && it <= Long.MAX_VALUE.toDouble() && it % 1.0 == 0.0 }?.toLong()
+                val composition = if (listOf(bodyFat, bodyWater, bmr, visceral).any { it != null }) {
                     BodyCompositionEstimateEntity(
-                        measuredAtMillis = measuredAt,
+                        measuredAtMillis = timestamp.toEpochMilli(),
                         bodyFatPercent = bodyFat,
                         leanMassKg = null,
                         bodyWaterPercent = bodyWater,
@@ -87,101 +71,117 @@ class ScaleHistoryCsvImporter(
                         provenance = ScaleMeasurementEntity.PROVENANCE_IMPORTED,
                         algorithm = FORMAT_ID
                     )
+                } else null
+                rows += ScaleHistoryRow(
+                    measurement = ScaleMeasurementEntity(
+                        deviceAddress = source,
+                        measuredAtMillis = timestamp.toEpochMilli(),
+                        weightKg = weight,
+                        impedanceOhms = null,
+                        heartRateBpm = heartRate,
+                        profileSlot = null,
+                        provenance = ScaleMeasurementEntity.PROVENANCE_IMPORTED,
+                        algorithm = FORMAT_ID
+                    ),
+                    composition = composition
                 )
+            }
+            try {
+                val imported = if (rows.isEmpty()) 0 else dao.importHistoryRows(rows)
+                ScaleHistoryImportResult.Success(imported, rows.size - imported, skipped, users)
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                // The DAO transaction has rolled back. Never leak a health value from a SQL error.
+                ScaleHistoryImportResult.Failure("storage_error")
             }
         }
 
-        return ScaleHistoryImportResult.Success(
-            importedRows = imported,
-            duplicateRows = duplicates,
-            skippedRows = skipped,
-            users = users
-        )
-    }
-
-    private fun parseDate(raw: String?): LocalDateTime? {
+    private fun parseInstant(raw: String?): Instant? {
         val value = raw?.trim().orEmpty()
-        if (value.isEmpty()) return null
-        return DATE_FORMATS.firstNotNullOfOrNull { formatter ->
+        runCatching { OffsetDateTime.parse(value).toInstant() }.getOrNull()?.let { return it }
+        val local = DATE_FORMATS.firstNotNullOfOrNull { formatter ->
             runCatching { LocalDateTime.parse(value, formatter) }.getOrNull()
-        }
+        } ?: return null
+        // Exported local timestamps have no offset. Refuse DST gaps/ambiguity instead of guessing.
+        val offsets = zoneId.rules.getValidOffsets(local)
+        return offsets.singleOrNull()?.let { local.toInstant(it) }
     }
 
-    private fun parsePositive(raw: String?): Double? =
-        raw?.trim()
-            ?.replace(',', '.')
-            ?.toDoubleOrNull()
-            ?.takeIf { it > 0.0 && it.isFinite() }
+    private fun String.toNumber(): Double? = trim().replace(',', '.')
+        .toDoubleOrNull()?.takeIf { it.isFinite() }
 
-    private data class CsvTable(
-        val header: Set<String>,
-        val rows: List<Map<String, String>>
-    )
+    private data class CsvTable(val headers: Set<String>, val rows: List<Map<String, String>>)
 
     private fun parse(csv: String): CsvTable {
-        val records = parseRecords(csv)
-        require(records.isNotEmpty()) { "CSV is empty" }
-        val headers = records.first().map { it.trim().removePrefix("\uFEFF") }
-        val rows = records.drop(1).filter { record -> record.any { it.isNotBlank() } }.map { record ->
-            headers.mapIndexed { index, name -> name to record.getOrElse(index) { "" } }.toMap()
+        val records = parseRecords(csv.removePrefix("\uFEFF"))
+        require(records.isNotEmpty())
+        val headers = records.first().map(String::trim)
+        require(headers.none(String::isEmpty) && headers.distinct().size == headers.size)
+        val rows = records.drop(1).filter { it.any(String::isNotBlank) }.map { record ->
+            // A truncated row can shift User/Source. Do not silently pad or truncate it.
+            require(record.size == headers.size)
+            headers.zip(record).toMap()
         }
         return CsvTable(headers.toSet(), rows)
     }
 
-    /**
-     * Small RFC-4180 compatible reader. It supports quoted commas, escaped
-     * quotes and CRLF without adding a dependency solely for CSV import.
-     */
     private fun parseRecords(csv: String): List<List<String>> {
-        val records = mutableListOf<List<String>>()
+        val result = mutableListOf<List<String>>()
         var row = mutableListOf<String>()
         val field = StringBuilder()
         var quoted = false
+        var closedQuote = false
         var index = 0
-
         fun finishField() {
             row.add(field.toString())
             field.setLength(0)
+            closedQuote = false
         }
         fun finishRow() {
             finishField()
-            records.add(row)
+            result.add(row)
             row = mutableListOf()
         }
-
         while (index < csv.length) {
             val ch = csv[index]
             if (quoted) {
-                when {
-                    ch == '"' && index + 1 < csv.length && csv[index + 1] == '"' -> {
+                if (ch == '"') {
+                    if (index + 1 < csv.length && csv[index + 1] == '"') {
                         field.append('"')
                         index++
+                    } else {
+                        quoted = false
+                        closedQuote = true
                     }
-                    ch == '"' -> quoted = false
-                    else -> field.append(ch)
-                }
+                } else field.append(ch)
             } else {
+                require(!closedQuote || ch == ',' || ch == '\n' || ch == '\r')
                 when (ch) {
-                    '"' -> quoted = true
+                    '"' -> { require(field.isEmpty()); quoted = true }
                     ',' -> finishField()
                     '\n' -> finishRow()
-                    '\r' -> if (index + 1 >= csv.length || csv[index + 1] != '\n') finishRow()
+                    '\r' -> {
+                        finishRow()
+                        if (index + 1 < csv.length && csv[index + 1] == '\n') index++
+                    }
                     else -> field.append(ch)
                 }
             }
             index++
         }
-        if (field.isNotEmpty() || row.isNotEmpty()) finishRow()
-        require(!quoted) { "Unterminated quoted field" }
-        return records
+        require(!quoted)
+        if (field.isNotEmpty() || row.isNotEmpty() || closedQuote) finishRow()
+        return result
     }
 
     companion object {
         const val SOURCE_ID = "xiaomi_home_csv"
         const val FORMAT_ID = "smartscaleconnect_csv"
+        const val MAX_CSV_CHARACTERS = 5 * 1024 * 1024
         private val DATE_FORMATS = listOf(
-            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"),
-            DateTimeFormatter.ISO_LOCAL_DATE_TIME
+            DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm:ss").withResolverStyle(ResolverStyle.STRICT),
+            DateTimeFormatter.ISO_LOCAL_DATE_TIME.withResolverStyle(ResolverStyle.STRICT)
         )
     }
 }
@@ -193,7 +193,6 @@ sealed interface ScaleHistoryImportResult {
         val skippedRows: Int,
         val users: List<String>
     ) : ScaleHistoryImportResult
-
     data class MultipleUsers(val users: List<String>) : ScaleHistoryImportResult
     data class Failure(val reason: String) : ScaleHistoryImportResult
 }

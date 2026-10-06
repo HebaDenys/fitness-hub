@@ -4,17 +4,54 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
 
+/** One validated CSV row. This is not a Room table. */
+data class ScaleHistoryRow(
+    val measurement: ScaleMeasurementEntity,
+    val composition: BodyCompositionEstimateEntity?
+)
+
 @Dao
 interface ScaleDao {
-
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertMeasurement(measurement: ScaleMeasurementEntity): Long
 
+    @Query("SELECT * FROM body_composition_estimates WHERE measuredAtMillis = :timestamp LIMIT 1")
+    suspend fun compositionAt(timestamp: Long): BodyCompositionEstimateEntity?
+
     @Upsert
-    suspend fun upsertEstimate(estimate: BodyCompositionEstimateEntity)
+    suspend fun saveEstimateRow(estimate: BodyCompositionEstimateEntity)
+
+    /** Match the unique timestamp before upserting by primary key. Never overwrite vendor history. */
+    @Transaction
+    suspend fun upsertEstimate(estimate: BodyCompositionEstimateEntity) {
+        val existing = compositionAt(estimate.measuredAtMillis)
+        if (existing?.provenance == ScaleMeasurementEntity.PROVENANCE_IMPORTED) return
+        saveEstimateRow(estimate.copy(id = existing?.id ?: estimate.id))
+    }
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insertImportedComposition(estimate: BodyCompositionEstimateEntity)
+
+    /**
+     * Import the complete validated batch in one Room transaction. Repeated
+     * measurements are a no-op, including their composition. A conflicting
+     * timestamp from another source aborts rather than attaching the wrong
+     * composition. Room rolls back the batch if any statement fails.
+     */
+    @Transaction
+    suspend fun importHistoryRows(rows: List<ScaleHistoryRow>): Int {
+        var inserted = 0
+        for (row in rows) {
+            if (insertMeasurement(row.measurement) == -1L) continue
+            row.composition?.let { insertImportedComposition(it) }
+            inserted++
+        }
+        return inserted
+    }
 
     @Upsert
     suspend fun upsertProfile(profile: UserProfileEntity)
@@ -40,7 +77,6 @@ interface ScaleDao {
     @Query("SELECT * FROM scale_measurements ORDER BY measuredAtMillis")
     suspend fun dumpAll(): List<ScaleMeasurementEntity>
 
-    /** Restore relies on the unique (device, timestamp) index to skip duplicates. */
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun restoreAll(measurements: List<ScaleMeasurementEntity>): List<Long>
 }
