@@ -33,3 +33,7 @@ google-services.json
 
 # Android Profiling
 *.hprof
+
+# Agent & local tools cache
+.omo/
+.opencode/
