@@ -1,0 +1,11 @@
+<resources>
+    <string name="backup_coverage_v2">Snapshot cifrato di tutte le 19 tabelle dei dati: pasti, alimenti, allenamenti, composizione corporea e nuovo archivio Xiaomi. Esclusi credenziali, preferenze, immagini e cursori sync. Archivio decifrato massimo: 32 MiB. Il trasferimento su telefono fisico resta da verificare.</string>
+    <string name="backup_merge_policy_v2">Il ripristino aggiunge le righe mancanti e ignora quelle identiche. Un conflitto annulla tutto il ripristino senza sovrascrivere dati. Il formato 2 richiede lo stesso schema database. I vecchi file formato 1 restano parziali.</string>
+    <string name="backup_restored_v2">Aggiunte %1$d righe; %2$d righe identiche già presenti.</string>
+    <string name="backup_legacy_partial_v2">Backup vecchio e parziale: i dati mai inclusi nel formato precedente non possono essere recuperati da questo ripristino.</string>
+    <string name="backup_conflict_v2">Il backup è in conflitto con dati presenti. Nessun dato importato o sovrascritto. Conserva entrambe le copie: i conflitti non si risolvono automaticamente.</string>
+    <string name="backup_document_ready_v2">File caricato. Inserisci la sua passphrase per ripristinarlo.</string>
+    <string name="backup_document_read_failed_v2">Impossibile leggere il backup oppure dimensione oltre il limite supportato.</string>
+    <string name="backup_paste_v2">Incolla un piccolo archivio (opzionale)</string>
+    <string name="backup_paste_hint_v2">Puoi incollare fino a 64 KiB; per archivi più grandi usa Apri file di backup.</string>
+</resources>

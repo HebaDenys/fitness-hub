@@ -27,6 +27,11 @@ import io.github.hebadenys.fitnesshub.core.workout.WorkoutSessionEntity
 import io.github.hebadenys.fitnesshub.core.workout.WorkoutSetEntity
 import io.github.hebadenys.fitnesshub.core.workout.WorkoutTemplateEntity
 import io.github.hebadenys.fitnesshub.core.workout.WorkoutTemplateExerciseEntity
+import io.github.hebadenys.fitnesshub.core.xiaomi.storage.SourceIdentityEntity
+import io.github.hebadenys.fitnesshub.core.xiaomi.storage.XiaomiBindingEntity
+import io.github.hebadenys.fitnesshub.core.xiaomi.storage.XiaomiSnapshotEntity
+import io.github.hebadenys.fitnesshub.core.xiaomi.storage.XiaomiCheckpointEntity
+import io.github.hebadenys.fitnesshub.core.xiaomi.storage.XiaomiArchiveDao
 import kotlinx.coroutines.flow.Flow
 
 @Entity(tableName = "daily_health")
@@ -47,10 +52,7 @@ data class DailyHealthEntity(
     val algorithm: String? = null
 )
 
-@Entity(
-    tableName = "exercise_sessions",
-    indices = [Index(value = ["externalId"], unique = true)]
-)
+@Entity(tableName = "exercise_sessions", indices = [Index(value = ["externalId"], unique = true)])
 data class ExerciseEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val externalId: String,
@@ -63,10 +65,7 @@ data class ExerciseEntity(
     val algorithm: String? = null
 )
 
-@Entity(
-    tableName = "heart_rate_samples",
-    indices = [Index(value = ["timeEpochMillis", "dataOrigin"], unique = true)]
-)
+@Entity(tableName = "heart_rate_samples", indices = [Index(value = ["timeEpochMillis", "dataOrigin"], unique = true)])
 data class HeartRateSampleEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val date: String,
@@ -77,10 +76,7 @@ data class HeartRateSampleEntity(
     val algorithm: String? = null
 )
 
-@Entity(
-    tableName = "oxygen_saturation_readings",
-    indices = [Index(value = ["timeEpochMillis", "dataOrigin"], unique = true)]
-)
+@Entity(tableName = "oxygen_saturation_readings", indices = [Index(value = ["timeEpochMillis", "dataOrigin"], unique = true)])
 data class OxygenSampleEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val date: String,
@@ -91,10 +87,7 @@ data class OxygenSampleEntity(
     val algorithm: String? = null
 )
 
-@Entity(
-    tableName = "resting_heart_rate_readings",
-    indices = [Index(value = ["timeEpochMillis", "dataOrigin"], unique = true)]
-)
+@Entity(tableName = "resting_heart_rate_readings", indices = [Index(value = ["timeEpochMillis", "dataOrigin"], unique = true)])
 data class RestingHeartRateSampleEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val date: String,
@@ -109,40 +102,28 @@ data class RestingHeartRateSampleEntity(
 interface HealthDao {
     @Query("SELECT * FROM daily_health ORDER BY date DESC")
     fun observeDaily(): Flow<List<DailyHealthEntity>>
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertDaily(items: List<DailyHealthEntity>)
-
     @Query("SELECT * FROM daily_health ORDER BY date")
     suspend fun dumpDaily(): List<DailyHealthEntity>
-
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insertExercises(items: List<ExerciseEntity>)
-
     @Query("SELECT externalId FROM exercise_sessions WHERE endMillis >= :startMillis AND startMillis <= :endMillis")
     suspend fun exerciseExternalIds(startMillis: Long, endMillis: Long): List<String>
-
     @Query("SELECT externalId FROM exercise_sessions WHERE externalId IN (:ids)")
     suspend fun exerciseIdsIn(ids: List<String>): List<String>
-
     @Query("DELETE FROM exercise_sessions WHERE externalId IN (:ids)")
     suspend fun deleteExercisesById(ids: List<String>)
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertHeartRateSamples(items: List<HeartRateSampleEntity>)
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertOxygenSamples(items: List<OxygenSampleEntity>)
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRestingHeartRateSamples(items: List<RestingHeartRateSampleEntity>)
-
     @Query("DELETE FROM heart_rate_samples WHERE timeEpochMillis >= :startMillis AND timeEpochMillis < :endMillis")
     suspend fun deleteHeartRateSamplesBetween(startMillis: Long, endMillis: Long)
-
     @Query("DELETE FROM oxygen_saturation_readings WHERE timeEpochMillis >= :startMillis AND timeEpochMillis < :endMillis")
     suspend fun deleteOxygenSamplesBetween(startMillis: Long, endMillis: Long)
-
     @Query("DELETE FROM resting_heart_rate_readings WHERE timeEpochMillis >= :startMillis AND timeEpochMillis < :endMillis")
     suspend fun deleteRestingHeartRateSamplesBetween(startMillis: Long, endMillis: Long)
 }
@@ -154,9 +135,10 @@ interface HealthDao {
         FoodEntity::class, NutritionEntryEntity::class, NutritionDailyEntity::class,
         ScaleMeasurementEntity::class, BodyCompositionEstimateEntity::class, UserProfileEntity::class,
         WorkoutExerciseEntity::class, WorkoutSessionEntity::class, WorkoutSetEntity::class,
-        WorkoutTemplateEntity::class, WorkoutTemplateExerciseEntity::class
+        WorkoutTemplateEntity::class, WorkoutTemplateExerciseEntity::class,
+        SourceIdentityEntity::class, XiaomiBindingEntity::class, XiaomiSnapshotEntity::class, XiaomiCheckpointEntity::class
     ],
-    version = 5,
+    version = 6,
     exportSchema = true
 )
 abstract class HealthDatabase : RoomDatabase() {
@@ -164,11 +146,12 @@ abstract class HealthDatabase : RoomDatabase() {
     abstract fun nutritionDao(): NutritionDao
     abstract fun scaleDao(): ScaleDao
     abstract fun workoutDao(): WorkoutDao
+    abstract fun xiaomiArchiveDao(): XiaomiArchiveDao
 
     companion object {
         fun create(context: Context): HealthDatabase =
             Room.databaseBuilder(context, HealthDatabase::class.java, "fitness-hub.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                 .build()
     }
 }

@@ -23,7 +23,7 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
-      - name: Test CI certificate parser
+      - name: Test CI and privacy checks
         run: python3 -m unittest discover -s ci -p 'test_*.py' -v
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
@@ -62,8 +62,14 @@ jobs:
             app/build/test-results/testDebugUnitTest/
             app/build/reports/tests/testDebugUnitTest/
             app/build/reports/lint-results-debug.*
+            app/schemas/
           if-no-files-found: warn
           retention-days: 7
+      - name: Expose generated Room schema for reviewed commit
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 ci/export_room_schema.py
       - name: Package APK from build metadata
         id: version
         run: |
@@ -119,7 +125,6 @@ jobs:
           fi
           printf '\nBuild commit: `%s`\n' "$GITHUB_SHA" >> "$RUNNER_TEMP/release-notes.md"
           if gh release view test-latest >/dev/null 2>&1; then
-            # Upload first. Do not delete the previous working release if publishing fails.
             gh release upload test-latest "$APK" "$APK.sha256" --clobber
             gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/test-latest" -f sha="$GITHUB_SHA" -F force=true >/dev/null
             gh release edit test-latest --target "$GITHUB_SHA" --title "Fitness Hub v$VERSION Test" --notes-file "$RUNNER_TEMP/release-notes.md" --prerelease

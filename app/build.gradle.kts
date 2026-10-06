@@ -4,17 +4,25 @@ plugins {
 }
 android {
  namespace="io.github.hebadenys.fitnesshub"; compileSdk=36
- defaultConfig { applicationId="io.github.hebadenys.fitnesshub"; minSdk=28; targetSdk=35; versionCode=4; versionName="0.3.2"; testInstrumentationRunner="androidx.test.runner.AndroidJUnitRunner" }
+ defaultConfig { applicationId="io.github.hebadenys.fitnesshub"; minSdk=28; targetSdk=35; versionCode=5; versionName="0.3.3"; testInstrumentationRunner="androidx.test.runner.AndroidJUnitRunner" }
  buildFeatures { compose=true }
  compileOptions { sourceCompatibility=JavaVersion.VERSION_17; targetCompatibility=JavaVersion.VERSION_17 }
-  kotlin {
+ kotlin {
     jvmToolchain(21)
     compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) }
-  }
-  testOptions { unitTests.all { it.useJUnitPlatform() }; unitTests.isReturnDefaultValues = true }
-
-  val ciKeystorePath = System.getenv("FITNESS_HUB_TEST_KEYSTORE")
-  if (!ciKeystorePath.isNullOrBlank()) {
+ }
+ testOptions {
+    unitTests.all {
+        it.useJUnitPlatform()
+        it.systemProperty("fitnesshub.schemas", "$projectDir/schemas")
+        it.systemProperty("robolectric.dependency.repo.url", "https://repo.maven.apache.org/maven2")
+        it.maxHeapSize = "2g"
+    }
+    unitTests.isReturnDefaultValues = true
+    unitTests.isIncludeAndroidResources = true
+ }
+ val ciKeystorePath = System.getenv("FITNESS_HUB_TEST_KEYSTORE")
+ if (!ciKeystorePath.isNullOrBlank()) {
     signingConfigs {
       create("ciDebug") {
         storeFile = file(ciKeystorePath)
@@ -23,12 +31,8 @@ android {
         keyPassword = System.getenv("FITNESS_HUB_TEST_KEY_PASSWORD")
       }
     }
-    buildTypes {
-      getByName("debug") {
-        signingConfig = signingConfigs.getByName("ciDebug")
-      }
-    }
-  }
+    buildTypes { getByName("debug") { signingConfig = signingConfigs.getByName("ciDebug") } }
+ }
 }
 dependencies {
   implementation(platform("androidx.compose:compose-bom:2025.10.01"))
@@ -52,5 +56,9 @@ dependencies {
   testRuntimeOnly("org.junit.platform:junit-platform-launcher:1.11.4")
   testImplementation("org.bouncycastle:bcprov-jdk18on:1.80")
   testImplementation("org.json:json:20250107")
+  // JUnit Vintage executes Robolectric alongside the existing Jupiter suite, not instead of it.
+  testImplementation("junit:junit:4.13.2")
+  testRuntimeOnly("org.junit.vintage:junit-vintage-engine:5.11.4")
+  testImplementation("org.robolectric:robolectric:4.16.1")
 }
 ksp { arg("room.schemaLocation","$projectDir/schemas") }

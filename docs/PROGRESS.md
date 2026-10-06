@@ -1,135 +1,74 @@
-# Fitness Hub — Stato operativo e passaggio di consegne
+# Fitness Hub — Stato operativo
 
 **Aggiornamento:** 6 ottobre 2026.  
-**Piano vincolante:** [MASTER_PLAN.md](MASTER_PLAN.md), revisione 1.  
-**HEAD letto all'inizio della sessione:** `81b4f853b2a349fd7cf94e6d0c1a7d11f6194662`.  
-**Ultimo codice verificato:** `b757f8e7c3df84ac444476874e990098154e710a` — 0.3.2 di test.  
-**CI verificata:** [run 37518253962](https://github.com/HebaDenys/fitness-hub/actions/runs/37518253962), conclusione `success`.  
-**Ultima modifica del registro:** documentale, non modifica il codice/APK verificato.
+**Piano:** [MASTER_PLAN.md](MASTER_PLAN.md), revisione 1.  
+**HEAD letto all'inizio:** `be12732813e9d3c3732f9c36ef6e95ded7335257`.  
+**Ultimo codice verificato prima di questa sessione:** `b757f8e7c3df84ac444476874e990098154e710a`, APK 0.3.2.  
+**Questa consegna in verifica:** persistenza Xiaomi / schema 6 / backup database v2, candidata 0.3.3. Non considerare la nuova CI passata finché non è registrato l'esito effettivo.
 
-## 1. Prossima attività precisa
+## 1. Lavoro corrente
 
-**`FH-DATA-01` / `FH-DATA-02` — Binding persistente persona/sorgente e provenienza nel database.**
+`FH-DATA-01/02`, incremento di persistenza cloud; prerequisiti `FH-DATA-04`, `FH-QA-02` e `FH-PORT-01..04/06`.
 
-Il prerequisito `FH-XIA-01` è concluso al livello di parser/contratti e fixture. Non rifarlo e non tornare al CSV come strategia principale. Il protocollo nuovo non è ancora collegato a un login o a un archivio Room: il prossimo incremento deve realizzare la persistenza corretta prima del collegamento live.
+Implementata l'associazione persistente di un singolo subject/device Xiaomi alla connessione, archivio di snapshot sanitizzati e checkpoint transazionali. Il reader esistente ora ha un committer Room concreto. Non contiene ancora il trasporto autenticato, login o UI live.
 
-### Risultato atteso della prossima sessione
+Il percorso di backup nella UI ora usa il formato database v2. Copre tutte le colonne delle 19 tabelle dei dati, conserva ID/relazioni, legge uno snapshot coerente e ripristina transazionalmente con conflitti fail-closed. Esclusi credenziali, preferenze, media e cursori operativi. Il formato precedente resta leggibile e dichiaratamente parziale.
 
-1. Rileggere HEAD/CI; risolvere eventuali regressioni prima di estendere il codice.
-2. Ispezionare schema Room v5, migrazioni, DAOs, backup e `core/xiaomi` effettivi.
-3. Definire profilo locale e binding persistente `(connessione, regione, UID, accountId/subject)`; il nome o il peso non identificano una persona. Una seconda persona non può essere importata nello stesso archivio senza una scelta esplicita.
-4. Introdurre envelope/record e provenienza per metrica. Separare acquisizione cloud, stima vendor, peso riportato, qualità, unità e timestamp originali. Non presumere che `dataVersion` sia una revisione o che `sn` sia un ID globale: il protocollo letto non lo prova.
-5. Collegare una implementazione del committer Xiaomi a transazione record/checkpoint idempotente, con fixture. Non mettere la rete in una transazione DB.
-6. Aggiornare migrazioni/schema esportato e copertura backup insieme ai nuovi dati; test SQLite/Room reali per binding, rollback e relazioni. Non sostituirli con Mockito.
-7. Prima del trasporto/login continuare SAFE: session store, URL/redirect HTTPS autorizzati, errori, challenge realmente supportate, firma e UI dei segreti.
-8. Aggiornare questo registro con evidenze e prima azione successiva.
+### Verifica da chiudere in questa sessione
 
-`FH-SAFE-03` richiederà una decisione sulla firma privata e migrazione prima dei login reali. Non cambiare package o chiave senza approvazione e non chiedere password/token in chat. Modello bilancia/companion e Android esatti sono ancora da verificare sul telefono; non impediscono lo sviluppo con fixture.
+1. Eseguire CI sul commit software finale e correggere i problemi effettivi senza disabilitare test/lint.
+2. Verificare che i test Jupiter preesistenti e i nuovi test Robolectric/Vintage siano entrambi eseguiti.
+3. Acquisire lo schema 6 JSON generato realmente da KSP, tramite artifact/blob CI, e adottarlo con commit revisionato.
+4. Verificare APK, checksum, certificato e release del medesimo SHA.
+5. Registrare esito e prossimo task senza fingere test Xiaomi/telefono non eseguiti.
 
-## 2. Decisioni già approvate
+## 2. Registro
 
-- Un solo APK nostro; Xiaomi Home e companion/Health Connect restano componenti del setup.
-- Xiaomi Cloud diretto è il flusso principale da completare. CSV e BLE esistenti restano ripieghi.
-- Niente root, script esterno obbligatorio, backend Fitness Hub o account Fitness Hub.
-- Room è l'archivio proprio; lettura ampia e write-back HC devono essere completati con permessi/outbox.
-- Tutti i dati realmente esposti e autorizzati, non accesso universale a ogni archivio/app.
-- Originali, qualità, unità e identità conservati. Nessuna correzione o fusione silenziosa sulla sola somiglianza dei numeri.
-- Lavoro diretto su `main` autorizzato, commit multi-file atomici, mai force-push.
-- Nessuna licenza finale scelta o esecuzione automatica futura autorizzata da questo piano.
-
-## 3. Registro delle attività
-
-Gli ID non elencati sono `TODO`. Uno stato VERIFIED vale solo per i criteri e il livello di prova indicati, non per l'intero prodotto.
-
-| ID | Stato | Risultato / criterio residuo |
+| ID | Stato | Prove e limiti |
 |---|---|---|
-| PLAN-R1 | VERIFIED — documentazione | Master plan e continuità salvati nel commit `81b4f85`. Nessuna funzione era dichiarata completata dalla sola pianificazione. |
-| FH-XIA-01 | VERIFIED — contratti e fixture | Commit `b757f8e`: request CN/globali, tre formati risposta, JSON rigoroso/limitato, identità ambigue e campi/unità/provenienza separati, paginazione e contratti di commit. 36 nuovi test Xiaomi passati nel motore JUnit della CI. Upstream `a9e5c04` e licenza MIT annotati/inclusi nell'APK. Nessun login, chiamata reale o persistenza nuova. |
-| FH-SAFE-01 | IN_PROGRESS | [Inventario iniziale](security/pre-cloud-audit.md) con manifest, logger, secret store AI/bindkey, trasporto AI e firma. Logger reso allowlist con 6 nuovi test passati; DTO Xiaomi redatti. Restano audit esteso chiamate Log/UI/errori e confronto comportamento runtime/policy. |
-| FH-SAFE-02 | AWAITING_DEVICE | Esclusioni esplicite di backup OS cloud e device transfer, domini credential/device-protected. Quattro test XML passati e risorse compilate nella build Android. Prove comportamento backup/restore OEM e merged-manifest approfondito ancora necessarie. |
-| FH-SAFE-03 | TODO — decisione prima dei login reali | Firma privata e custodia/migrazione da concordare. Chiave pubblica test esistente non cambiata. Non blocca fixture e persistenza locale. |
-| FH-DATA-01 | TODO — prossimo | Binding persistente persona/connessione/subject oltre al filtro del singolo CSV. |
-| FH-DATA-02 | TODO — prossimo | Envelope e provenienza per metrica nel DB; i DTO Xiaomi sono già separati ma non sono persistenza definitiva. |
+| PLAN-R1 | VERIFIED — documentazione | Piano R1 nel commit `81b4f85`; non una funzione applicativa. |
+| FH-XIA-01 | VERIFIED — contratti/fixture | `b757f8e`, CI 37518253962. Protocollo Kotlin con upstream MIT annotato; nessuna chiamata reale. |
+| FH-SAFE-01 | IN_PROGRESS | Audit iniziale e logging allowlist nella 0.3.2; resto dell'audit e trasporti da completare. |
+| FH-SAFE-02 | AWAITING_DEVICE | Regole backup OS esplicite/test XML; comportamento OEM non verificato. |
+| FH-SAFE-03 | TODO — decisione prima dei login | Firma privata/custodia/migrazione richiedono scelta del proprietario. Nessuna chiave cambiata. |
+| FH-DATA-01 | IN_PROGRESS — nuova persistenza | Binding immutabile regione/login UID/subject/device e profilo locale. Resta migrazione identità legacy e UI di rebind esplicito. |
+| FH-DATA-02 | IN_PROGRESS — nuova persistenza | Snapshot con raw/unità/metodo/qualità per metrica. Non è ancora un resolver globale o una revisione vendor dimostrata. |
+| FH-DATA-04 / FH-QA-02 | IN_PROGRESS — test aggiunti | Migrazioni v1–v5→v6, compilato Room/SQLite nativo sotto Robolectric; attendere risultati CI effettivi. |
+| FH-PORT-01..04/06 | IN_PROGRESS — incremento database | Backup v2, registro tabelle, snapshot/transazioni, merge conservativo, IO limitato fuori UI. Non include media/preferenze; prove fisiche e conflitti avanzati restano. |
 
-Stati: `TODO`, `IN_PROGRESS`, `BLOCKED`, `IMPLEMENTED`, `AWAITING_DEVICE`, `VERIFIED`, `DEFERRED`.
+Gli altri task rimangono nello stato del master (`TODO` se non registrati). Un risultato verificato per un sottosistema non completa l'intero prodotto.
 
-## 4. Codice consegnato
+## 3. File e contratti
 
-- `core/xiaomi/XiaomiJson.kt`: parsing JSON rigoroso e limitato, con errori statici; non dipende da Android, Room o rete.
-- `core/xiaomi/XiaomiScaleProtocol.kt`: request descriptor, tre formati, metadati/subject, tempi distinti, per-metric method/unit/quality e payload selezionato.
-- `core/xiaomi/XiaomiHistoryReader.kt`: fetch -> parse off-main -> committer -> cursore successivo; budget/pause, errori e cancellazione. Il committer resta un contratto da implementare in Room.
-- Test `XiaomiJsonTest`, `XiaomiScaleProtocolTest`, `XiaomiHistoryReaderTest` e fixture JSON totalmente sintetiche.
-- `core/sync/OperationalLogLine.kt`, `AppLogger.kt` e test: allowlist effettive, nessuna stringificazione di oggetti arbitrari.
-- Manifest e `res/xml/backup_rules.xml`, `data_extraction_rules.xml`; `ci/test_privacy_policy.py`.
-- Attribuzione MIT in `assets/licenses/SmartScaleConnect-MIT.txt`, [protocollo](connectors/xiaomi-protocol.md), [audit SAFE](security/pre-cloud-audit.md), [note 0.3.2](releases/0.3.2.md).
+- `core/xiaomi/storage/XiaomiArchiveEntities.kt`: identità, binding, snapshot e checkpoint; stringificazione redatta.
+- `core/xiaomi/RoomXiaomiArchive.kt`: associazione, ripresa, replay e commit pagina atomico.
+- `core/xiaomi/XiaomiSnapshotCodec.kt`, `XiaomiArchiveIntegrity.kt`: envelope, hash e controllo identità/integrità nel recupero.
+- `core/database/XiaomiArchiveMigration.kt`: migrazione additiva 5→6.
+- `core/backup/DatabaseBackupService.kt`: formato nuovo collegato a Insights, con adattatore del formato vecchio.
+- Helper backup per IO, limiti JSON e relazioni; nuova UI file/passphrase e stringhe EN/IT/ES.
+- Test Room nativi: migrazioni, riapertura, replay concorrente, rollback/checkpoint, confronto di tutte le colonne e restore con conflitti.
+- `ci/export_room_schema.py`: espone schema KSP come blob senza modificare branch; il suo risultato deve essere revisionato e committato.
 
-Nessun backend, nuova dipendenza di produzione, schema DB o cambio di firma introdotto.
+[Archivio Xiaomi](connectors/xiaomi-storage.md) — [Formato backup](backup-format-v2.md) — [Note 0.3.3](releases/0.3.3.md).
 
-## 5. Verifiche e distribuzione
+## 4. Limiti e gate
 
-### Verifica locale limitata
+- Il collegamento Xiaomi live e il login non sono presenti. Nessuna credenziale reale richiesta o usata.
+- Un solo binding Xiaomi immutabile per installazione in questo incremento. Non rinominare connessioni per aggirare la separazione delle persone.
+- Il binding nuovo non assegna retroattivamente una persona ai vecchi dati CSV/BLE/HC. Non dichiarare risolta la riconciliazione universale.
+- Hash dei contenuti significa snapshot identico, non identità vendor dimostrata. Dati cambiati conservati separatamente, non ordinati automaticamente come revisioni.
+- Backup v2: tabelle dei dati, stesso schema DB, massimo 32 MiB decifrati, conflitti interrompono tutto. Nessun replace distruttivo. V1 resta parziale e non garantito idempotente.
+- Preferenze, allegati e segreti esclusi; backup OS resta disattivato. Nessun consiglio di disinstallazione alla cieca.
+- HC non modificato da questa consegna: 11 tipi, sonno/storico/write-back ancora incompleti.
+- Nessuna prova fisica Redmi/S400/Mi Band; Robolectric con SQLite nativo non è un telefono reale.
+- Chiave pubblica TEST-ONLY conservata; firma privata e migrazione da approvare prima dei login sensibili. Nessuna scelta di licenza definitiva.
 
-Compilate le nuove classi pure con Kotlin/JVM disponibile ed eseguiti 42 metodi di test/assertion tramite harness offline. Quattro test Python di policy XML passati. L'harness locale usava un sostituto della sola annotazione JUnit per avviare i test, non il motore JUnit e non un emulatore Android.
+## 5. Prossimo passo dopo verifica
 
-Non è stata eseguita localmente la build Gradle Android completa: l'ambiente non risolve GitHub per il clone e non dispone del toolchain Android completo. Letture/scritture effettive tramite connettore GitHub.
+Procedere con i prerequisiti del trasporto e della sessione Xiaomi (`FH-XIA-02/03/04`, SAFE), usando server simulati/fixture e senza chiedere password in chat. Prima leggere il registro finale: una regressione o uno schema non adottato ha precedenza. Collegare successivamente il selettore del subject e i dati persistiti alla UI/canonicalizzazione; il gate firma resta per l'uso reale delle credenziali.
 
-### Verifica CI effettiva
+## 6. Evidenze precedenti
 
-[Run 37518253962](https://github.com/HebaDenys/fitness-hub/actions/runs/37518253962), job `112456641140`, SHA `b757f8e7c3df84ac444476874e990098154e710a`: completati con successo.
+La CI software 0.3.2 [37518253962](https://github.com/HebaDenys/fitness-hub/actions/runs/37518253962), SHA `b757f8e`, aveva 261 test app/21 suite e 11 test Python passati, build/lint/firma/pubblicazione verdi. Questo riferimento NON attesta i nuovi test.
 
-- `python3 -m unittest discover -s ci -p 'test_*.py' -v`: **11 test**, passati.
-- `./gradlew testDebugUnitTest lintDebug assembleDebug --stacktrace`: **BUILD SUCCESSFUL**.
-- JUnit: **261 test, 21 suite, 0 failures, 0 errors, 0 skipped**. Sono 219 preesistenti più 42 nuovi controlli, non tutti scritti in questa sessione.
-- Firma APK confrontata con il certificato CI test esistente: corrispondente.
-- Checksum e pubblicazione `test-latest`: completati con successo.
-- [Report di verifica](https://github.com/HebaDenys/fitness-hub/actions/runs/37518253962/artifacts/11438550805), soggetti alla retention della CI.
-
-APK **0.3.2**, versionCode **4**, package `io.github.hebadenys.fitnesshub`, dimensione **142843285 byte**:
-
-[Download diretto](https://github.com/HebaDenys/fitness-hub/releases/download/test-latest/FitnessHub-v0.3.2-debug.apk) — [checksum](https://github.com/HebaDenys/fitness-hub/releases/download/test-latest/FitnessHub-v0.3.2-debug.apk.sha256)
-
-SHA-256: `5ae988a0a6b5ccf0a113e6ac451fe4306f4144a40e25069bdb4d1d3b42df92fd`.
-
-Release verificata sul commit software `b757f8e`; un successivo aggiornamento solo documentale del registro non modifica tale APK. Le release rolling possono cambiare: verificare sempre i metadati prima di usarle come prova futura.
-
-### Prove non eseguite
-
-Login/rete Xiaomi, prova Redmi/S400/Mi Band, nuovi test Room/migrazioni/backup fisici. Nessuna credenziale reale richiesta né dato personale usato nelle nuove fixture. Le risorse backup compilate e i test XML non provano il comportamento di ogni OEM.
-
-## 6. Limiti ancora reali
-
-- Gateway HC: 11 tipi; fasi sonno non preservate, finestra applicativa 30/365 giorni, nessun write-back. Nessuna nuova garanzia di completezza in 0.3.2.
-- Xiaomi: protocollo/contratti puri nuovi; CSV e BLE sperimentali esistenti. Nessuna sessione, sincronizzazione automatica o prova S400 Pro.
-- Repository canonico condiviso da tutte le viste ancora da completare; nessun schema v6 in questo incremento.
-- Backup portabile incompleto. Le esclusioni OS non equivalgono a recovery lossless. Non disinstallare build con dati importanti contando su questo backup.
-- La fonte Xiaomi upstream usa una euristica di pagina corta da 20 record; non è prova che l'intero archivio sia stato restituito.
-- Campi numerici vendor estesi preservati senza inventare unità; testo non classificato/identità/chiavi sensibili esclusi con issue. Non rivendicare preservazione di qualsiasi campo futuro.
-- Issue/PR aperte: nessuna al controllo iniziale. Rileggere GitHub nelle sessioni successive.
-
-## 7. Gate esterni
-
-Il login reale deve avvenire nel canale sicuro dell'app, con profilo corretto ed eventuali verifiche vendor normali. Non pubblicare segreti o interi export sanitari. Firma privata, store, costi e licenza definitiva richiedono decisioni specifiche; non inventarle. Il modello bilancia, regione Xiaomi, band e Android non impediscono lo sviluppo locale ma impediscono dichiarazioni di compatibilità reale.
-
-## 8. Cronologia
-
-### 6 ottobre 2026 — Piano R1
-
-Commit documentale `81b4f85` con master, progress e direzione Xiaomi Cloud integrato. Build non rieseguita per soli Markdown.
-
-### 6 ottobre 2026 — FH-XIA-01 e prerequisiti SAFE
-
-Commit software `b757f8e`. Letti HEAD, documenti vincolanti, issue/PR, CI e upstream Xiaomi pinning/licenza. Sviluppato il prerequisito Kotlin ed eseguiti i test sopra. Pipeline verde al primo commit atomico; release 0.3.2 verificata. Aggiornamento di chiusura solo Markdown con evidenze e task successivo; nessuna pianificazione sostitutiva del codice.
-
-## Template di chiusura
-
-```text
-Data e HEAD iniziale:
-Task ID / risultato verificabile:
-Commit / file:
-Comandi locali realmente eseguiti:
-CI: URL, SHA e conclusione:
-APK: versione, SHA e URL effettivi:
-Prove dispositivo/Room mancanti:
-Limiti e blocchi:
-Prossima attività e prima azione:
-```
+La verifica Android completa non è stata eseguita localmente in questa sessione: la validazione del nuovo toolchain/Room viene demandata alla CI effettiva. Non trasformare un'ispezione del codice in una dichiarazione di test eseguito.
