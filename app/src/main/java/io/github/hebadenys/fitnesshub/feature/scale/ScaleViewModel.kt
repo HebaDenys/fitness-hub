@@ -1,6 +1,10 @@
 package io.github.hebadenys.fitnesshub.feature.scale
 
+import android.Manifest
 import android.bluetooth.BluetoothManager
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.core.content.ContextCompat
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -118,7 +122,27 @@ class ScaleViewModel @Inject constructor(
         }
     }
 
+    fun requiredScanPermissions(): Array<String> =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            arrayOf(Manifest.permission.BLUETOOTH_SCAN)
+        } else {
+            arrayOf(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+
+    fun hasScanPermission(): Boolean =
+        requiredScanPermissions().all { permission ->
+            ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
+        }
+
+    fun refreshBluetoothState() {
+        bluetoothAvailable.value = runCatching {
+            (context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager)?.adapter?.isEnabled
+        }.getOrDefault(false) == true
+    }
+
     fun toggleScan() {
+        refreshBluetoothState()
+        if (!hasScanPermission()) return
         if (scanning.value) stopScan() else startScan()
     }
 
