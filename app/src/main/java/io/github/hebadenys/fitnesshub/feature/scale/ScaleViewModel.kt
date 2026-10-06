@@ -15,6 +15,8 @@ import io.github.hebadenys.fitnesshub.core.scale.S400ScaleConnector
 import io.github.hebadenys.fitnesshub.core.scale.ScaleBleScanner
 import io.github.hebadenys.fitnesshub.core.scale.ScaleDao
 import io.github.hebadenys.fitnesshub.core.scale.ScaleMeasurementEntity
+import io.github.hebadenys.fitnesshub.core.scale.ScaleHistoryCsvImporter
+import io.github.hebadenys.fitnesshub.core.scale.ScaleHistoryImportResult
 import io.github.hebadenys.fitnesshub.core.scale.Sex
 import io.github.hebadenys.fitnesshub.ui.state.ScreenState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,6 +40,14 @@ data class ScaleUiModel(
     val sex: Sex?
 )
 
+sealed interface ScaleHistoryImportState {
+    data object Idle : ScaleHistoryImportState
+    data object Working : ScaleHistoryImportState
+    data class Success(val imported: Int, val duplicates: Int, val skipped: Int) : ScaleHistoryImportState
+    data class MultipleUsers(val users: List<String>) : ScaleHistoryImportState
+    data class Failure(val reason: String) : ScaleHistoryImportState
+}
+
 sealed interface BindkeyResult {
     data object Idle : BindkeyResult
     data object Saved : BindkeyResult
@@ -48,6 +58,7 @@ sealed interface BindkeyResult {
 class ScaleViewModel @Inject constructor(
     private val connector: S400ScaleConnector,
     private val dao: ScaleDao,
+    private val historyImporter: ScaleHistoryCsvImporter,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -55,8 +66,10 @@ class ScaleViewModel @Inject constructor(
     private val scanning = MutableStateFlow(false)
     private val bluetoothAvailable = MutableStateFlow(false)
     private val bindkeyResult = MutableStateFlow<BindkeyResult>(BindkeyResult.Idle)
+    private val historyImportResult = MutableStateFlow<ScaleHistoryImportState>(ScaleHistoryImportState.Idle)
 
     val bindkeyState: StateFlow<BindkeyResult> = bindkeyResult.asStateFlow()
+    val historyImportState: StateFlow<ScaleHistoryImportState> = historyImportResult.asStateFlow()
 
     private var scanner: ScaleBleScanner? = null
 
@@ -138,6 +151,26 @@ class ScaleViewModel @Inject constructor(
         bluetoothAvailable.value = runCatching {
             (context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager)?.adapter?.isEnabled
         }.getOrDefault(false) == true
+    }
+
+    fun importHistoryCsv(csv: String, userFilter: String?) {
+        if (historyImportResult.value is ScaleHistoryImportState.Working) return
+        viewModelScope.launch {
+            historyImportResult.value = ScaleHistoryImportState.Working
+            historyImportResult.value = when (val result = historyImporter.import(csv, userFilter)) {
+                is ScaleHistoryImportResult.Success -> ScaleHistoryImportState.Success(
+                    imported = result.importedRows,
+                    duplicates = result.duplicateRows,
+                    skipped = result.skippedRows
+                )
+                is ScaleHistoryImportResult.MultipleUsers -> ScaleHistoryImportState.MultipleUsers(result.users)
+                is ScaleHistoryImportResult.Failure -> ScaleHistoryImportState.Failure(result.reason)
+            }
+        }
+    }
+
+    fun dismissHistoryImportResult() {
+        historyImportResult.value = ScaleHistoryImportState.Idle
     }
 
     fun toggleScan() {
