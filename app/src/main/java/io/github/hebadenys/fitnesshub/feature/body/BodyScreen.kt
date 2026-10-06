@@ -173,9 +173,14 @@ fun BodyScreen(
                                     text = day.date.toString(),
                                     style = MaterialTheme.typography.titleMedium
                                 )
-                                if (day.provenance == io.github.hebadenys.fitnesshub.core.model.DailySummary.PROVENANCE_ESTIMATE) {
-                                    Text(
+                                when (day.provenance) {
+                                    io.github.hebadenys.fitnesshub.core.model.DailySummary.PROVENANCE_ESTIMATE -> Text(
                                         text = stringResource(R.string.provenance_estimate),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.tertiary
+                                    )
+                                    io.github.hebadenys.fitnesshub.core.model.DailySummary.PROVENANCE_IMPORTED -> Text(
+                                        text = stringResource(R.string.scale_provenance_imported),
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.tertiary
                                     )
