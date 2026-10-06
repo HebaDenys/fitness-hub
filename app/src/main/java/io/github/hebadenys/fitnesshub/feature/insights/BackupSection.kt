@@ -120,6 +120,7 @@ internal fun BackupSection(state: BackupState, weightCsv: String, onCreate: (Str
             Button(onClick = { onRestore(restoreText, passphrase); passphrase = "" },
                 enabled = restoreText.isNotBlank() && passphrase.isNotEmpty() && !busy,
                 modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.backup_restore)) }
+            Text(stringResource(R.string.export_csv_description), style = MaterialTheme.typography.bodySmall)
             Button(onClick = { pendingCsv = weightCsv; saveCsv.launch("FitnessHub-weight.csv") },
                 enabled = weightCsv.isNotBlank() && !busy, modifier = Modifier.fillMaxWidth()) { Text(stringResource(R.string.export_weight_csv)) }
             if (fileWorking) CircularProgressIndicator()
