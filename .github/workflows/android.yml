@@ -23,6 +23,8 @@ jobs:
           distribution: temurin
           java-version: '21'
       - uses: gradle/actions/setup-gradle@v4
+      - name: Test CI certificate parser
+        run: python3 -m unittest discover -s ci -p 'test_*.py' -v
       - name: Make Gradle wrapper executable
         run: chmod +x gradlew
       - name: Prepare stable test signing key
@@ -86,13 +88,13 @@ jobs:
         env:
           APK: ${{ steps.version.outputs.apk }}
         run: |
+          set -euo pipefail
           SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
           APKSIGNER=$(find "$SDK_ROOT/build-tools" -name apksigner -type f | sort -V | tail -n 1)
           test -n "$APKSIGNER"
           "$APKSIGNER" verify --verbose --print-certs "$APK" | tee "$RUNNER_TEMP/apk-signature.txt"
           EXPECTED=$(keytool -exportcert -keystore "$RUNNER_TEMP/fitnesshub-test.jks" -storepass fitnesshub -alias fitnesshubtest | sha256sum | cut -d ' ' -f1)
-          ACTUAL=$(sed -n 's/^Signer #1 certificate SHA-256 digest: //p' "$RUNNER_TEMP/apk-signature.txt")
-          test "$EXPECTED" = "$ACTUAL"
+          python3 ci/verify_apk_certificate.py "$RUNNER_TEMP/apk-signature.txt" "$EXPECTED"
           sha256sum -c "$APK.sha256"
       - uses: actions/upload-artifact@v4
         with:
@@ -109,13 +111,18 @@ jobs:
           APK: ${{ steps.version.outputs.apk }}
           VERSION: ${{ steps.version.outputs.name }}
         run: |
-          cp docs/releases/0.3.1.md "$RUNNER_TEMP/release-notes.md"
+          set -euo pipefail
+          if [ -f "docs/releases/$VERSION.md" ]; then
+            cp "docs/releases/$VERSION.md" "$RUNNER_TEMP/release-notes.md"
+          else
+            printf '# Fitness Hub %s test build\n' "$VERSION" > "$RUNNER_TEMP/release-notes.md"
+          fi
           printf '\nBuild commit: `%s`\n' "$GITHUB_SHA" >> "$RUNNER_TEMP/release-notes.md"
           if gh release view test-latest >/dev/null 2>&1; then
             # Upload first. Do not delete the previous working release if publishing fails.
             gh release upload test-latest "$APK" "$APK.sha256" --clobber
             gh api --method PATCH "repos/$GITHUB_REPOSITORY/git/refs/tags/test-latest" -f sha="$GITHUB_SHA" -F force=true >/dev/null
-            gh release edit test-latest --title "Fitness Hub v$VERSION Test" --notes-file "$RUNNER_TEMP/release-notes.md" --prerelease
+            gh release edit test-latest --target "$GITHUB_SHA" --title "Fitness Hub v$VERSION Test" --notes-file "$RUNNER_TEMP/release-notes.md" --prerelease
           else
             gh release create test-latest "$APK" "$APK.sha256" --target "$GITHUB_SHA" --title "Fitness Hub v$VERSION Test" --notes-file "$RUNNER_TEMP/release-notes.md" --prerelease
           fi
