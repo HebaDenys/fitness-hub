@@ -277,4 +277,14 @@
     <string name="ai_confirm_body">This is the exact content that will leave your device. Your key is shown masked. Nothing is sent unless you tap send.</string>
     <string name="ai_confirm_send">Send</string>
     <string name="ai_confirm_cancel">Cancel</string>
+
+    <string name="backup_save_file">Save encrypted backup file</string>
+    <string name="backup_open_file">Open backup file</string>
+    <string name="backup_file_saved">Backup file saved.</string>
+    <string name="backup_file_loaded">Backup file loaded. Enter the passphrase and restore.</string>
+    <string name="backup_file_failed">Could not read or write the selected file.</string>
+    <string name="export_weight_csv">Export weight CSV</string>
+    <string name="export_csv_description">Export your smoothed weight trend as a standard CSV file for spreadsheets and personal analysis.</string>
+    <string name="export_csv_saved">CSV file saved.</string>
+
 </resources>
