@@ -287,4 +287,19 @@
     <string name="export_csv_description">Export your smoothed weight trend as a standard CSV file for spreadsheets and personal analysis.</string>
     <string name="export_csv_saved">CSV file saved.</string>
 
+
+    <string name="scale_history_title">Import Xiaomi Home history</string>
+    <string name="scale_history_description">Import a CSV exported by SmartScaleConnect from Xiaomi Home. This restores older S400 weigh-ins without giving Fitness Hub your Xiaomi credentials.</string>
+    <string name="scale_history_user_filter">User name (optional)</string>
+    <string name="scale_history_user_filter_hint">If the file contains multiple people, enter the exact Xiaomi profile name to avoid mixing their measurements.</string>
+    <string name="scale_history_import">Choose history CSV</string>
+    <string name="scale_history_importing">Importing history…</string>
+    <string name="scale_history_success">Imported %1$d measurement(s); %2$d duplicate(s); %3$d skipped row(s).</string>
+    <string name="scale_history_multiple_users">Multiple users found: %1$s. Enter one user name above and import the same file again.</string>
+    <string name="scale_history_failed">History import failed (%1$s).</string>
+    <string name="scale_body_fat_reading">Body fat: %1$s%%</string>
+    <string name="scale_body_water_reading">Body water: %1$s%%</string>
+    <string name="scale_visceral_fat_reading">Visceral fat: %1$s</string>
+    <string name="scale_provenance_imported">IMPORTED FROM XIAOMI HISTORY</string>
+
 </resources>
