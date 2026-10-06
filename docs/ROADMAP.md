@@ -1,203 +1,308 @@
 # Fitness Hub — Product Roadmap
 
-This document outlines the evolutionary milestones and feature phases for Fitness Hub. 
-
-> [!IMPORTANT]
-> Per [AGENTS.md](../AGENTS.md), development proceeds sequentially. Milestone **M0** and **M1** cover foundational stabilization. **Every phase from Phase 3 onward requires explicit user approval before implementation begins.**
+Fitness Hub has moved beyond its original linear "Phase 1 -> Phase 7" implementation plan. Most major domains now have prototype implementations. The priority is therefore **stabilization, real-device validation, data integrity and release readiness**, not adding more disconnected feature surface.
 
 ---
 
-## Milestone Overview
+## Current state
 
-```mermaid
-flowchart TD
-    M0["M0: Rename, Docs & Toolchain"] --> M1["M1: Health Connect Hardening"]
-    M1 --> M2["M2: UI Foundation & Design System"]
-    M2 -. "Approval Required" .-> P3["Phase 3: Nutrition & Local Food DB"]
-    P3 -. "Approval Required" .-> P4["Phase 4: Xiaomi S400 Local BLE"]
-    P4 -. "Approval Required" .-> P5["Phase 5: Workout & Strength Tracking"]
-    P5 -. "Approval Required" .-> P6["Phase 6: Cross-Domain Analytics & Backup"]
-    P6 -. "Approval Required" .-> P7["Phase 7: Optional AI Integrations"]
-    P7 -. "Approval Required" .-> P8["Phase 8: Release Readiness & Compliance"]
+### Implemented / prototype
+
+- Android local-first foundation: Kotlin, Compose, Material 3, Hilt, Room.
+- Health Connect ingestion with granular permissions.
+- Background/incremental Health Connect synchronization.
+- Activity, sleep, body and dashboard views.
+- Nutrition logging.
+- Barcode scanning and nutrition-label OCR.
+- Optional Open Food Facts lookup with local caching.
+- Xiaomi S400 passive BLE prototype.
+- Xiaomi Home history import through SmartScaleConnect-compatible CSV.
+- Workout/strength logging.
+- Estimated 1RM and personal-record detection.
+- Cross-domain analytics.
+- Encrypted local backup/restore.
+- CSV export.
+- Optional BYOK AI infrastructure.
+- GitHub Actions test/lint/APK pipeline and rolling test release.
+
+"Implemented" here means code exists and is reachable. It does **not** automatically mean the feature is production-ready.
+
+---
+
+## Priority S0 — Keep main releasable
+
+This is permanent.
+
+### Requirements
+
+- Every change on `main` must pass:
+  - unit tests;
+  - Android lint;
+  - `assembleDebug`.
+- `test-latest` must point to the newest successful `main` build.
+- Test APKs use the repository's deliberately public test-only signing key.
+- Production signing material must never be committed.
+- Database migrations must be explicit and schema exports tracked.
+- Existing user data must not be silently destroyed by an upgrade.
+
+---
+
+## Priority S1 — Real-device validation
+
+Code-level tests cannot prove vendor/device behavior.
+
+### Health Connect
+
+Validate on the real Android device:
+
+- Mi Fitness permission flow;
+- which Mi Band metrics actually reach Health Connect;
+- steps and calorie aggregation;
+- sleep sessions/stages;
+- heart-rate series;
+- resting heart rate;
+- SpO2;
+- exercise sessions;
+- historical access;
+- incremental synchronization after new records arrive.
+
+Document missing Mi Fitness exports as limitations rather than synthesizing them.
+
+### Xiaomi S400
+
+Validate both paths:
+
+#### Historical
+
+```text
+Xiaomi Home -> SmartScaleConnect CSV -> Fitness Hub
 ```
 
----
+Test:
 
-## Milestone M0: Project Rename, Documentation & Toolchain
+- older measurements;
+- vendor body-fat/body-water/BMR values;
+- duplicate import;
+- CSV with Denys + Dahiana or any other multi-user case;
+- explicit user filtering;
+- timestamps/time zone.
 
-Refactor repository identity and establish reproducible build infrastructure.
+#### Live
 
-### Scope
-- Rename root project and namespace from `com.openhealthhub.app` to `io.github.hebadenys.fitnesshub`.
-- Reorganize and rewrite repository documentation to strictly reflect codebase reality.
-- Introduce official Gradle 8.13 wrapper (`gradlew`, `gradlew.bat`, wrapper jar and properties).
-- Update GitHub Actions workflow to leverage `./gradlew` and publish version-aligned debug APKs.
+```text
+S400 -> passive BLE -> Fitness Hub
+```
 
-### Done When
-- [x] Application compiles cleanly under the new `io.github.hebadenys.fitnesshub` application ID.
-- [x] Automated CI builds pass `./gradlew testDebugUnitTest lintDebug assembleDebug`.
-- [x] All documentation links resolve and describe actual project status accurately.
+Test:
 
----
+- Android runtime Bluetooth permissions;
+- real S400 advertisements;
+- regional firmware variants;
+- Xiaomi Home operating concurrently;
+- bindkey decryption;
+- weight;
+- impedance;
+- heart rate;
+- duplicate broadcasts.
 
-## Milestone M1: Phase 2 Hardening (Health Connect Integration)
-
-Resolve known edge cases and structural limitations in the initial Health Connect prototype before adding new domain features.
-
-### Scope
-- **Null Handling over Zero Default**: Replace zero-default metrics with nullable properties (`Long?`, `Double?`) in `DailySummary` and persistence models. The UI explicitly differentiates between recorded zero, missing data, and permission denied.
-- **Granular Permissions**: Replace all-or-nothing checks (`containsAll`) with per-metric evaluation (`grantedMetrics()`). Partial permission grants import available metrics without failing the entire synchronization.
-- **Permissions Rationale Activity (Android 14+)**: Implement `PrivacyRationaleActivity` responding to `androidx.health.ACTION_SHOW_PERMISSIONS_RATIONALE` and register the `android.intent.action.VIEW_PERMISSION_USAGE` activity-alias.
-- **Nocturnal Sleep Attribution**: Attribute sleep sessions to the waking calendar day (`endTime` in local time) across noon-to-noon windows (`[Day - 1 12:00, Day 12:00)`), avoiding double-counting nights crossing midnight.
-- **Vitals & Heart Rate Series**: Ingest continuous heart rate series; persist all daily readings for SpO2 and resting heart rate rather than relying on arbitrary `lastOrNull` snapshots.
-- **Data Provenance & Source Tracking**: Store `metadata.dataOrigin.packageName` for all individual records and daily aggregates. Flag estimated metrics with explicit algorithm tags.
-- **Background & Incremental Synchronization**: Implement WorkManager `SyncWorker` for periodic background sync. Utilize Health Connect Changes tokens stored in DataStore to ingest only modified records; fallback to full range sync on token expiration.
-- **Historical Data Range**: Provide optional `READ_HEALTH_DATA_HISTORY` support for importing records older than 30 days.
-- **Toolchain Modernization & Database Versioning**: Migrate annotation processing from `kapt` to `ksp`. Enable Room schema export (`exportSchema = true`) to version-tracked `app/schemas` directory, bumping the database to version 2 with clean migration strategies.
-- **Traceable Structured Logging**: Introduce `AppLogger` with unique `syncId` correlation IDs. Strictly guarantee that **no personal health metrics** are printed to system logs.
-- **Unit Testing**: Implement JVM-based unit tests using JUnit 5 and `mockito-kotlin` (`DailySummaryMapperTest`, `SleepAttributionTest`, `PermissionFilterTest`, `HealthSyncRepositoryTest`, `ExerciseDedupTest`). Remove placeholder assertions.
-
-### Done When
-- Background and incremental syncs execute reliably without data duplication.
-- Granting a subset of permissions imports authorized data successfully.
-- Sleep spanning midnight attributes accurately to the wake date.
-- All JUnit 5 test suites pass in CI and locally.
-- Room schemas are exported and tracked in version control.
+Do not mark BLE support stable before a physical weigh-in passes end-to-end.
 
 ---
 
-## Milestone M2: UI Foundation & Design System
+## Priority S2 — Canonical body-data model
 
-Establish a responsive, accessible, and informative presentation layer.
+Body data can currently originate from:
 
-### Scope
-- **Material 3 Design System**: Dynamic color palettes (Material You), dark/light mode optimization, and consistent typography hierarchy.
-- **Chart Visualizations**: Integrate a lightweight, performant Android chart library (Vico) for daily, 7-day, 30-day, and 90-day metric trends.
-- **Dashboard Metric Cards**: Modular summary cards for activity, sleep duration, resting heart rate, and body composition with baseline delta indicators.
-- **State Handling**: Uniform representation across all screens for loading, empty state, permission missing, and sync error conditions.
-- **Localization & Accessibility**: Bilingual support (English and Italian); comprehensive accessibility labeling and scalable typography.
+- Health Connect;
+- imported Xiaomi history;
+- direct S400 BLE;
+- Fitness Hub estimates.
 
-### Done When
-- All screens handle empty, partial, and full data states gracefully with visual parity across themes.
-- Trend graphs render multi-week data without UI stutter.
-- UI screenshots and visual component guides are updated in the documentation.
+The product must resolve these consistently.
 
----
+### Required behavior
 
-## Phase 3: Nutrition & Local Food Database ⚠️
-
-> [!WARNING]
-> Requires explicit approval prior to commencement.
-
-Provide local-first dietary logging without mandatory dependencies on external commercial APIs.
-
-### Scope
-- **Local Food Database**: On-device SQLite store for food items, nutritional values (calories, macros, micronutrients), serving sizes, and user-defined recipes.
-- **On-Device Barcode Scanner**: Local barcode detection utilizing CameraX and on-device ML Kit / ZXing.
-- **Nutrition Label OCR**: Camera capture of nutritional labels with on-device text recognition to automatically parse caloric and macronutrient tables.
-- **Local Product Learning**: Scan an unknown barcode, photograph the nutrition table, confirm parsed fields once, and persist it locally for future offline reuse.
-- **Open Food Facts Connector**: Optional, opt-in network lookup for product barcodes against the open Open Food Facts database with local caching.
-- **Health Connect Export**: Optional export of meal nutritional totals to Health Connect as `NutritionRecord`.
-
-### Done When
-- A user can scan an unknown food product barcode offline, photograph the nutritional label, confirm values via UI, and reuse the saved item in meal logs without internet connectivity.
-- Meal nutritional totals calculate accurately and optionally sync to Health Connect.
+- Prefer genuine measured/imported vendor values over local estimates.
+- Never replace a genuine measurement with an estimate.
+- Keep source/provenance visible.
+- Ensure Dashboard, Body and Insights use the same resolved body history.
+- Prevent same-day duplicate sources from inflating analytics.
+- Define deterministic precedence when several measurements exist on one day.
 
 ---
 
-## Phase 4: Xiaomi Body Composition Scale S400 (Local BLE) ⚠️
+## Priority S3 — Data portability and lossless recovery
 
-> [!WARNING]
-> Requires explicit approval prior to commencement.
+Backup/restore is a core product feature, not an optional extra.
 
-Direct, passive wireless reception of Xiaomi S400 scale measurements without Xiaomi cloud involvement.
+### Already available
 
-### Scope
-- **Passive BLE Advertisement Reception**: Background/foreground BLE scanning to capture encrypted Xiaomi MiBeacon v5 broadcast packets emitted during weigh-ins.
-- **Cryptographic Decryption**: Decrypt broadcast payloads using AES-128-CCM with a user-supplied 16-byte `bindkey`.
-- **Hardware Keystore Integration**: Store the scale `bindkey` encrypted at rest using the Android Keystore.
-- **Physical Metric Ingestion**: Extract authenticated raw measurements: weight (kg), bioelectrical impedance (Ohms), heart rate (bpm), and user profile slot.
-- **Body Composition Estimation Engine**: Estimate body fat percentage, lean mass, body water, and visceral fat using validated open-source algorithms (openScale / bodymiscale formulas).
-- **Provenance & Transparency**: Strictly flag all derived body composition values as `ESTIMATE` with the corresponding algorithm identifier. Raw impedance is permanently archived.
-- **Health Connect Export**: Optional export of weight, body fat, and basal metabolic rate records to Health Connect.
+- passphrase-derived AES-256-GCM encrypted backup;
+- Android file picker;
+- CSV weight export.
 
-### Done When
-- A real weigh-in on physical S400 hardware is intercepted passively, decrypted via the saved bindkey, and recorded into the local database while Xiaomi Home remains paired.
-- Calculated body composition metrics are clearly marked as estimates in both the database and user interface.
+### Required hardening
 
----
+A complete backup must include all meaningful user-owned data:
 
-## Phase 5: Workout & Strength Training Tracking ⚠️
+- daily Health Connect summaries;
+- detailed heart/vitals samples where intentionally retained;
+- local nutrition foods;
+- nutrition entries and daily totals;
+- raw scale measurements;
+- imported scale measurements;
+- body-composition estimates;
+- local user profile;
+- workout exercises;
+- workout sessions;
+- workout sets;
+- templates;
+- relevant local preferences/configuration where safe.
 
-> [!WARNING]
-> Requires explicit approval prior to commencement.
+Restore must:
 
-A comprehensive, local workout logger for resistance training, bodybuilding, calisthenics, and cardio.
-
-### Scope
-- **Exercise Library**: Built-in default exercise database with full support for user-created custom movements, muscle group tagging, and equipment classification.
-- **Workout Execution Logger**: Track active sessions with sets, repetitions, load (kg/lbs), Rate of Perceived Exertion (RPE), and Reps in Reserve (RIR).
-- **Rest Timers & Templates**: Integrated rest interval notifications and reusable workout routines.
-- **Strength Analytics & PRs**: Automatic personal record detection (1RM, 3RM, volume PRs) and 1RM estimations via Epley and Brzycki equations.
-- **Health Connect Integration**: Export completed training workouts as `ExerciseSessionRecord` with associated activity types.
-
-### Done When
-- A full resistance training session can be logged offline, calculating estimated 1RMs and updating personal records without latency or network requirements.
+- validate integrity before writes;
+- remain idempotent where possible;
+- preserve relationships;
+- report skipped/conflicting records;
+- be tested across database versions.
 
 ---
 
-## Phase 6: Cross-Domain Analytics, Reports & Encrypted Backup ⚠️
+## Priority S4 — Nutrition completion
 
-> [!WARNING]
-> Requires explicit approval prior to commencement.
+Validate the complete real workflow:
 
-Derive actionable insights across nutrition, activity, sleep, and physical performance.
+```text
+barcode
+ -> local cache
+ -> optional Open Food Facts
+ -> unknown product
+ -> label photo/OCR
+ -> user review
+ -> local product
+ -> meal log
+ -> daily totals
+```
 
-### Scope
-- **Cross-Domain Correlations**: Correlate caloric intake vs. scale weight trends, sleep duration/stages vs. workout strength output, and active energy expenditure vs. dietary targets.
-- **Statistical Integrity**: Prominent "correlation is not causation" advisory; rolling moving averages (7-day and 14-day exponential smoothing) to filter fluid weight fluctuations.
-- **Exportable Reports**: Generate formatted PDF summaries and raw CSV datasets for personal archiving or consultation with trainers/physicians.
-- **Encrypted Local Backup & Restore**: Full database backup encrypted with user passphrase using AES-256-GCM. Lossless import across device migrations.
+### Remaining work
 
-### Done When
-- Encrypted database backup can be created, transferred to another device, and restored losslessly with checksum validation.
-- Cross-domain analytical cards render statistically smoothed trend charts.
+- real-camera validation;
+- OCR parsing across Paraguay/Spanish, Italian and English labels;
+- serving-size handling;
+- recipes/saved meals;
+- editing existing foods/log entries;
+- broader micronutrients;
+- Health Connect nutrition export where mapping is appropriate;
+- better search and recent/favorite foods.
 
----
-
-## Phase 7: Optional AI Integrations ⚠️
-
-> [!WARNING]
-> Requires explicit approval prior to commencement.
-
-Opt-in machine learning enhancements that preserve local-first principles.
-
-### Scope
-- **Natural Language Meal & Workout Entry**: Parse unstructured text inputs (e.g., "3 eggs, 50g oats, black coffee") into structured food or exercise logs.
-- **Visual Meal Estimation**: Analyze food photographs to estimate meal components and portion sizes.
-- **Bring Your Own Key (BYOK)**: User configures personal API credentials for supported LLM providers (e.g., OpenAI, Google Gemini, Anthropic) or local on-device models.
-- **Data Privacy Disclosures**: Explicit confirmation modal displaying the exact JSON payload before any data leaves the device. Strictly disabled by default.
-
-### Done When
-- Core application operates 100% identically with AI features disabled.
-- When enabled, full transparency of transmitted network data is displayed to the user prior to invocation.
+The user must always be able to correct OCR/network data before it becomes trusted local data.
 
 ---
 
-## Phase 8: Release Readiness & Security Verification ⚠️
+## Priority S5 — Workout completion
 
-> [!WARNING]
-> Requires explicit approval prior to commencement.
+### Existing prototype
 
-Prepare the application for distribution and formal public release.
+- exercise catalogue;
+- sessions;
+- sets/reps/load;
+- RPE/RIR;
+- rest timer;
+- estimated 1RM;
+- personal records.
 
-### Scope
-- **Licensing Finalization**: Apply chosen license (e.g., PolyForm Noncommercial 1.0.0 or BSL 1.1) and implement Contributor License Agreement (CLA) workflow.
-- **Privacy Policy & Declarations**: Publish formal privacy policy compliant with Google Play Health Connect developer requirements.
-- **Production Build Configuration**: Release signing configuration, R8 optimization and obfuscation rules, reproducible build verification.
-- **Local Diagnostics**: On-device crash logging and diagnostic export without third-party tracking SDKs.
-- **Security Audit**: OWASP Mobile Application Security Verification Standard (MASVS) checklist review, verifying Keystore usage, SQL injection prevention, and intent security.
+### Remaining work
 
-### Done When
-- Signed release AAB passes all lint, security, and R8 checks.
-- Health Connect privacy and permissions verification requirements are fully met.
+- reusable workout templates;
+- editing completed sessions;
+- richer exercise catalogue;
+- bodyweight/assisted exercise semantics;
+- cardio/duration/distance models;
+- Health Connect exercise export;
+- progression charts;
+- volume by muscle/exercise/week.
+
+---
+
+## Priority S6 — Analytics integrity
+
+Cross-domain analysis is valuable only when source data is coherent.
+
+### Next targets
+
+- make imported/direct scale measurements part of the canonical weight series;
+- calorie intake vs smoothed weight trend;
+- steps vs weight change;
+- sleep vs training performance;
+- bodyweight vs strength;
+- resting HR vs sleep/activity;
+- configurable 7/14/30-day smoothing;
+- minimum sample-size thresholds;
+- transparent correlation coefficients and sample counts.
+
+Never present correlation as causation.
+
+---
+
+## Priority S7 — AI as optional enhancement
+
+AI is never required for core Fitness Hub behavior.
+
+### Rules
+
+- disabled by default;
+- BYOK/provider abstraction;
+- API key encrypted locally;
+- exact outgoing payload visible before sending;
+- meal/photo estimates require user confirmation;
+- health/fitness summaries must not be presented as medical diagnosis;
+- local/on-device alternatives preferred when practical.
+
+### Future
+
+- structured natural-language meal entry;
+- structured workout entry;
+- optional photo meal estimation;
+- natural-language questions over local analytics using minimized/redacted context.
+
+---
+
+## Priority S8 — Release readiness
+
+Before a public production release:
+
+- finalize source-available/non-commercial license;
+- implement contributor licensing policy/CLA if needed;
+- formal privacy policy;
+- Google Play Health Connect declarations;
+- production signing;
+- R8/release build verification;
+- dependency/license audit;
+- OWASP MASVS-oriented security review;
+- accessibility review;
+- localization review;
+- reproducible migration tests;
+- diagnostic export without remote telemetry.
+
+---
+
+## Distribution
+
+### Test channel
+
+Every successful relevant `main` build publishes the rolling `test-latest` prerelease APK.
+
+The test APK is signed with a deliberately public, repository-owned **test-only** key so new test builds can update previous test builds.
+
+### Production
+
+Production releases will use a separate private signing identity and versioned immutable releases. The public CI test key must never be reused.
+
+---
+
+## Architecture rule
+
+Do not add a backend merely because a feature could use one.
+
+A backend must solve a concrete requirement that cannot be reasonably met by the local-first architecture, and must remain optional unless the project's direction is explicitly changed.
