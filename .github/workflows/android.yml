@@ -28,7 +28,9 @@ jobs:
         run: chmod +x gradlew
 
       - name: Prepare stable test signing key
-        run: base64 --decode ci/fitnesshub-test.jks.b64 > "$RUNNER_TEMP/fitnesshub-test.jks"
+        run: |
+          base64 --decode ci/fitnesshub-test.jks.b64 > "$RUNNER_TEMP/fitnesshub-test.jks"
+          keytool -list -keystore "$RUNNER_TEMP/fitnesshub-test.jks" -storepass fitnesshub -alias fitnesshubtest >/dev/null
 
       - name: Test lint and build APK
         env:
