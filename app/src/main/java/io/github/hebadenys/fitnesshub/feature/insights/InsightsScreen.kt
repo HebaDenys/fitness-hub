@@ -1,5 +1,7 @@
 package io.github.hebadenys.fitnesshub.feature.insights
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -27,6 +29,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -86,6 +89,7 @@ fun InsightsScreen(
 
             BackupSection(
                 state = backupState,
+                weightCsv = content.weightCsv,
                 onCreate = viewModel::createBackup,
                 onRestore = viewModel::restoreBackup,
                 onDismiss = viewModel::dismissBackupState
@@ -150,12 +154,57 @@ private fun InsightCardView(
 @Composable
 private fun BackupSection(
     state: BackupState,
+    weightCsv: String,
     onCreate: (String) -> Unit,
     onRestore: (String, String) -> Unit,
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
     var passphrase by remember { mutableStateOf("") }
     var archive by remember { mutableStateOf("") }
+    var pendingBackup by remember { mutableStateOf<String?>(null) }
+    var fileStatus by remember { mutableStateOf<String?>(null) }
+
+    val saveBackupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/octet-stream")
+    ) { uri ->
+        val payload = pendingBackup
+        if (uri != null && payload != null) {
+            fileStatus = runCatching {
+                context.contentResolver.openOutputStream(uri)?.bufferedWriter()?.use { writer ->
+                    writer.write(payload)
+                } ?: error("Unable to open destination")
+                context.getString(R.string.backup_file_saved)
+            }.getOrElse { context.getString(R.string.backup_file_failed) }
+        }
+        pendingBackup = null
+    }
+
+    val openBackupLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri != null) {
+            fileStatus = runCatching {
+                archive = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use { reader ->
+                    reader.readText()
+                } ?: error("Unable to open backup")
+                context.getString(R.string.backup_file_loaded)
+            }.getOrElse { context.getString(R.string.backup_file_failed) }
+        }
+    }
+
+    val saveCsvLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/csv")
+    ) { uri ->
+        if (uri != null) {
+            fileStatus = runCatching {
+                context.contentResolver.openOutputStream(uri)?.bufferedWriter()?.use { writer ->
+                    writer.write(weightCsv)
+                } ?: error("Unable to open destination")
+                context.getString(R.string.export_csv_saved)
+            }.getOrElse { context.getString(R.string.backup_file_failed) }
+        }
+    }
 
     Card(modifier = Modifier.fillMaxWidth()) {
         Column(
@@ -195,11 +244,18 @@ private fun BackupSection(
                         text = stringResource(R.string.backup_created),
                         style = MaterialTheme.typography.bodyMedium
                     )
-                    // Selectable so the archive can be copied out: it is the
-                    // user's only way off the device.
+                    Button(
+                        onClick = {
+                            pendingBackup = state.archive
+                            saveBackupLauncher.launch("FitnessHub-backup.fhub")
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(R.string.backup_save_file))
+                    }
                     SelectionContainer {
                         Text(
-                            text = state.archive,
+                            text = state.archive.take(160) + if (state.archive.length > 160) "…" else "",
                             style = MaterialTheme.typography.bodySmall,
                             fontFamily = FontFamily.Monospace
                         )
@@ -217,6 +273,14 @@ private fun BackupSection(
                 BackupState.Idle -> Unit
             }
 
+            Button(
+                onClick = { openBackupLauncher.launch(arrayOf("application/octet-stream", "text/plain", "*/*")) },
+                enabled = state !is BackupState.Working,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.backup_open_file))
+            }
+
             OutlinedTextField(
                 value = archive,
                 onValueChange = { archive = it },
@@ -230,6 +294,27 @@ private fun BackupSection(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(stringResource(R.string.backup_restore))
+            }
+
+            Text(
+                text = stringResource(R.string.export_csv_description),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Button(
+                onClick = { saveCsvLauncher.launch("FitnessHub-weight.csv") },
+                enabled = weightCsv.isNotBlank(),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.export_weight_csv))
+            }
+
+            fileStatus?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
 
             if (state !is BackupState.Idle) {
