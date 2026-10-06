@@ -4,7 +4,7 @@
 
 App Android local-first per unificare salute, composizione corporea, alimentazione, attività, sonno, allenamenti, obiettivi, analytics e report.
 
-**Stato: pre-alpha, build di test 0.3.3.** Codice e test non equivalgono a compatibilità hardware verificata o prodotto pronto per credenziali sensibili.
+**Stato: pre-alpha, build di test 0.3.4.** Codice e test non equivalgono a compatibilità hardware verificata o prodotto pronto per credenziali sensibili.
 
 ## Piano e continuità
 
@@ -13,7 +13,7 @@ App Android local-first per unificare salute, composizione corporea, alimentazio
 - **[Roadmap](docs/ROADMAP.md):** ordine e dipendenze dei traguardi.
 - **[Istruzioni agenti](AGENTS.md):** cosa leggere e come avanzare in ogni sessione.
 
-Il prossimo incremento riguarda autenticazione/trasporto/sessione Xiaomi (`FH-XIA-02/03/04` con SAFE). Parser, archivio e committer Room sono già presenti; non sono ancora un collegamento cloud funzionante nell'interfaccia. Il piano guida le sessioni richieste dall'utente, non attiva esecuzioni schedulate autonome.
+Il prossimo incremento riguarda onboarding, selezione e stato Xiaomi (`FH-XIA-05/06/10`). Parser, archivio Room, motore autenticazione/trasporto/sessione esistono e sono testati con risposte sintetiche; **non c'è ancora un login Xiaomi utilizzabile nell'interfaccia**. Il piano guida le sessioni richieste dall'utente, non attiva esecuzioni schedulate autonome.
 
 ## Obiettivo
 
@@ -23,7 +23,7 @@ Core senza account Fitness Hub, backend obbligatorio, pubblicità, tracking o ab
 
 ## Xiaomi nello stesso APK
 
-Flusso principale **ancora da completare end-to-end**:
+Flusso principale **ancora da completare end-to-end sul telefono**:
 
 ```text
 S400 -> Xiaomi Home -> servizi Xiaomi -> connettore dentro Fitness Hub
@@ -38,7 +38,9 @@ S400 -> Xiaomi Home -> servizi Xiaomi -> connettore dentro Fitness Hub
 
 Nessun root, script, container, server o secondo APK ponte. Xiaomi Home resta installata. CSV e BLE presenti sono opzioni secondarie.
 
-La **0.3.3** aggiunge persistenza locale e un committer paginato testato con fixture; **non contiene ancora login, trasporto autenticato, sincronizzazione Xiaomi automatica o write-back HC**. [Protocollo](docs/connectors/xiaomi-protocol.md), [archivio](docs/connectors/xiaomi-storage.md) e [strategia](docs/connectors/xiaomi-s400.md).
+0.3.3 ha aggiunto archivio/binding/committer; **0.3.4 aggiunge motore di login normale, trasporto autenticato, sessione cifrata e collegamento alle letture Room**. Il runtime di rete rimane bloccato in attesa di firma privata/custodia/migrazione approvate. Challenge sono rilevati, non completati. Onboarding/selettore, sincronizzazione periodica, prova vendor/Redmi e write-back HC restano incompleti.
+
+[Protocollo](docs/connectors/xiaomi-protocol.md) — [Autenticazione/sessione](docs/connectors/xiaomi-auth.md) — [Archivio](docs/connectors/xiaomi-storage.md) — [Strategia](docs/connectors/xiaomi-s400.md).
 
 Per la Mi Band: companion compatibile -> Health Connect -> Fitness Hub. Modello/app e metriche realmente condivise vanno verificati. Il dato mostrato dal produttore non è automaticamente esposto a HC.
 
@@ -48,23 +50,25 @@ Per la Mi Band: companion compatibile -> Health Connect -> Fitness Hub. Modello/
 |---|---|
 | Fondazione | Kotlin/Compose/Material 3, Hilt, Room schema 6, un modulo Android. |
 | Health Connect | Lettura di 11 tipi e sync prototipale. Fasi sonno, tipi aggiuntivi, storico completo e write-back da completare; finestra applicativa 30/365 giorni. |
-| Xiaomi | Parser, binding singolo subject/device, snapshot con provenienza, committer/checkpoint Room verificati con fixture. CSV/BLE preesistenti; nessun login live. |
+| Xiaomi | Protocollo, binding singolo subject/device, snapshot, committer, autenticazione e sessione verificati con fixture; rete reale gated e UI non pronta. CSV/BLE preesistenti. |
 | Nutrizione | Catalogo locale, diario, barcode/OCR e Open Food Facts prototipali. |
 | Training | Esercizi, sessioni, serie, RPE/RIR e stime 1RM/PR prototipali. |
 | Analytics | Grafici e correlazioni iniziali; repository canonico comune e deduplica cross-source da completare. |
-| Backup | Formato v2 delle 19 tabelle dei dati, ripristino transazionale e controlli conflitti verificati con SQLite nativo. Esclude credenziali, preferenze e media; stesso schema DB richiesto. |
+| Backup | Formato v2 delle 19 tabelle dati, ripristino transazionale e conflitti verificati con SQLite nativo. Esclude credenziali, preferenze e media; stesso schema DB richiesto. |
 | AI | BYOK/configurazione/trasporto iniziali, non riconoscimento pasti completo. |
 | Distribuzione | APK e checksum in release; chiave pubblica TEST-ONLY, non firma privata di produzione. |
 
-[CI 0.3.3 verificata](https://github.com/HebaDenys/fitness-hub/actions/runs/37525676439): build, lint, suite Jupiter + Room/SQLite nativo sotto Robolectric, firma e pubblicazione passati. Non sostituisce prove fisiche su Redmi/S400/companion. Il dettaglio aggiornato è in [PROGRESS.md](docs/PROGRESS.md).
+[CI 0.3.4 verificata](https://github.com/HebaDenys/fitness-hub/actions/runs/37530351539): 346 test app, 11 controlli CI/privacy, build, lint, firma e pubblicazione passati. Test con connessioni simulate, AES di test e Room/SQLite nativo sotto Robolectric non sostituiscono prova account Xiaomi, handshake remoto, hardware Keystore o S400 fisica. Dettagli in [PROGRESS.md](docs/PROGRESS.md).
 
 ## Installazione e recupero
 
-Scaricare l'APK dalla [prerelease test-latest](https://github.com/HebaDenys/fitness-hub/releases/tag/test-latest), controllando versione, commit e note. La chiave test nota pubblicamente mantiene continuità fra build compatibili ma non autentica il distributore contro chi possiede la stessa chiave. Firma privata/custodia/migrazione restano un gate prima del normale uso con login sensibili.
+[APK 0.3.4](https://github.com/HebaDenys/fitness-hub/releases/download/test-latest/FitnessHub-v0.3.4-debug.apk) dalla [prerelease test-latest](https://github.com/HebaDenys/fitness-hub/releases/tag/test-latest). Controllare versione, commit e note. Il motore Xiaomi è incluso ma il login reale è disabilitato.
 
-**Non disinstallare una versione con dati importanti per risolvere un errore di firma.** Il vecchio package Open Health Hub e `io.github.hebadenys.fitnesshub` sono identità distinte, senza migrazione automatica dimostrata.
+La chiave test pubblica mantiene continuità fra build compatibili ma non autentica il distributore contro chi possiede la stessa chiave. Firma privata/custodia/migrazione restano un gate prima del normale uso con login sensibili.
 
-Il backup v2 è accessibile in **Insights -> Backup**: crea file cifrato, apre e ripristina. Copre tutte le righe registrate nel DB, non l'intero ambiente app. Massimo 32 MiB decifrati, stesso schema, conflitti annullano tutto senza sovrascrivere. I file v1 sono parziali e ammessi solo in archivio salute vuoto; catalogo esercizi e impostazioni del profilo possono rimanere. Prova fisica di trasferimento e portabilità fra schemi diversi ancora da completare. [Formato e limiti](docs/backup-format-v2.md).
+**Non disinstallare una versione con dati importanti per risolvere un errore di firma.** Il vecchio package Open Health Hub e `io.github.hebadenys.fitnesshub` sono identità distinte, senza migrazione automatica dimostrata. La 0.3.4 non cambia package, chiave test o database rispetto alla 0.3.3.
+
+Backup v2 in **Insights -> Backup**: file cifrato, apertura e ripristino. Copre righe DB, non l'intero ambiente app. Massimo 32 MiB decifrati, stesso schema; conflitti annullano tutto senza sovrascrivere. V1 parziale solo in archivio salute vuoto; catalogo esercizi e impostazioni del profilo possono rimanere. Prova fisica di trasferimento e portabilità fra schemi diversi ancora da completare. [Formato e limiti](docs/backup-format-v2.md).
 
 ## Architettura e qualità
 
@@ -74,20 +78,20 @@ Mancante non significa zero. Importato non significa misurato: una stima vendor 
 
 ## Build
 
-JDK 21, Gradle Wrapper 8.13, compile SDK 36, target SDK 35, min SDK 28. Verificare sempre le versioni effettive nei file Gradle.
+JDK 21, Gradle Wrapper 8.13, compile SDK 36, target SDK 35, min SDK 28. Verificare le versioni effettive nei file Gradle.
 
 ```bash
 ./gradlew testDebugUnitTest lintDebug assembleDebug
 python3 -m unittest discover -s ci -p 'test_*.py' -v
 ```
 
-Su Windows usare `gradlew.bat`. APK locale in `app/build/outputs/apk/debug/`. I test includono Jupiter e Vintage/Robolectric con SQLite nativo; conservare entrambi. Gli schemi JSON devono provenire da KSP. La CI verifica anche certificato e checksum prima della pubblicazione.
+Su Windows usare `gradlew.bat`. APK locale in `app/build/outputs/apk/debug/`. I test includono Jupiter e Vintage/Robolectric con SQLite nativo; conservare entrambi. Gli schemi JSON devono provenire da KSP. La CI verifica certificato e checksum prima della pubblicazione.
 
 ## Privacy e licenza
 
-Nessun backend Fitness Hub obbligatorio o SDK di tracking. Backup OS automatico e device transfer esclusi esplicitamente; file esportati dall'utente possono essere salvati presso un document provider cloud. Le policy vendor, sessioni, UI dei segreti e comportamento OEM devono essere verificati prima dei login reali.
+Nessun backend Fitness Hub obbligatorio o SDK di tracking. Backup OS automatico e device transfer esclusi; file esportati dall'utente possono essere salvati presso un document provider cloud. La sessione Xiaomi è cifrata separatamente in noBackupFilesDir e non compare nel backup dati. Policy vendor, UI dei segreti e comportamento OEM devono essere verificati prima dei login reali.
 
-**Licenza del progetto da finalizzare.** Direzione source-available, uso personale privato gratuito e licenza commerciale separata: non presentarla come licenza OSI se limita l'uso commerciale. Il piano non applica automaticamente PolyForm/MIT/Apache al progetto; upstream e dipendenze mantengono i loro avvisi.
+**Licenza del progetto da finalizzare.** Direzione source-available, uso personale gratuito e licenza commerciale separata: non presentarla come licenza OSI se limita l'uso commerciale. Il piano non applica automaticamente PolyForm/MIT/Apache al progetto; upstream e dipendenze mantengono i loro avvisi.
 
 [Contributi](CONTRIBUTING.md) e [sostenibilità](docs/SUSTAINABILITY.md). Nessuna monetizzazione tramite vendita di dati sanitari o paywall obbligatorio sul core locale.
 

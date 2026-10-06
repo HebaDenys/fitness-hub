@@ -39,13 +39,13 @@ La precedente preferenza per CSV storico + BLE live è superata. Non rifiutare i
 
 ## Come scegliere il lavoro
 
-Riprendere il task attivo o il primo pronto in `docs/PROGRESS.md`. `FH-XIA-01` parser/contratti è nella 0.3.2; la 0.3.3 aggiunge persistenza/binding cloud, committer Room, schema 6 e backup DB v2 con test SQLite nativi. Non rifare questi incrementi da zero. I workstream DATA/PORT complessivi restano parziali: leggere i criteri residui nel registro.
+Riprendere il task attivo o il primo pronto in `docs/PROGRESS.md`. `FH-XIA-01` parser/contratti è nella 0.3.2; 0.3.3 aggiunge persistenza/binding cloud, committer Room, schema 6 e backup DB v2 con test SQLite nativi. 0.3.4 aggiunge autenticazione normale, trasporto/session store e collegamento al reader, verificati con 49 nuovi test e CI verde. Non rifare questi incrementi da zero.
 
-Il prossimo passo registrato è `FH-XIA-02/03/04` con SAFE: trasporto/autenticazione/sessione verificabili senza credenziali reali, poi integrazione UI. Il gate firma privata resta per i login reali, non deve bloccare tutti i test indipendenti. Verificare che il registro non sia cambiato nel frattempo.
+Il prossimo passo è `FH-XIA-05/06/10`: onboarding/selezione/stato UI, con test sintetici. Leggere `docs/connectors/xiaomi-auth.md`: challenge sono solo rilevati; redirect STS non seguiti. Il runtime reale usa `AwaitingPrivateSigning`: niente rimozione del gate o flag permissivo senza risolvere la decisione di firma privata. La UI deve ricevere metadati sanitizzati, non il DTO con token. Usare una sola istanza client/store per app. Verificare che il registro non sia cambiato.
 
 Il proprietario ha autorizzato le attività di questo piano per le sessioni che richiede e il lavoro diretto su `main`. Non richiedere di nuovo il consenso per «Phase 3» o altre fasi già incluse. Non rieseguire la pianificazione al posto dello sviluppo a ogni «continua».
 
-Una sessione deve chiudere una vertical slice utile o un prerequisito eseguibile verificabile. Evitare molte feature parziali contemporanee. Se un test hardware o un login è bloccato, completare lavoro indipendente previsto dal piano e registrare il blocco.
+Una sessione deve chiudere una vertical slice utile o un prerequisito eseguibile verificabile. Evitare molte feature parziali contemporanee. Se un test hardware o un login è bloccato, completare lavoro indipendente previsto dal piano e registrare il blocco. I test senza credenziali non richiedono il telefono.
 
 ## Esecuzione, commit e prove
 
@@ -54,7 +54,7 @@ Una sessione deve chiudere una vertical slice utile o un prerequisito eseguibile
 - Eseguire test pertinenti e `./gradlew testDebugUnitTest lintDebug assembleDebug` per codice/config Android; anche `python3 -m unittest discover -s ci -p 'test_*.py' -v` quando pertinente.
 - Test Room/dispositivo non sostituibili con mock. Mantenere i test Vintage/Robolectric nativi insieme alla suite Jupiter; non sostituiscono il test fisico. Migrazioni, backup e outbox fanno parte di ogni cambiamento persistente.
 - Conservare gli schemi Room generati da KSP, senza inventare identityHash. Se il toolchain genera output in CI, adottarlo dopo revisione, non modificare automaticamente main durante la build.
-- Non disabilitare lint/test per ottenere verde e non dichiarare eseguito un comando non eseguito. Distinguere harness offline, JUnit e dispositivo reale.
+- Non disabilitare lint/test per ottenere verde e non dichiarare eseguito un comando non eseguito. Distinguere harness offline, JUnit, connessioni HTTP fake e dispositivo/Keystore/TLS reali.
 - Per soli documenti verificare link, ID, dipendenze e diff. È consentito evitare la build Android quando nessun file eseguibile cambia e le regole di branch lo consentono; dichiararlo nel riepilogo.
 - Verificare SHA software e APK/release effettivi, non una run di una versione precedente. Un commit successivo solo documentale o di adozione dell'esatto output schema già verificato non richiede un APK identico.
 - Aggiornare `docs/PROGRESS.md` con risultati, file/commit, test e livello di verifica, limiti e prossimo passo. Nessun task VERIFIED solo perché esiste una classe o la build compila.

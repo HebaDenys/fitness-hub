@@ -2,7 +2,7 @@
 
 **Piano completo:** [MASTER_PLAN.md](MASTER_PLAN.md).  
 **Punto da cui ripartire:** [PROGRESS.md](PROGRESS.md).  
-**Aggiornamento:** 6 ottobre 2026, consegna 0.3.3.
+**Aggiornamento:** 6 ottobre 2026, consegna 0.3.4.
 
 Questa roadmap è un indice, non una seconda copia del backlog. Le vecchie Phase 1–7 e il percorso CSV storico/BLE principale sono superati: Xiaomi Cloud integrato nello stesso APK, archivio locale completo, controlli cross-source e interoperabilità HC.
 
@@ -38,13 +38,13 @@ Backup e sicurezza iniziano in T0/T1: T7 indica la prova completa di trasferimen
 
 ## Incrementi verificati, non traguardi completi
 
-0.3.2: parser/contratti Xiaomi e prerequisiti privacy. 0.3.3: binding persistente e archivio cloud con committer Room, migrazioni schema 6 e backup database v2 collegato a Insights. Test nativi SQLite e CI verificati nel registro.
+0.3.2: parser/contratti Xiaomi e prerequisiti privacy. 0.3.3: binding persistente, archivio e committer Room, migrazioni schema 6 e backup database v2. 0.3.4: motore autenticazione in tre passi, trasporto HTTPS limitato, sessione cifrata e coordinamento del reader Room. Le prove del nuovo blocco usano risposte sintetiche e SQLite nativo; CI, firma e APK verificati nel registro.
 
-T1 non è ancora completo: mancano trasporto autenticato, sessione, onboarding e prova vendor. T7 non è completo: backup v2 copre righe DB, non preferenze/media, e il trasferimento fisico/cross-schema resta da verificare.
+**T1 non è completo:** mancano onboarding/selezione, completamento challenge, integrazione UI/periodica e prova reale vendor. Il runtime è bloccato fino alla decisione sulla firma privata; non è un login utilizzabile sul telefono. T7 non è completo: backup v2 copre righe DB, non preferenze/media, e trasferimento fisico/cross-schema resta da verificare.
 
 ## Prossimo incremento
 
-`FH-XIA-02/03/04` con gate SAFE: ricerca autenticazione effettiva, trasporto HTTPS limitato e session store protetto, testabili senza credenziali reali. Usare il parser e il committer già presenti; non rifarli. Firma privata/custodia/migrazione da approvare prima dei login reali, non prima di ogni test con fixture.
+`FH-XIA-05/06/10`: onboarding regione/modello/device/subject e stato delle sorgenti, riusando client/sessione/archivio già presenti. Test UI/contratti con fixture prima delle credenziali reali. `FH-SAFE-03` rimane per chiave privata/custodia/migrazione prima del vero login; non blocca lo sviluppo indipendente.
 
 ## Regole
 
