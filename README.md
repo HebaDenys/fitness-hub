@@ -86,7 +86,7 @@ Automated test builds are generated on every push to the repository:
 ## Build from Source
 
 **Requirements:**
-- JDK 17 (e.g., Eclipse Temurin 17)
+- JDK 21 (Gradle 8.13 does not support running on JDK 25)
 - Android SDK Platform 36 (Build-Tools 35.x or 36.x)
 
 ```bash

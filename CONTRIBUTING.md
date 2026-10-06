@@ -7,7 +7,7 @@ Thank you for your interest in contributing to Fitness Hub. This project is buil
 ## 1. Development Setup
 
 ### Prerequisites
-- **JDK**: Java Development Kit 17 (Eclipse Temurin 17 recommended).
+- **JDK**: Java Development Kit 21. Gradle 8.13 cannot run on JDK 25 (`IllegalArgumentException: 25.0.1`); the build pins the toolchain to 21.
 - **Android SDK**:
   - Compile SDK: `36`
   - Target SDK: `35`
