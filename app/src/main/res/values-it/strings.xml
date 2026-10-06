@@ -277,4 +277,14 @@
     <string name="ai_confirm_body">Questo è il contenuto esatto che lascierà il dispositivo. La tua chiave è mostrata mascherata. Nulla viene inviato finché non tocchi invia.</string>
     <string name="ai_confirm_send">Invia</string>
     <string name="ai_confirm_cancel">Annulla</string>
+
+    <string name="backup_save_file">Salva file di backup cifrato</string>
+    <string name="backup_open_file">Apri file di backup</string>
+    <string name="backup_file_saved">File di backup salvato.</string>
+    <string name="backup_file_loaded">File di backup caricato. Inserisci la passphrase e ripristina.</string>
+    <string name="backup_file_failed">Impossibile leggere o scrivere il file selezionato.</string>
+    <string name="export_weight_csv">Esporta CSV del peso</string>
+    <string name="export_csv_description">Esporta l’andamento del peso in un file CSV standard per fogli di calcolo e analisi personali.</string>
+    <string name="export_csv_saved">File CSV salvato.</string>
+
 </resources>
