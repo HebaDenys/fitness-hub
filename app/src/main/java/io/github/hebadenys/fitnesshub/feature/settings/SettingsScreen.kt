@@ -54,6 +54,7 @@ import io.github.hebadenys.fitnesshub.PrivacyRationaleActivity
 import io.github.hebadenys.fitnesshub.R
 import io.github.hebadenys.fitnesshub.core.model.HealthMetrics
 import io.github.hebadenys.fitnesshub.feature.scale.ScaleSettingsSection
+import io.github.hebadenys.fitnesshub.feature.xiaomi.XiaomiSourceEntry
 import io.github.hebadenys.fitnesshub.ui.state.ScreenStateHandler
 import io.github.hebadenys.fitnesshub.ui.theme.FitnessHubTheme
 
@@ -61,6 +62,7 @@ import io.github.hebadenys.fitnesshub.ui.theme.FitnessHubTheme
 @Composable
 fun SettingsScreen(
     onNavigateToInsights: () -> Unit = {},
+    onNavigateToXiaomi: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -117,6 +119,8 @@ fun SettingsScreen(
                     .padding(spacing.md),
                 verticalArrangement = Arrangement.spacedBy(spacing.md)
             ) {
+                XiaomiSourceEntry(onClick = onNavigateToXiaomi)
+
                 // Section: Health Connect Status
                 Text(
                     text = stringResource(R.string.settings_hc_section),
@@ -328,28 +332,18 @@ fun SettingsScreen(
                 }
 
                 Spacer(modifier = Modifier.height(spacing.lg))
-
                 ScaleSettingsSection()
-
                 Spacer(modifier = Modifier.height(spacing.lg))
-
                 InsightsSettingsSection(onClick = onNavigateToInsights)
-
                 Spacer(modifier = Modifier.height(spacing.lg))
-
                 AiSettingsSection()
-
                 Spacer(modifier = Modifier.height(spacing.lg))
             }
         }
     }
 }
 
-/**
- * Entry point to the cross-domain view. Insights is not a tab: it is a secondary
- * surface, so it lives in Settings rather than displacing a primary destination
- * in the bottom bar.
- */
+/** Secondary analytical surface, separate from primary bottom-bar destinations. */
 @Composable
 private fun InsightsSettingsSection(onClick: () -> Unit) {
     val spacing = FitnessHubTheme.spacing
@@ -362,22 +356,11 @@ private fun InsightsSettingsSection(onClick: () -> Unit) {
         )
     ) {
         Column(modifier = Modifier.padding(spacing.md)) {
-            Text(
-                text = stringResource(R.string.insights_title),
-                style = MaterialTheme.typography.titleMedium
-            )
-            Text(
-                text = stringResource(R.string.insights_settings_description),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Text(text = stringResource(R.string.insights_title), style = MaterialTheme.typography.titleMedium)
+            Text(text = stringResource(R.string.insights_settings_description), style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.height(spacing.md))
-            OutlinedButton(
-                onClick = onClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .defaultMinSize(minHeight = dimensions.minTouchTarget)
-            ) {
+            OutlinedButton(onClick = onClick, modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = dimensions.minTouchTarget)) {
                 Text(text = stringResource(R.string.insights_open))
             }
         }
@@ -385,49 +368,22 @@ private fun InsightsSettingsSection(onClick: () -> Unit) {
 }
 
 @Composable
-private fun PermissionBadge(
-    isGranted: Boolean,
-    modifier: Modifier = Modifier
-) {
+private fun PermissionBadge(isGranted: Boolean, modifier: Modifier = Modifier) {
     val spacing = FitnessHubTheme.spacing
     val cornerRadius = FitnessHubTheme.cornerRadius
     val dimensions = FitnessHubTheme.dimensions
-
     val (bg, fg, label, icon) = if (isGranted) {
-        Quad(
-            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-            MaterialTheme.colorScheme.primary,
-            stringResource(R.string.settings_permission_granted),
-            Icons.Default.Check
-        )
+        Quad(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f), MaterialTheme.colorScheme.primary,
+            stringResource(R.string.settings_permission_granted), Icons.Default.Check)
     } else {
-        Quad(
-            MaterialTheme.colorScheme.surfaceVariant,
-            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
-            stringResource(R.string.settings_permission_denied),
-            Icons.Default.Close
-        )
+        Quad(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            stringResource(R.string.settings_permission_denied), Icons.Default.Close)
     }
-
-    Row(
-        modifier = modifier
-            .clip(RoundedCornerShape(cornerRadius.sm))
-            .background(bg)
-            .padding(horizontal = spacing.sm, vertical = spacing.xxs),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(spacing.xxs)
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = fg,
-            modifier = Modifier.size(dimensions.iconSmall)
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = fg
-        )
+    Row(modifier = modifier.clip(RoundedCornerShape(cornerRadius.sm)).background(bg)
+        .padding(horizontal = spacing.sm, vertical = spacing.xxs), verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(spacing.xxs)) {
+        Icon(imageVector = icon, contentDescription = null, tint = fg, modifier = Modifier.size(dimensions.iconSmall))
+        Text(text = label, style = MaterialTheme.typography.labelSmall, color = fg)
     }
 }
 

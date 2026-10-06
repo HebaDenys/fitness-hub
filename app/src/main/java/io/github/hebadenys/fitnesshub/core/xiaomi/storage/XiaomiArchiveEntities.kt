@@ -39,11 +39,7 @@ data class XiaomiBindingEntity(
     val confirmedAtMillis: Long
 ) : PrivateArchiveValue()
 
-/**
- * Immutable, sanitized protocol snapshots, NOT a claim of a vendor revision ID.
- * An eventKey is only a candidate grouping. Different contents are retained, not overwritten.
- * Per-metric value/raw/unit/method/issues and vendor extensions are in snapshotJson.
- */
+/** Immutable source snapshots. eventKey is a candidate grouping, not a proven vendor revision. */
 @Entity(
     tableName = "xiaomi_snapshots",
     primaryKeys = ["connectionId", "contentHash"],
@@ -62,7 +58,6 @@ data class XiaomiSnapshotEntity(
     val snapshotJson: String
 ) : PrivateArchiveValue()
 
-/** Durable page boundary. A generation prevents an old worker writing into a newer backfill. */
 @Entity(
     tableName = "xiaomi_checkpoints",
     foreignKeys = [ForeignKey(entity = XiaomiBindingEntity::class, parentColumns = ["connectionId"], childColumns = ["connectionId"])]
@@ -79,6 +74,8 @@ data class XiaomiCheckpointEntity(
     val otherRows: Long,
     val updatedAtMillis: Long
 ) : PrivateArchiveValue()
+
+data class XiaomiArchiveRange(val oldest: Long?, val newest: Long?) : PrivateArchiveValue()
 
 @Dao
 interface XiaomiArchiveDao {
@@ -104,4 +101,8 @@ interface XiaomiArchiveDao {
     suspend fun snapshots(connectionId: String): List<XiaomiSnapshotEntity>
     @Query("SELECT COUNT(*) FROM xiaomi_snapshots")
     suspend fun snapshotCount(): Int
+    @Query("SELECT * FROM xiaomi_snapshots WHERE connectionId = :connectionId ORDER BY createTimeMillis DESC, contentHash LIMIT :limit OFFSET :offset")
+    suspend fun snapshotPage(connectionId: String, limit: Int, offset: Int): List<XiaomiSnapshotEntity>
+    @Query("SELECT MIN(measuredAtMillis) AS oldest, MAX(measuredAtMillis) AS newest FROM xiaomi_snapshots WHERE connectionId = :connectionId")
+    suspend fun range(connectionId: String): XiaomiArchiveRange
 }

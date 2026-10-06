@@ -14,7 +14,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import java.time.Clock
 
-/** Coordinates protocol, authenticated HTTP, protected session and Room committer. */
+/** One instance per app: all authenticated operations share lifecycle and session ownership. */
 internal class XiaomiCloudClient(
     private val http: XiaomiHttpExchange,
     private val sessions: XiaomiSessionStore,
@@ -28,47 +28,80 @@ internal class XiaomiCloudClient(
     private var generation = 0L
     private var sessionBlocked = false
 
-    suspend fun login(connectionId: String, region: XiaomiRegion, username: String, password: CharArray): Unit = try {
+    fun networkBlock(): XiaomiAccessFailure? = try {
+        gate.requireAllowed(); null
+    } catch (failure: XiaomiAccessException) { failure.reason }
+
+    /** Reading connection status never makes a network request or reveals service secrets. */
+    suspend fun accountInfo(): XiaomiAccountInfo? = lock.withLock {
+        if (sessionBlocked) return@withLock null
+        val session = sessions.load() ?: return@withLock null
+        checkExpiry(session)
+        XiaomiAccountInfo(session.connectionId, session.region, session.userId)
+    }
+
+    suspend fun login(connectionId: String, region: XiaomiRegion, username: String, password: CharArray,
+        expectedUserId: String? = null): Unit = try {
         operation { epoch ->
             loginLock.withLock {
-                assertCurrent(epoch)
-                gate.requireAllowed()
-                val session = XiaomiAuthentication(http, clock).login(connectionId, region, username, password)
-                lock.withLock {
-                    checkCurrent(epoch)
-                    val previous = if (sessionBlocked) null else try {
-                        sessions.load()
-                    } catch (failure: XiaomiAccessException) {
-                        // A verified fresh login can replace an unreadable, already discarded session.
-                        if (failure.reason != XiaomiAccessFailure.SESSION_UNREADABLE) throw failure
-                        null
+                readLock.withLock {
+                    assertCurrent(epoch)
+                    gate.requireAllowed()
+                    val session = XiaomiAuthentication(http, clock).login(connectionId, region, username, password)
+                    lock.withLock {
+                        checkCurrent(epoch)
+                        if (expectedUserId != null && session.userId != expectedUserId) {
+                            accessFailure(XiaomiAccessFailure.SESSION_SCOPE_MISMATCH)
+                        }
+                        val previous = if (sessionBlocked) null else try {
+                            sessions.load()
+                        } catch (failure: XiaomiAccessException) {
+                            if (failure.reason != XiaomiAccessFailure.SESSION_UNREADABLE) throw failure
+                            null
+                        }
+                        if (previous != null && (previous.userId != session.userId || previous.region != region || previous.connectionId != connectionId)) {
+                            accessFailure(XiaomiAccessFailure.SESSION_SCOPE_MISMATCH)
+                        }
+                        sessions.save(session)
+                        sessionBlocked = false
                     }
-                    if (previous != null && (previous.userId != session.userId || previous.region != region || previous.connectionId != connectionId)) {
-                        accessFailure(XiaomiAccessFailure.SESSION_SCOPE_MISMATCH)
-                    }
-                    sessions.save(session)
-                    sessionBlocked = false
                 }
             }
         }
     } finally { password.fill('\u0000') }
 
+    suspend fun discover(model: String, beforeMillis: Long): XiaomiDiscoveryPage = operation { epoch ->
+        readLock.withLock {
+            gate.requireAllowed()
+            if (!XiaomiModels.valid(model)) accessFailure(XiaomiAccessFailure.INVALID_INPUT)
+            val session = lock.withLock { checkCurrent(epoch); requireSession() }
+            val scope = XiaomiScope(session.connectionId, session.region, model, session.userId)
+            withSafeErrors(epoch) {
+                val source = XiaomiAuthenticatedPageSource(http, session, scope, clock)
+                val page = XiaomiDiscoveryReader(clock).read(source, scope, beforeMillis)
+                assertCurrent(epoch)
+                page
+            }
+        }
+    }
+
+    /** Selection is checked again against the currently usable account, not a stale screen. */
+    suspend fun confirmSelection(archive: RoomXiaomiArchive, scope: XiaomiScope, subject: XiaomiSubject, deviceId: String) =
+        operation { epoch ->
+            lock.withLock {
+                gate.requireAllowed()
+                checkCurrent(epoch)
+                requireSession(scope)
+                archive.confirmBinding(scope, subject, deviceId)
+                Unit
+            }
+        }
+
     suspend fun readHistory(archive: RoomXiaomiArchive, scope: XiaomiScope, beforeMillis: Long, maxPages: Int = 100): XiaomiHistoryResult =
         operation { epoch ->
             readLock.withLock {
                 gate.requireAllowed()
-                val session = lock.withLock {
-                    checkCurrent(epoch)
-                    if (sessionBlocked) accessFailure(XiaomiAccessFailure.SESSION_MISSING)
-                    val current = sessions.load() ?: accessFailure(XiaomiAccessFailure.SESSION_MISSING)
-                    if (!current.matches(scope)) accessFailure(XiaomiAccessFailure.SESSION_SCOPE_MISMATCH)
-                    if (!current.usableAt(clock.millis())) {
-                        sessionBlocked = true
-                        sessions.clear()
-                        accessFailure(XiaomiAccessFailure.SESSION_EXPIRED)
-                    }
-                    current
-                }
+                val session = lock.withLock { checkCurrent(epoch); requireSession(scope) }
                 val source = XiaomiAuthenticatedPageSource(http, session, scope, clock)
                 val guarded = XiaomiPageSource { request ->
                     assertCurrent(epoch)
@@ -76,23 +109,36 @@ internal class XiaomiCloudClient(
                     assertCurrent(epoch)
                     response
                 }
-                try {
-                    archive.read(guarded, scope, beforeMillis, maxPages)
-                } catch (failure: XiaomiAccessException) {
-                    if (failure.reason == XiaomiAccessFailure.AUTH_REQUIRED) {
-                        lock.withLock {
-                            if (generation == epoch) {
-                                sessionBlocked = true
-                                sessions.clear()
-                            }
-                        }
-                    }
-                    throw failure
-                }
+                withSafeErrors(epoch) { archive.read(guarded, scope, beforeMillis, maxPages) }
             }
         }
 
-    /** Cancel running AND queued operations; no database mutation or remote deletion. */
+    /** Call only while holding lock. Never regenerate or silently switch a service session. */
+    private suspend fun requireSession(scope: XiaomiScope? = null): XiaomiSession {
+        if (sessionBlocked) accessFailure(XiaomiAccessFailure.SESSION_MISSING)
+        val session = sessions.load() ?: accessFailure(XiaomiAccessFailure.SESSION_MISSING)
+        if (scope != null && !session.matches(scope)) accessFailure(XiaomiAccessFailure.SESSION_SCOPE_MISMATCH)
+        checkExpiry(session)
+        return session
+    }
+
+    private suspend fun checkExpiry(session: XiaomiSession) {
+        if (!session.usableAt(clock.millis())) {
+            sessionBlocked = true
+            sessions.clear()
+            accessFailure(XiaomiAccessFailure.SESSION_EXPIRED)
+        }
+    }
+
+    private suspend fun <T> withSafeErrors(epoch: Long, block: suspend () -> T): T = try {
+        block()
+    } catch (failure: XiaomiAccessException) {
+        if (failure.reason == XiaomiAccessFailure.AUTH_REQUIRED) lock.withLock {
+            if (generation == epoch) { sessionBlocked = true; sessions.clear() }
+        }
+        throw failure
+    }
+
     suspend fun disconnect() = withContext(NonCancellable) {
         lock.withLock {
             generation++
@@ -117,11 +163,7 @@ internal class XiaomiCloudClient(
     }
 }
 
-/**
- * Production assembly stays blocked until the approved private-signing policy exists.
- * Reuse one runtime per app. No UI, build flag or silent default enables real credentials.
- * Tests inject synthetic transports/gates directly, never a real account.
- */
+/** Gate remains closed until owner-approved private signing/custody/migration. */
 internal class XiaomiCloudRuntime private constructor(val client: XiaomiCloudClient, val archive: RoomXiaomiArchive) {
     companion object {
         fun create(context: Context, database: HealthDatabase): XiaomiCloudRuntime {

@@ -35,6 +35,7 @@ import io.github.hebadenys.fitnesshub.feature.nutrition.NutritionScreen
 import io.github.hebadenys.fitnesshub.feature.settings.SettingsScreen
 import io.github.hebadenys.fitnesshub.feature.sleep.SleepScreen
 import io.github.hebadenys.fitnesshub.feature.workout.WorkoutScreen
+import io.github.hebadenys.fitnesshub.feature.xiaomi.XiaomiSourceScreen
 import io.github.hebadenys.fitnesshub.ui.theme.FitnessHubTheme
 
 @AndroidEntryPoint
@@ -65,6 +66,7 @@ private enum class Screen(
     companion object {
         const val SETTINGS_ROUTE = "settings"
         const val INSIGHTS_ROUTE = "insights"
+        const val XIAOMI_ROUTE = "sources/xiaomi"
     }
 }
 
@@ -147,23 +149,23 @@ fun FitnessHubAppRoot() {
                     }
                 )
             }
-            composable(Screen.Nutrition.route) {
-                NutritionScreen()
-            }
-            composable(Screen.Workout.route) {
-                WorkoutScreen()
-            }
+            composable(Screen.Nutrition.route) { NutritionScreen() }
+            composable(Screen.Workout.route) { WorkoutScreen() }
             composable(Screen.SETTINGS_ROUTE) {
                 SettingsScreen(
                     onNavigateToInsights = {
-                        navController.navigate(Screen.INSIGHTS_ROUTE) {
-                            launchSingleTop = true
-                        }
+                        navController.navigate(Screen.INSIGHTS_ROUTE) { launchSingleTop = true }
+                    },
+                    onNavigateToXiaomi = {
+                        navController.navigate(Screen.XIAOMI_ROUTE) { launchSingleTop = true }
                     }
                 )
             }
             composable(Screen.INSIGHTS_ROUTE) {
                 InsightsScreen(onNavigateBack = { navController.popBackStack() })
+            }
+            composable(Screen.XIAOMI_ROUTE) {
+                XiaomiSourceScreen(onBack = { navController.popBackStack() })
             }
         }
     }

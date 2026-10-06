@@ -4,7 +4,7 @@ plugins {
 }
 android {
  namespace="io.github.hebadenys.fitnesshub"; compileSdk=36
- defaultConfig { applicationId="io.github.hebadenys.fitnesshub"; minSdk=28; targetSdk=35; versionCode=6; versionName="0.3.4"; testInstrumentationRunner="androidx.test.runner.AndroidJUnitRunner" }
+ defaultConfig { applicationId="io.github.hebadenys.fitnesshub"; minSdk=28; targetSdk=35; versionCode=7; versionName="0.3.5"; testInstrumentationRunner="androidx.test.runner.AndroidJUnitRunner" }
  buildFeatures { compose=true }
  compileOptions { sourceCompatibility=JavaVersion.VERSION_17; targetCompatibility=JavaVersion.VERSION_17 }
  kotlin {
@@ -60,5 +60,7 @@ dependencies {
   testImplementation("junit:junit:4.13.2")
   testRuntimeOnly("org.junit.vintage:junit-vintage-engine:5.11.4")
   testImplementation("org.robolectric:robolectric:4.16.1")
+  testImplementation("androidx.compose.ui:ui-test-junit4")
+  debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
 ksp { arg("room.schemaLocation","$projectDir/schemas") }
