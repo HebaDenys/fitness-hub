@@ -34,7 +34,9 @@ class DatabaseBackupIdentityTest {
             val encoded = DatabaseBackupService(source).createBackup("test-only".toCharArray())
             val root = JSONObject(String(BackupCrypto.decryptFromBase64(encoded, "test-only".toCharArray()), Charsets.UTF_8))
             val tables = root.getJSONArray("tables")
-            val snapshots = tables.getJSONObject(tables.length() - 1)
+            val snapshots = (0 until tables.length())
+                .map { tables.getJSONObject(it) }
+                .single { it.getString("name") == "xiaomi_snapshots" }
             val columns = snapshots.getJSONArray("columns")
             val payloadIndex = (0 until columns.length()).single { columns.getString(it) == "snapshotJson" }
             val row = snapshots.getJSONArray("rows").getJSONArray(0)
