@@ -49,6 +49,8 @@ import io.github.hebadenys.fitnesshub.ui.components.ChartSkeleton
 import io.github.hebadenys.fitnesshub.ui.components.MetricCard
 import io.github.hebadenys.fitnesshub.ui.components.MetricCardSkeleton
 import io.github.hebadenys.fitnesshub.ui.components.TrendChart
+import io.github.hebadenys.fitnesshub.feature.body.sourceLabel
+import io.github.hebadenys.fitnesshub.feature.body.toProvenance
 import io.github.hebadenys.fitnesshub.ui.state.ScreenStateHandler
 import io.github.hebadenys.fitnesshub.ui.theme.FitnessHubTheme
 import java.time.LocalDate
@@ -224,14 +226,20 @@ fun DashboardScreen(
                     delta = model.restingHrDelta
                 )
 
-                // Weight Card
+                // Weight is independent from today's activity summary: always show its real measurement date.
                 MetricCard(
                     label = stringResource(R.string.metric_weight),
-                    value = d?.weightKg?.let { stringResource(R.string.unit_kg, it) },
+                    value = model.latestWeight?.value?.let { stringResource(R.string.unit_kg, it) },
                     icon = Icons.Default.Home,
                     delta = model.weightDelta,
-                    provenance = d?.provenance,
-                    algorithm = d?.algorithm
+                    provenance = model.latestWeight?.toProvenance(),
+                    subtitle = model.latestWeight?.let {
+                        stringResource(
+                            R.string.body_measurement_source,
+                            it.measuredAt.atZone(java.time.ZoneId.systemDefault()).toLocalDate().toString(),
+                            it.sourceLabel()
+                        )
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(spacing.sm))
