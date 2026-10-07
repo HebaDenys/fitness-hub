@@ -32,6 +32,9 @@ import io.github.hebadenys.fitnesshub.feature.body.BodyScreen
 import io.github.hebadenys.fitnesshub.feature.dashboard.DashboardScreen
 import io.github.hebadenys.fitnesshub.feature.insights.InsightsScreen
 import io.github.hebadenys.fitnesshub.feature.nutrition.NutritionScreen
+import io.github.hebadenys.fitnesshub.feature.settings.AiSettingsScreen
+import io.github.hebadenys.fitnesshub.feature.settings.HealthConnectSourceScreen
+import io.github.hebadenys.fitnesshub.feature.settings.LocalScaleSettingsScreen
 import io.github.hebadenys.fitnesshub.feature.settings.SettingsScreen
 import io.github.hebadenys.fitnesshub.feature.sleep.SleepScreen
 import io.github.hebadenys.fitnesshub.feature.workout.WorkoutScreen
@@ -67,6 +70,9 @@ private enum class Screen(
         const val SETTINGS_ROUTE = "settings"
         const val INSIGHTS_ROUTE = "insights"
         const val XIAOMI_ROUTE = "sources/xiaomi"
+        const val HEALTH_CONNECT_ROUTE = "sources/health-connect"
+        const val LOCAL_SCALE_ROUTE = "sources/local-scale"
+        const val AI_ROUTE = "settings/ai"
     }
 }
 
@@ -78,32 +84,32 @@ fun FitnessHubAppRoot() {
 
     Scaffold(
         bottomBar = {
-            NavigationBar {
-                Screen.entries.forEach { screen ->
-                    val selected = currentRoute == screen.route
-                    NavigationBarItem(
-                        selected = selected,
-                        onClick = {
-                            if (!selected) {
-                                navController.navigate(screen.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
+            if (Screen.entries.any { it.route == currentRoute }) {
+                NavigationBar {
+                    Screen.entries.forEach { screen ->
+                        val selected = currentRoute == screen.route
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick = {
+                                if (!selected) {
+                                    navController.navigate(screen.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
                                     }
-                                    launchSingleTop = true
-                                    restoreState = true
                                 }
-                            }
-                        },
-                        icon = {
-                            Icon(
-                                imageVector = screen.icon,
-                                contentDescription = stringResource(screen.cdRes)
-                            )
-                        },
-                        label = {
-                            Text(text = stringResource(screen.labelRes))
-                        }
-                    )
+                            },
+                            icon = {
+                                Icon(
+                                    imageVector = screen.icon,
+                                    contentDescription = stringResource(screen.cdRes)
+                                )
+                            },
+                            label = { Text(text = stringResource(screen.labelRes)) }
+                        )
+                    }
                 }
             }
         }
@@ -153,11 +159,21 @@ fun FitnessHubAppRoot() {
             composable(Screen.Workout.route) { WorkoutScreen() }
             composable(Screen.SETTINGS_ROUTE) {
                 SettingsScreen(
-                    onNavigateToInsights = {
-                        navController.navigate(Screen.INSIGHTS_ROUTE) { launchSingleTop = true }
+                    onBack = { navController.popBackStack() },
+                    onNavigateToHealthConnect = {
+                        navController.navigate(Screen.HEALTH_CONNECT_ROUTE) { launchSingleTop = true }
                     },
                     onNavigateToXiaomi = {
                         navController.navigate(Screen.XIAOMI_ROUTE) { launchSingleTop = true }
+                    },
+                    onNavigateToScale = {
+                        navController.navigate(Screen.LOCAL_SCALE_ROUTE) { launchSingleTop = true }
+                    },
+                    onNavigateToInsights = {
+                        navController.navigate(Screen.INSIGHTS_ROUTE) { launchSingleTop = true }
+                    },
+                    onNavigateToAi = {
+                        navController.navigate(Screen.AI_ROUTE) { launchSingleTop = true }
                     }
                 )
             }
@@ -166,6 +182,15 @@ fun FitnessHubAppRoot() {
             }
             composable(Screen.XIAOMI_ROUTE) {
                 XiaomiSourceScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Screen.HEALTH_CONNECT_ROUTE) {
+                HealthConnectSourceScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Screen.LOCAL_SCALE_ROUTE) {
+                LocalScaleSettingsScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Screen.AI_ROUTE) {
+                AiSettingsScreen(onBack = { navController.popBackStack() })
             }
         }
     }

@@ -10,6 +10,7 @@ import io.github.hebadenys.fitnesshub.ui.state.ScreenState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -28,9 +29,12 @@ data class SettingsUiModel(
     val hasAnyPermission: Boolean,
     val historyGranted: Boolean,
     val metricStatuses: List<MetricPermissionStatus>,
+    val lastLocalSyncMillis: Long? = null,
     val isSyncing: Boolean = false,
     val syncOutcome: SyncOutcome? = null
-)
+) {
+    val grantedMetricCount: Int get() = metricStatuses.count { it.isGranted }
+}
 
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
@@ -44,12 +48,12 @@ class SettingsViewModel @Inject constructor(
     private val isSyncing = MutableStateFlow(false)
     private val syncOutcome = MutableStateFlow<SyncOutcome?>(null)
 
-    init {
-        refresh()
-    }
+    init { refresh() }
 
     fun refresh() {
         viewModelScope.launch {
+            val localRows = repo.observeDaily().first()
+            val lastSync = localRows.maxOfOrNull { it.syncedAt }?.takeIf { it > 0L }
             val isAvailable = health.client != null
             if (!isAvailable) {
                 _uiState.value = ScreenState.Content(
@@ -57,9 +61,8 @@ class SettingsViewModel @Inject constructor(
                         isClientAvailable = false,
                         hasAnyPermission = false,
                         historyGranted = false,
-                        metricStatuses = HealthMetrics.ALL.map {
-                            MetricPermissionStatus(it, false)
-                        },
+                        metricStatuses = HealthMetrics.ALL.map { MetricPermissionStatus(it, false) },
+                        lastLocalSyncMillis = lastSync,
                         isSyncing = isSyncing.value,
                         syncOutcome = syncOutcome.value
                     )
@@ -69,20 +72,15 @@ class SettingsViewModel @Inject constructor(
 
             val granted = health.grantedMetrics()
             val history = health.historyAccessGranted()
-
-            val metricList = HealthMetrics.ALL.map { metric ->
-                MetricPermissionStatus(
-                    metricKey = metric,
-                    isGranted = metric in granted
-                )
-            }
-
             _uiState.value = ScreenState.Content(
                 SettingsUiModel(
                     isClientAvailable = true,
                     hasAnyPermission = granted.isNotEmpty(),
                     historyGranted = history,
-                    metricStatuses = metricList,
+                    metricStatuses = HealthMetrics.ALL.map { metric ->
+                        MetricPermissionStatus(metric, metric in granted)
+                    },
+                    lastLocalSyncMillis = lastSync,
                     isSyncing = isSyncing.value,
                     syncOutcome = syncOutcome.value
                 )
@@ -95,14 +93,12 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             isSyncing.value = true
             syncOutcome.value = null
-            val currentContent = (_uiState.value as? ScreenState.Content)?.data
-            if (currentContent != null) {
-                _uiState.value = ScreenState.Content(currentContent.copy(isSyncing = true))
-            }
+            val current = (_uiState.value as? ScreenState.Content)?.data
+            if (current != null) _uiState.value = ScreenState.Content(current.copy(isSyncing = true))
 
             val outcome = repo.sync().fold(
                 onSuccess = { SyncOutcome.Success },
-                onFailure = { SyncOutcome.Failure(it.message ?: it::class.java.simpleName) }
+                onFailure = { SyncOutcome.Failure(it::class.java.simpleName) }
             )
 
             isSyncing.value = false

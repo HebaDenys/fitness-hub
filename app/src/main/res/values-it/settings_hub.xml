@@ -1,0 +1,32 @@
+<resources>
+    <string name="settings_hub_sources_title">Sorgenti dati</string>
+    <string name="settings_hub_sources_description">Collega e controlla da dove arrivano i dati salute. Ogni sorgente resta facoltativa e utilizzabile in modo indipendente.</string>
+    <string name="settings_hub_tools_title">Dati e privacy</string>
+    <string name="settings_hub_tools_description">Controlla trend, backup, AI facoltativa e protezioni locali.</string>
+
+    <string name="source_status_connected">Collegato</string>
+    <string name="source_status_setup">Da configurare</string>
+    <string name="source_status_unavailable">Non disponibile</string>
+    <string name="source_status_signing_required">Firma richiesta</string>
+    <string name="source_status_optional">Facoltativo</string>
+    <string name="source_status_local">Locale</string>
+
+    <string name="source_health_summary">%1$d di %2$d gruppi metriche autorizzati</string>
+    <string name="source_health_permissions_count">%1$d di %2$d gruppi metriche autorizzati</string>
+    <string name="source_health_last_sync">Ultima sync locale: %1$s</string>
+    <string name="source_health_never_sync">Nessuna sincronizzazione Health Connect locale</string>
+    <string name="source_hc_apps_title">Mi Fitness, Google Fit e altre app</string>
+    <string name="source_hc_apps_description">Fitness Hub non richiede le loro password. Quando queste app condividono record compatibili con Android Health Connect, Fitness Hub legge soltanto i tipi che autorizzi.</string>
+    <string name="source_hc_history_granted">Accesso allo storico esteso autorizzato.</string>
+    <string name="source_hc_history_limited">Accesso storico limitato: i record più vecchi potrebbero non essere disponibili.</string>
+    <string name="source_hc_manage_access">Gestisci accesso</string>
+    <string name="source_hc_check_access">Controlla stato</string>
+    <string name="source_hc_permissions_title">Gruppi metriche autorizzati</string>
+
+    <string name="source_xiaomi_description">Archivio cloud della bilancia Xiaomi. Connettore in sola lettura; il login reale resta disabilitato finché non approviamo la firma privata dell’app.</string>
+    <string name="source_scale_title">Strumenti bilancia locali</string>
+    <string name="source_scale_description">Migrazione CSV e acquisizione Bluetooth facoltativa. Restano strumenti di fallback, non il flusso Xiaomi principale.</string>
+    <string name="source_scale_advanced_notice">Strumenti di fallback avanzati. Per lo storico normale usa la sorgente Xiaomi quando il canale firmato sarà approvato e verificato.</string>
+    <string name="source_ai_description">Assistenza BYOK facoltativa. Salute, alimentazione e allenamenti restano utilizzabili senza AI.</string>
+    <string name="source_privacy_description">Permessi salute, informativa e funzionamento local-first. Fitness Hub non richiede un proprio account cloud.</string>
+</resources>
