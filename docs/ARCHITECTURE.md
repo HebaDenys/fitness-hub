@@ -12,7 +12,7 @@ Il prodotto non è ancora un hub completo: la presenza di componenti e test non 
 
 ## 2. Componenti attuali
 
-Un modulo `app`, package `io.github.hebadenys.fitnesshub`, database Room 6 e migrazioni v1–v5→v6. Gateway HC e coordinamento sync, nutrizione, CSV/BLE, workout, analytics, backup e AI rimangono in fasi diverse di sviluppo.
+Un modulo `app`, package `io.github.hebadenys.fitnesshub`, database Room 7 e migrazioni v1–v5→v6. Gateway HC e coordinamento sync, nutrizione, CSV/BLE, workout, analytics, backup e AI rimangono in fasi diverse di sviluppo.
 
 Xiaomi ha ora quattro confini eseguibili:
 
@@ -72,7 +72,7 @@ Barcode/OCR/manuale/workout ----------------+        v
 
 La vista sorgente Xiaomi non è il resolver condiviso. Dashboard, Corpo e Insights conservano ancora logiche diverse: il prossimo blocco FH-DATA-05/FH-BODY-02/FH-REC-03 deve unificarle senza riscrivere gli originali.
 
-HC legge un sottoinsieme di tipi, con finestra applicativa 30/365; dettaglio fasi sonno e write-back restano incompleti. Nessun worker periodico Xiaomi è ancora registrato.
+HC legge un sottoinsieme di tipi, con finestra applicativa 30/365. Peso e body-fat hanno ora anche tabelle evento con record ID/timestamp esatti; `daily_health` resta cache/compatibilità. Dettaglio fasi sonno e write-back restano incompleti. Nessun worker periodico Xiaomi è ancora registrato.
 
 ## 5. Identità, provenienza e tempo
 
@@ -97,3 +97,10 @@ Backup v2 contiene colonne/relazioni delle 19 tabelle dati registrate, con snaps
 Test Jupiter, Room/SQLite nativo e Compose sotto Robolectric verificano contratti, migrazioni, UI e rollback. Non sostituiscono device Redmi, account Xiaomi, BLE, TLS remoto, hardware Keystore o trasferimento tra telefoni. I risultati effettivi/SHA sono nel registro.
 
 Estrarre nuovi moduli Gradle solo per un problema misurato. Nessuna infrastruttura server soltanto perché una feature potrebbe usarla.
+
+
+## 8. Record corporei Health Connect esatti (schema 7)
+
+`hc_weight_samples` e `hc_body_fat_samples` preservano identità, timestamp e origine dei record Health Connect. Il repository canonico preferisce questi eventi quando esistono e usa il valore giornaliero legacy solo come fallback per quella metrica/data. Più misure nello stesso giorno restano distinte. Il resolver seleziona una vista; non riscrive la cache o gli originali.
+
+La migrazione 6→7 è additiva. Backup/restore registra 21 tabelle dominio. La Changes API e la gestione tombstone per tipo restano un workstream HC separato.

@@ -4,7 +4,7 @@
 
 The outer encrypted container stays `BackupCrypto` (AES-256-GCM with passphrase-derived key). JSON inside has `payloadVersion: 2`, `databaseVersion`, coverage/exclusion metadata and ordered `tables`. Each table has an exact column list and arrays of cell values. All stored primary keys, nullable fields and persisted domain relationships are retained.
 
-The 19 domain tables are registered in `DatabaseBackupService.DOMAIN_TABLES`. Column definitions come from the local compiled database, sorted by name so physical column order after ALTER TABLE does not change the portable format. No SQL from an archive is executed. A new unregistered application table makes export fail rather than silently omit it; SQLite-reserved internal tables and Room metadata are not domain data.
+The 21 domain tables are registered in `DatabaseBackupService.DOMAIN_TABLES`. Column definitions come from the local compiled database, sorted by name so physical column order after ALTER TABLE does not change the portable format. No SQL from an archive is executed. A new unregistered application table makes export fail rather than silently omit it; SQLite-reserved internal tables and Room metadata are not domain data.
 
 Credentials, shared preferences, media and operational checkpoints are excluded. This is database-data coverage, not a clone of the entire app environment.
 
@@ -35,3 +35,8 @@ A selected document provider may be cloud-backed. Automatic OS backup exclusions
 ## Verified evidence
 
 [CI 37525676439](https://github.com/HebaDenys/fitness-hub/actions/runs/37525676439), software SHA `55ae7c0`: native SQLite under Robolectric with generated Room code. Tests compare all registered database columns/relationships, duplicate restore, conflicts, wrong passphrase/tampering, unsupported schema, orphaned relations, forged Xiaomi identity and unsafe legacy merge. API 28 plus one API 35 backup round-trip. Not physical-device testing; see [PROGRESS.md](PROGRESS.md) for full scope and remaining gates.
+
+
+### Schema 7
+
+Dalla 0.3.6 il manifest dominio include anche `hc_weight_samples` e `hc_body_fat_samples`, così ID e timestamp originali dei record corporei Health Connect sopravvivono al backup. Il formato v2 continua a richiedere lo stesso database schema per il restore; questa estensione non rende il formato automaticamente cross-version.

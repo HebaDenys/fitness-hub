@@ -40,7 +40,7 @@ La precedente strategia CSV storico + BLE live è superata. Local-first non viet
 
 ## Cosa è già implementato
 
-0.3.2: parser/contratti Xiaomi. 0.3.3: binding/archivio/committer Room e backup DB v2, schema 6. 0.3.4: motore auth/HTTPS/sessione collegato al reader. 0.3.5: singleton Hilt, gateway/metadata senza token, discovery paginata di identità nello storico, conferma esplicita persona/device, route Impostazioni -> Xiaomi Home, stato/import/cancel/logout e dettagli offline. Leggere esiti/limiti in PROGRESS, non rifare questi blocchi da zero.
+0.3.2–0.3.5: protocollo Xiaomi, archivio/sessione/UI e resolver corporeo condiviso. 0.3.6: schema 7 con record Health Connect peso/body-fat a ID/timestamp esatti, migrazione/backup e fallback legacy giornaliero. Leggere esiti/limiti in PROGRESS, non rifare questi blocchi da zero.
 
 Discovery non è un catalogo della famiglia Xiaomi: mostra solo identità osservate, non persiste pesate prima della selezione. I nomi sono effimeri; chiavi includono ID esatti. Il binding corrente è unico/immutabile. La UI non riceve XiaomiSession o cookie. Un solo runtime/client/store per app.
 
@@ -48,7 +48,7 @@ Il runtime usa ancora `AwaitingPrivateSigning`. La UI di test mostra il blocco e
 
 ## Prossimo lavoro
 
-Riprendere il primo task pronto di PROGRESS. In assenza di cambiamenti, il blocco tecnico successivo è **FH-DATA-05 + FH-BODY-02 + FH-REC-03**: un repository condiviso delle metriche corporee, ultimo dato con propria data e selezione deterministica delle fonti. Le regole complete sono nel master.
+Riprendere il primo task pronto di PROGRESS. In assenza di cambiamenti, il blocco tecnico successivo è **FH-UX-02/03/04/06 + FH-HC-01/13**: centro Sorgenti, diagnostica Health Connect read-only e rifinitura Material 3/accessibilità. Le regole complete sono nel master.
 
 1. Leggere BodyViewModel, DashboardViewModel, InsightsRepository, CSV/export, store HC/scale e snapshot Xiaomi prima di progettare il resolver.
 2. Conservare tutti gli originali. Non scegliere una revisione Xiaomi solo perché dataVersion/sn sembrano ID certi.
