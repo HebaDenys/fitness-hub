@@ -1,5 +1,5 @@
 <resources>
-    <string name="backup_coverage_v2">Encrypted snapshot of all 19 domain tables, including meals, foods, workouts, scale composition and the new Xiaomi archive. Credentials, preferences, media and sync cursors are excluded. Maximum decoded archive: 32 MiB. Physical phone-transfer testing is still required.</string>
+    <string name="backup_coverage_v2">Encrypted snapshot of all 21 domain tables, including meals, foods, workouts, scale composition and the new Xiaomi archive. Credentials, preferences, media and sync cursors are excluded. Maximum decoded archive: 32 MiB. Physical phone-transfer testing is still required.</string>
     <string name="backup_merge_policy_v2">Format 2: missing rows are added and identical rows skipped. A conflict cancels the whole restore without replacing data. The same database schema is required. Old format 1 backups remain partial and can only restore into an empty health archive; existing exercise catalogues and local profile settings are retained.</string>
     <string name="backup_restored_v2">Added %1$d rows; %2$d identical rows already present.</string>
     <string name="backup_legacy_partial_v2">Legacy partial backup: data never included in the old format cannot be recovered by this restore.</string>

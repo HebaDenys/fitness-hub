@@ -98,10 +98,38 @@ data class RestingHeartRateSampleEntity(
     val algorithm: String? = null
 )
 
+@Entity(
+    tableName = "hc_weight_samples",
+    indices = [Index(value = ["timeEpochMillis", "dataOrigin"])]
+)
+data class HealthWeightSampleEntity(
+    @PrimaryKey val recordId: String,
+    val date: String,
+    val timeEpochMillis: Long,
+    val kilograms: Double,
+    val dataOrigin: String
+)
+
+@Entity(
+    tableName = "hc_body_fat_samples",
+    indices = [Index(value = ["timeEpochMillis", "dataOrigin"])]
+)
+data class HealthBodyFatSampleEntity(
+    @PrimaryKey val recordId: String,
+    val date: String,
+    val timeEpochMillis: Long,
+    val percentage: Double,
+    val dataOrigin: String
+)
+
 @Dao
 interface HealthDao {
     @Query("SELECT * FROM daily_health ORDER BY date DESC")
     fun observeDaily(): Flow<List<DailyHealthEntity>>
+    @Query("SELECT * FROM hc_weight_samples ORDER BY timeEpochMillis DESC, recordId")
+    fun observeWeightSamples(): Flow<List<HealthWeightSampleEntity>>
+    @Query("SELECT * FROM hc_body_fat_samples ORDER BY timeEpochMillis DESC, recordId")
+    fun observeBodyFatSamples(): Flow<List<HealthBodyFatSampleEntity>>
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertDaily(items: List<DailyHealthEntity>)
     @Query("SELECT * FROM daily_health ORDER BY date")
@@ -120,25 +148,38 @@ interface HealthDao {
     suspend fun insertOxygenSamples(items: List<OxygenSampleEntity>)
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRestingHeartRateSamples(items: List<RestingHeartRateSampleEntity>)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertWeightSamples(items: List<HealthWeightSampleEntity>)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertBodyFatSamples(items: List<HealthBodyFatSampleEntity>)
     @Query("DELETE FROM heart_rate_samples WHERE timeEpochMillis >= :startMillis AND timeEpochMillis < :endMillis")
     suspend fun deleteHeartRateSamplesBetween(startMillis: Long, endMillis: Long)
     @Query("DELETE FROM oxygen_saturation_readings WHERE timeEpochMillis >= :startMillis AND timeEpochMillis < :endMillis")
     suspend fun deleteOxygenSamplesBetween(startMillis: Long, endMillis: Long)
     @Query("DELETE FROM resting_heart_rate_readings WHERE timeEpochMillis >= :startMillis AND timeEpochMillis < :endMillis")
     suspend fun deleteRestingHeartRateSamplesBetween(startMillis: Long, endMillis: Long)
+    @Query("DELETE FROM hc_weight_samples WHERE timeEpochMillis >= :startMillis AND timeEpochMillis < :endMillis")
+    suspend fun deleteWeightSamplesBetween(startMillis: Long, endMillis: Long)
+    @Query("DELETE FROM hc_body_fat_samples WHERE timeEpochMillis >= :startMillis AND timeEpochMillis < :endMillis")
+    suspend fun deleteBodyFatSamplesBetween(startMillis: Long, endMillis: Long)
+    @Query("SELECT * FROM hc_weight_samples ORDER BY timeEpochMillis, recordId")
+    suspend fun dumpWeightSamples(): List<HealthWeightSampleEntity>
+    @Query("SELECT * FROM hc_body_fat_samples ORDER BY timeEpochMillis, recordId")
+    suspend fun dumpBodyFatSamples(): List<HealthBodyFatSampleEntity>
 }
 
 @Database(
     entities = [
         DailyHealthEntity::class, ExerciseEntity::class, HeartRateSampleEntity::class,
         OxygenSampleEntity::class, RestingHeartRateSampleEntity::class,
+        HealthWeightSampleEntity::class, HealthBodyFatSampleEntity::class,
         FoodEntity::class, NutritionEntryEntity::class, NutritionDailyEntity::class,
         ScaleMeasurementEntity::class, BodyCompositionEstimateEntity::class, UserProfileEntity::class,
         WorkoutExerciseEntity::class, WorkoutSessionEntity::class, WorkoutSetEntity::class,
         WorkoutTemplateEntity::class, WorkoutTemplateExerciseEntity::class,
         SourceIdentityEntity::class, XiaomiBindingEntity::class, XiaomiSnapshotEntity::class, XiaomiCheckpointEntity::class
     ],
-    version = 6,
+    version = 7,
     exportSchema = true
 )
 abstract class HealthDatabase : RoomDatabase() {
@@ -151,7 +192,7 @@ abstract class HealthDatabase : RoomDatabase() {
     companion object {
         fun create(context: Context): HealthDatabase =
             Room.databaseBuilder(context, HealthDatabase::class.java, "fitness-hub.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
                 .build()
     }
 }

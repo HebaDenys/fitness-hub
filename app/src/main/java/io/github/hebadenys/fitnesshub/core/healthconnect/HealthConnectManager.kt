@@ -144,7 +144,10 @@ class HealthConnectManager(private val context: Context) : HealthDataSource {
         }
         if (HealthMetrics.OXYGEN_SATURATION in metrics) {
             payload = payload.copy(oxygenSamples = readAll<OxygenSaturationRecord>(c, range).map {
-                DecimalSample(it.time.toEpochMilli(), it.percentage.value, it.metadata.dataOrigin.packageName)
+                DecimalSample(
+                    it.time.toEpochMilli(), it.percentage.value,
+                    it.metadata.dataOrigin.packageName, it.metadata.id
+                )
             })
         }
         if (HealthMetrics.RESTING_HEART_RATE in metrics) {
@@ -154,12 +157,18 @@ class HealthConnectManager(private val context: Context) : HealthDataSource {
         }
         if (HealthMetrics.WEIGHT in metrics) {
             payload = payload.copy(weights = readAll<WeightRecord>(c, range).map {
-                DecimalSample(it.time.toEpochMilli(), it.weight.inKilograms, it.metadata.dataOrigin.packageName)
+                DecimalSample(
+                    it.time.toEpochMilli(), it.weight.inKilograms,
+                    it.metadata.dataOrigin.packageName, it.metadata.id
+                )
             })
         }
         if (HealthMetrics.BODY_FAT in metrics) {
             payload = payload.copy(bodyFats = readAll<BodyFatRecord>(c, range).map {
-                DecimalSample(it.time.toEpochMilli(), it.percentage.value, it.metadata.dataOrigin.packageName)
+                DecimalSample(
+                    it.time.toEpochMilli(), it.percentage.value,
+                    it.metadata.dataOrigin.packageName, it.metadata.id
+                )
             })
         }
         val aggregateKeys = setOf(

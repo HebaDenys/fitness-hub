@@ -9,7 +9,7 @@ import java.util.UUID
 
 internal fun testDatabase(name: String = UUID.randomUUID().toString()): HealthDatabase =
     Room.databaseBuilder(RuntimeEnvironment.getApplication(), HealthDatabase::class.java, name)
-        .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+        .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
         .allowMainThreadQueries()
         .build().also { it.openHelper.writableDatabase }
 
@@ -30,6 +30,14 @@ internal fun seedLegacyTables(db: SupportSQLiteDatabase) {
         }
         db.execSQL("INSERT INTO `$table` (${columns.joinToString(",") { "`${it.first}`" }}) VALUES (${columns.joinToString(",") { "?" }})", values.toTypedArray())
     }
+    db.execSQL(
+        "INSERT INTO hc_weight_samples (recordId,date,timeEpochMillis,kilograms,dataOrigin) VALUES (?,?,?,?,?)",
+        arrayOf("synthetic_weight_record", "2026-01-02", 1767312000000L, 72.5, "synthetic.health")
+    )
+    db.execSQL(
+        "INSERT INTO hc_body_fat_samples (recordId,date,timeEpochMillis,percentage,dataOrigin) VALUES (?,?,?,?,?)",
+        arrayOf("synthetic_body_fat_record", "2026-01-02", 1767312060000L, 21.5, "synthetic.health")
+    )
 }
 
 internal fun databaseRows(db: SupportSQLiteDatabase): Map<String, List<List<String?>>> =

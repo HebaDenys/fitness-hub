@@ -134,6 +134,32 @@ object DailySummaryMapper {
             )
         }
 
+    fun weightEntities(samples: List<DecimalSample>, zone: ZoneId): List<HealthWeightSampleEntity> =
+        samples.mapNotNull { sample ->
+            val recordId = sample.externalId?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            val value = sample.value.takeIf { it.isFinite() && it > 0.0 } ?: return@mapNotNull null
+            HealthWeightSampleEntity(
+                recordId = recordId,
+                date = sample.localDate(zone).toString(),
+                timeEpochMillis = sample.timeEpochMillis,
+                kilograms = value,
+                dataOrigin = sample.dataOrigin
+            )
+        }
+
+    fun bodyFatEntities(samples: List<DecimalSample>, zone: ZoneId): List<HealthBodyFatSampleEntity> =
+        samples.mapNotNull { sample ->
+            val recordId = sample.externalId?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            val value = sample.value.takeIf { it.isFinite() && it in 0.0..100.0 } ?: return@mapNotNull null
+            HealthBodyFatSampleEntity(
+                recordId = recordId,
+                date = sample.localDate(zone).toString(),
+                timeEpochMillis = sample.timeEpochMillis,
+                percentage = value,
+                dataOrigin = sample.dataOrigin
+            )
+        }
+
     private fun <T> latestPerDay(samples: List<T>, zone: ZoneId, time: (T) -> Long): Map<LocalDate, T> =
         samples.groupBy { Instant.ofEpochMilli(time(it)).atZone(zone).toLocalDate() }
             .mapValues { (_, day) -> day.maxBy(time) }

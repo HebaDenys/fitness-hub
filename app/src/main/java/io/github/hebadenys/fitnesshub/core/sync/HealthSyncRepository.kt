@@ -16,7 +16,9 @@ data class RefreshCounts(
     val exerciseRows: Int,
     val heartRateSamples: Int,
     val oxygenSamples: Int,
-    val restingHeartRateSamples: Int
+    val restingHeartRateSamples: Int,
+    val weightSamples: Int = 0,
+    val bodyFatSamples: Int = 0
 )
 
 data class SyncResult(val mode: String, val counts: RefreshCounts, val durationMs: Long)
@@ -54,6 +56,8 @@ class HealthSyncRepository(private val env: SyncEnvironment, private val dao: He
                     "heartRateSamples" to result.counts.heartRateSamples,
                     "oxygenSamples" to result.counts.oxygenSamples,
                     "restingSamples" to result.counts.restingHeartRateSamples,
+                    "weightSamples" to result.counts.weightSamples,
+                    "bodyFatSamples" to result.counts.bodyFatSamples,
                     "durationMs" to result.durationMs
                 ))
             },
@@ -139,6 +143,8 @@ class HealthSyncRepository(private val env: SyncEnvironment, private val dao: He
             dao.deleteHeartRateSamplesBetween(rangeStart.toEpochMilli(), rangeEnd.toEpochMilli())
             dao.deleteOxygenSamplesBetween(rangeStart.toEpochMilli(), rangeEnd.toEpochMilli())
             dao.deleteRestingHeartRateSamplesBetween(rangeStart.toEpochMilli(), rangeEnd.toEpochMilli())
+            dao.deleteWeightSamplesBetween(rangeStart.toEpochMilli(), rangeEnd.toEpochMilli())
+            dao.deleteBodyFatSamplesBetween(rangeStart.toEpochMilli(), rangeEnd.toEpochMilli())
         }
         val heartRate = DailySummaryMapper.heartRateEntities(payload.heartRateSamples, zone)
         val oxygen = DailySummaryMapper.oxygenEntities(payload.oxygenSamples, zone)
@@ -146,12 +152,19 @@ class HealthSyncRepository(private val env: SyncEnvironment, private val dao: He
         dao.insertHeartRateSamples(heartRate)
         dao.insertOxygenSamples(oxygen)
         dao.insertRestingHeartRateSamples(resting)
+        val weights = DailySummaryMapper.weightEntities(payload.weights, zone)
+        val bodyFats = DailySummaryMapper.bodyFatEntities(payload.bodyFats, zone)
+        dao.insertWeightSamples(weights)
+        dao.insertBodyFatSamples(bodyFats)
 
         val exercises = DailySummaryMapper.toExerciseEntities(payload.exercises).distinctBy { it.externalId }
         val existing = dao.exerciseExternalIds(rangeStart.toEpochMilli(), rangeEnd.toEpochMilli())
         val fresh = exercises.filter { it.externalId !in existing }
         dao.insertExercises(fresh)
-        return RefreshCounts(dates.size, fresh.size, heartRate.size, oxygen.size, resting.size)
+        return RefreshCounts(
+            dates.size, fresh.size, heartRate.size, oxygen.size, resting.size,
+            weights.size, bodyFats.size
+        )
     }
 
     private fun elapsed(run: SyncRun): Long = System.currentTimeMillis() - run.startedAtMillis

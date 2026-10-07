@@ -1,7 +1,9 @@
 package io.github.hebadenys.fitnesshub.core.body
 
 import io.github.hebadenys.fitnesshub.core.database.DailySummaryMapper
+import io.github.hebadenys.fitnesshub.core.database.HealthBodyFatSampleEntity
 import io.github.hebadenys.fitnesshub.core.database.HealthDao
+import io.github.hebadenys.fitnesshub.core.database.HealthWeightSampleEntity
 import io.github.hebadenys.fitnesshub.core.scale.BodyCompositionEstimateEntity
 import io.github.hebadenys.fitnesshub.core.scale.ScaleDao
 import io.github.hebadenys.fitnesshub.core.scale.ScaleMeasurementEntity
@@ -38,54 +40,93 @@ class CanonicalBodyRepository(
     private val resolver: CanonicalBodyMetricResolver = CanonicalBodyMetricResolver(),
     private val zone: ZoneId = ZoneId.systemDefault()
 ) {
-    fun observe(): Flow<CanonicalBodyData> = combine(
-        healthDao.observeDaily(),
-        scaleDao.observeMeasurements(limit = 2_000),
-        scaleDao.observeEstimates(limit = 2_000),
-        xiaomiDao.observeSnapshots()
-    ) { daily, measurements, estimates, xiaomi ->
-        val observations = buildList {
-            daily.map(DailySummaryMapper::toDomain).forEach { day ->
-                val measuredAt = day.date.atStartOfDay(zone).toInstant()
-                day.weightKg?.takeIf { it.isFinite() && it > 0.0 }?.let {
+    private data class ExactHealthBody(
+        val weights: List<HealthWeightSampleEntity>,
+        val bodyFats: List<HealthBodyFatSampleEntity>
+    )
+
+    fun observe(): Flow<CanonicalBodyData> {
+        val exactHealth = combine(
+            healthDao.observeWeightSamples(),
+            healthDao.observeBodyFatSamples()
+        ) { weights, bodyFats -> ExactHealthBody(weights, bodyFats) }
+
+        return combine(
+            healthDao.observeDaily(),
+            exactHealth,
+            scaleDao.observeMeasurements(limit = 2_000),
+            scaleDao.observeEstimates(limit = 2_000),
+            xiaomiDao.observeSnapshots()
+        ) { daily, exact, measurements, estimates, xiaomi ->
+            val exactWeightDates = exact.weights.map { LocalDate.parse(it.date) }.toSet()
+            val exactFatDates = exact.bodyFats.map { LocalDate.parse(it.date) }.toSet()
+            val observations = buildList {
+                exact.weights.forEach { row ->
                     add(observation(
-                        CanonicalBodyMetricResolver.Metric.WEIGHT, it, "kg", measuredAt,
+                        CanonicalBodyMetricResolver.Metric.WEIGHT, row.kilograms, "kg",
+                        Instant.ofEpochMilli(row.timeEpochMillis),
                         CanonicalBodyMetricResolver.Source.HEALTH_CONNECT,
-                        CanonicalBodyMetricResolver.Method.UNKNOWN,
-                        "hc-day:" + day.date + ":weight"
+                        CanonicalBodyMetricResolver.Method.MEASURED,
+                        "hc-weight:" + row.dataOrigin + ":" + row.recordId,
+                        eventKey = "hc-weight:" + row.recordId
                     ))
                 }
-                day.bodyFatPercent?.takeIf { it.isFinite() && it in 0.0..100.0 }?.let {
+                exact.bodyFats.forEach { row ->
                     add(observation(
-                        CanonicalBodyMetricResolver.Metric.BODY_FAT, it, "%", measuredAt,
+                        CanonicalBodyMetricResolver.Metric.BODY_FAT, row.percentage, "%",
+                        Instant.ofEpochMilli(row.timeEpochMillis),
                         CanonicalBodyMetricResolver.Source.HEALTH_CONNECT,
-                        CanonicalBodyMetricResolver.Method.UNKNOWN,
-                        "hc-day:" + day.date + ":body-fat"
+                        CanonicalBodyMetricResolver.Method.MEASURED,
+                        "hc-body-fat:" + row.dataOrigin + ":" + row.recordId,
+                        eventKey = "hc-body-fat:" + row.recordId
                     ))
                 }
+                daily.map(DailySummaryMapper::toDomain).forEach { day ->
+                    val measuredAt = day.date.atStartOfDay(zone).toInstant()
+                    if (day.date !in exactWeightDates) {
+                        day.weightKg?.takeIf { it.isFinite() && it > 0.0 }?.let {
+                            add(observation(
+                                CanonicalBodyMetricResolver.Metric.WEIGHT, it, "kg", measuredAt,
+                                CanonicalBodyMetricResolver.Source.HEALTH_CONNECT,
+                                CanonicalBodyMetricResolver.Method.UNKNOWN,
+                                "hc-day:" + day.date + ":weight"
+                            ))
+                        }
+                    }
+                    if (day.date !in exactFatDates) {
+                        day.bodyFatPercent?.takeIf { it.isFinite() && it in 0.0..100.0 }?.let {
+                            add(observation(
+                                CanonicalBodyMetricResolver.Metric.BODY_FAT, it, "%", measuredAt,
+                                CanonicalBodyMetricResolver.Source.HEALTH_CONNECT,
+                                CanonicalBodyMetricResolver.Method.UNKNOWN,
+                                "hc-day:" + day.date + ":body-fat"
+                            ))
+                        }
+                    }
+                }
+                measurements.forEach { addScaleMeasurement(it) }
+                estimates.forEach { addScaleEstimate(it) }
+                xiaomi.forEach { addAll(xiaomiObservations(it)) }
             }
-            measurements.forEach { addScaleMeasurement(it) }
-            estimates.forEach { addScaleEstimate(it) }
-            xiaomi.forEach { addAll(xiaomiObservations(it)) }
-        }
 
         val resolved = resolver.resolve(observations)
         val weight = resolver.timeline(observations, CanonicalBodyMetricResolver.Metric.WEIGHT)
         val fat = resolver.timeline(observations, CanonicalBodyMetricResolver.Metric.BODY_FAT)
         val dates = (weight.map { it.localDate() } + fat.map { it.localDate() }).distinct().sortedDescending()
-        CanonicalBodyData(
-            latestWeight = resolved[CanonicalBodyMetricResolver.Metric.WEIGHT],
-            latestBodyFat = resolved[CanonicalBodyMetricResolver.Metric.BODY_FAT],
-            weightTimeline = weight,
-            bodyFatTimeline = fat,
-            days = dates.map { date ->
-                CanonicalBodyDay(
-                    date,
-                    weight.filter { it.localDate() == date }.maxByOrNull { it.measuredAt },
-                    fat.filter { it.localDate() == date }.maxByOrNull { it.measuredAt }
-                )
-            }
-        )
+            CanonicalBodyData(
+                latestWeight = resolved[CanonicalBodyMetricResolver.Metric.WEIGHT],
+                latestBodyFat = resolved[CanonicalBodyMetricResolver.Metric.BODY_FAT],
+                weightTimeline = weight,
+                bodyFatTimeline = fat,
+                days = dates.map { date ->
+                    CanonicalBodyDay(
+                        date,
+                        weight.filter { it.localDate() == date }.maxByOrNull { it.measuredAt },
+                        fat.filter { it.localDate() == date }.maxByOrNull { it.measuredAt }
+                    )
+                }
+            )
+        }
     }
 
     private fun MutableList<CanonicalBodyMetricResolver.Observation>.addScaleMeasurement(row: ScaleMeasurementEntity) {

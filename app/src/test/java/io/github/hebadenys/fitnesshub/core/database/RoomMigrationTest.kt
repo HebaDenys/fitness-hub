@@ -19,11 +19,12 @@ import java.util.UUID
 @Config(sdk = [28], application = Application::class, manifest = Config.NONE)
 @SQLiteMode(SQLiteMode.Mode.NATIVE)
 class RoomMigrationTest {
-    @Test fun migrate1To6() { verify(1) }
-    @Test fun migrate2To6() { verify(2) }
-    @Test fun migrate3To6() { verify(3) }
-    @Test fun migrate4To6() { verify(4) }
-    @Test fun migrate5To6() { verify(5) }
+    @Test fun migrate1To7() { verify(1) }
+    @Test fun migrate2To7() { verify(2) }
+    @Test fun migrate3To7() { verify(3) }
+    @Test fun migrate4To7() { verify(4) }
+    @Test fun migrate5To7() { verify(5) }
+    @Test fun migrate6To7() { verify(6) }
 
     private fun verify(version: Int) {
         val name = UUID.randomUUID().toString()
@@ -64,7 +65,7 @@ class RoomMigrationTest {
         val upgraded = testDatabase(name)
         try {
             val sql = upgraded.openHelper.writableDatabase
-            assertEquals(6, sql.version)
+            assertEquals(7, sql.version)
             for ((table, values) in originals) {
                 sql.query("SELECT * FROM `$table`").use { cursor ->
                     assertTrue("Missing migrated row in $table", cursor.moveToFirst())

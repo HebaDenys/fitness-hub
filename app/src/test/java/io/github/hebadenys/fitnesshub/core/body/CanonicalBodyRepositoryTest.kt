@@ -3,7 +3,9 @@ package io.github.hebadenys.fitnesshub.core.body
 import android.app.Application
 import androidx.room.Room
 import io.github.hebadenys.fitnesshub.core.database.DailyHealthEntity
+import io.github.hebadenys.fitnesshub.core.database.HealthBodyFatSampleEntity
 import io.github.hebadenys.fitnesshub.core.database.HealthDatabase
+import io.github.hebadenys.fitnesshub.core.database.HealthWeightSampleEntity
 import io.github.hebadenys.fitnesshub.core.scale.ScaleMeasurementEntity
 import io.github.hebadenys.fitnesshub.core.xiaomi.storage.SourceIdentityEntity
 import io.github.hebadenys.fitnesshub.core.xiaomi.storage.XiaomiBindingEntity
@@ -108,6 +110,52 @@ class CanonicalBodyRepositoryTest {
 
         assertEquals("2026-10-07", data.latestWeight!!.observation.measuredAt.atZone(ZoneId.of("UTC")).toLocalDate().toString())
         assertEquals("2026-10-05", data.latestBodyFat!!.observation.measuredAt.atZone(ZoneId.of("UTC")).toLocalDate().toString())
+    }
+
+    @Test fun twoHealthConnectWeighInsOnSameDayRemainDistinctAndLatestWins() = runBlocking {
+        val morning = Instant.parse("2026-10-06T08:00:00Z").toEpochMilli()
+        val evening = Instant.parse("2026-10-06T18:00:00Z").toEpochMilli()
+        db.healthDao().insertWeightSamples(listOf(
+            HealthWeightSampleEntity("hc-weight-a", "2026-10-06", morning, 100.0, "fixture.health"),
+            HealthWeightSampleEntity("hc-weight-b", "2026-10-06", evening, 99.4, "fixture.health")
+        ))
+
+        val data = repository.observe().first()
+
+        val rows = data.weightTimeline.filter {
+            it.source == CanonicalBodyMetricResolver.Source.HEALTH_CONNECT
+        }
+        assertEquals(2, rows.size)
+        assertEquals(99.4, data.latestWeight!!.observation.value, 0.001)
+        assertEquals(evening, data.latestWeight!!.observation.measuredAt.toEpochMilli())
+        assertEquals(2, db.healthDao().dumpWeightSamples().size)
+    }
+
+    @Test fun exactHealthRecordsSuppressOnlyCanonicalFallbackAndPreserveDailyCache() = runBlocking {
+        val time = Instant.parse("2026-10-06T18:00:00Z").toEpochMilli()
+        db.healthDao().upsertDaily(listOf(
+            DailyHealthEntity(date = "2026-10-06", weightKg = 100.2, bodyFatPercent = 22.0)
+        ))
+        db.healthDao().insertWeightSamples(listOf(
+            HealthWeightSampleEntity("hc-weight", "2026-10-06", time, 99.8, "fixture.health")
+        ))
+        db.healthDao().insertBodyFatSamples(listOf(
+            HealthBodyFatSampleEntity("hc-fat", "2026-10-06", time + 60_000, 20.5, "fixture.health")
+        ))
+
+        val data = repository.observe().first()
+
+        assertEquals(1, data.weightTimeline.count {
+            it.source == CanonicalBodyMetricResolver.Source.HEALTH_CONNECT
+        })
+        assertEquals(1, data.bodyFatTimeline.count {
+            it.source == CanonicalBodyMetricResolver.Source.HEALTH_CONNECT
+        })
+        assertEquals(99.8, data.latestWeight!!.observation.value, 0.001)
+        assertEquals(20.5, data.latestBodyFat!!.observation.value, 0.001)
+        val original = db.healthDao().dumpDaily().single()
+        assertEquals(100.2, original.weightKg!!, 0.001)
+        assertEquals(22.0, original.bodyFatPercent!!, 0.001)
     }
 
     private suspend fun insertXiaomiSnapshot(hash: String, eventKey: String, time: String, weight: Double) {

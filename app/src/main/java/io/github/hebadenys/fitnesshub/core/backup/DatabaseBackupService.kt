@@ -213,7 +213,8 @@ class DatabaseBackupService @Inject constructor(private val database: HealthData
             "daily_health", "exercise_sessions", "heart_rate_samples", "oxygen_saturation_readings", "resting_heart_rate_readings",
             "food_items", "nutrition_entries", "nutrition_daily", "scale_measurements", "body_composition_estimates", "user_profile",
             "exercises", "workout_sessions", "workout_sets", "workout_templates", "workout_template_exercises",
-            "source_identity", "xiaomi_bindings", "xiaomi_snapshots"
+            "source_identity", "xiaomi_bindings", "xiaomi_snapshots",
+            "hc_weight_samples", "hc_body_fat_samples"
         )
         private val SYSTEM_TABLES = setOf("android_metadata", "room_master_table", "sqlite_sequence", "xiaomi_checkpoints")
     }

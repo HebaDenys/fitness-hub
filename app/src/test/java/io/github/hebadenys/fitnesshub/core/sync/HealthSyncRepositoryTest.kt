@@ -1,9 +1,12 @@
 package io.github.hebadenys.fitnesshub.core.sync
 
 import io.github.hebadenys.fitnesshub.core.database.DailyHealthEntity
+import io.github.hebadenys.fitnesshub.core.database.HealthBodyFatSampleEntity
 import io.github.hebadenys.fitnesshub.core.database.HealthDao
+import io.github.hebadenys.fitnesshub.core.database.HealthWeightSampleEntity
 import io.github.hebadenys.fitnesshub.core.healthconnect.HealthDataSource
 import io.github.hebadenys.fitnesshub.core.model.DayAggregate
+import io.github.hebadenys.fitnesshub.core.model.DecimalSample
 import io.github.hebadenys.fitnesshub.core.model.ExerciseSessionData
 import io.github.hebadenys.fitnesshub.core.model.HealthChangesPage
 import io.github.hebadenys.fitnesshub.core.model.HealthMetrics
@@ -331,6 +334,42 @@ class HealthSyncRepositoryTest {
         verify(dao).deleteHeartRateSamplesBetween(any(), any())
         verify(dao).deleteOxygenSamplesBetween(any(), any())
         verify(dao).deleteRestingHeartRateSamplesBetween(any(), any())
+        verify(dao).deleteWeightSamplesBetween(any(), any())
+        verify(dao).deleteBodyFatSamplesBetween(any(), any())
+    }
+
+    @Test
+    @DisplayName("exact Health Connect body records preserve record ids and timestamps")
+    fun bodySamples_preserveExactIdentity() = runTest {
+        stubEmptyDao()
+        val time = 1_791_286_400_123L
+        val source = FakeSource(
+            granted = setOf(HealthMetrics.WEIGHT, HealthMetrics.BODY_FAT),
+            payload = RangePayload(
+                weights = listOf(DecimalSample(time, 75.5, "fixture.health", "weight-record-id")),
+                bodyFats = listOf(DecimalSample(time + 1_000, 21.5, "fixture.health", "body-fat-record-id"))
+            )
+        )
+
+        val result = repository(source).sync()
+
+        assertTrue(result.isSuccess)
+        verify(dao).insertWeightSamples(listOf(
+            HealthWeightSampleEntity(
+                "weight-record-id",
+                java.time.Instant.ofEpochMilli(time).atZone(zone).toLocalDate().toString(),
+                time, 75.5, "fixture.health"
+            )
+        ))
+        verify(dao).insertBodyFatSamples(listOf(
+            HealthBodyFatSampleEntity(
+                "body-fat-record-id",
+                java.time.Instant.ofEpochMilli(time + 1_000).atZone(zone).toLocalDate().toString(),
+                time + 1_000, 21.5, "fixture.health"
+            )
+        ))
+        assertEquals(1, result.getOrThrow().counts.weightSamples)
+        assertEquals(1, result.getOrThrow().counts.bodyFatSamples)
     }
 
     @Test
@@ -343,6 +382,8 @@ class HealthSyncRepositoryTest {
         repository(source, tokens).sync()
 
         verify(dao, never()).deleteHeartRateSamplesBetween(any(), any())
+        verify(dao, never()).deleteWeightSamplesBetween(any(), any())
+        verify(dao, never()).deleteBodyFatSamplesBetween(any(), any())
     }
 
     @Test

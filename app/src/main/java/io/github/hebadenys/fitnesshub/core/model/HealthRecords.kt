@@ -31,7 +31,8 @@ data class Sample(
 data class DecimalSample(
     val timeEpochMillis: Long,
     val value: Double,
-    val dataOrigin: String
+    val dataOrigin: String,
+    val externalId: String? = null
 )
 
 /** A timestamp plus its source package, used to track aggregate metric origins. */
