@@ -99,6 +99,8 @@ interface XiaomiArchiveDao {
     suspend fun snapshot(connectionId: String, hash: String): XiaomiSnapshotEntity?
     @Query("SELECT * FROM xiaomi_snapshots WHERE connectionId = :connectionId ORDER BY createTimeMillis, contentHash")
     suspend fun snapshots(connectionId: String): List<XiaomiSnapshotEntity>
+    @Query("SELECT * FROM xiaomi_snapshots ORDER BY createTimeMillis DESC, contentHash")
+    fun observeSnapshots(): kotlinx.coroutines.flow.Flow<List<XiaomiSnapshotEntity>>
     @Query("SELECT COUNT(*) FROM xiaomi_snapshots")
     suspend fun snapshotCount(): Int
     @Query("SELECT * FROM xiaomi_snapshots WHERE connectionId = :connectionId ORDER BY createTimeMillis DESC, contentHash LIMIT :limit OFFSET :offset")
