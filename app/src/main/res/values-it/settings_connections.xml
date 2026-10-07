@@ -1,0 +1,5 @@
+<resources>
+    <string name="settings_connections_section">Connessioni dati</string>
+    <string name="settings_connections_description">Collega qui le sorgenti. Fitness Hub legge solo i dati autorizzati e mantiene un archivio locale proprio.</string>
+    <string name="settings_hc_connection_description">Mi Fitness, Google Fit e le altre app compatibili possono condividere i record supportati tramite Android Health Connect.</string>
+</resources>
