@@ -10,7 +10,7 @@ import java.time.Instant
  * event, or as a deterministic tie-break when timestamps are exactly equal.
  * Original observations are never mutated or deleted.
  */
-internal class CanonicalBodyMetricResolver {
+class CanonicalBodyMetricResolver {
 
     data class Observation(
         val metric: Metric,
