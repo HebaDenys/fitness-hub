@@ -3,10 +3,12 @@ package io.github.hebadenys.fitnesshub.feature.settings
 import android.app.Application
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.test.assertExists
 import androidx.compose.ui.test.assertIsEnabled
-import androidx.compose.ui.test.assertTextContains
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.hasTestTag
@@ -49,7 +51,8 @@ class SettingsHubScreenTest {
             }
         }
 
-        compose.onNodeWithTag("source_health_connect").assertTextContains("2 of").performClick()
+        compose.onNodeWithText("2 of 11 metric groups authorized").assertExists()
+        compose.onNodeWithTag("source_health_connect").performClick()
         compose.onNodeWithTag("source_xiaomi").performClick()
         compose.onNodeWithTag("source_scale").performClick()
         compose.runOnIdle {
@@ -89,8 +92,7 @@ class SettingsHubScreenTest {
         val unavailable = model(emptySet()).copy(isClientAvailable = false)
         compose.setContent { MaterialTheme { HealthConnectSourceContent(unavailable) } }
 
-        compose.onNodeWithTag("health_permissions").assertExists()
-        compose.onNodeWithTag("health_sync").assertExists()
-        // Disabled semantics are covered by production conditions; no connection is faked.
+        compose.onNodeWithTag("health_permissions").assertIsNotEnabled()
+        compose.onNodeWithTag("health_sync").assertIsNotEnabled()
     }
 }
