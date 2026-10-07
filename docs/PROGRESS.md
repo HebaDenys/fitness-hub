@@ -1,10 +1,60 @@
 # Fitness Hub — Stato operativo e passaggio di consegne
 
-**Aggiornamento:** 6 ottobre 2026. Piano vincolante: [MASTER_PLAN.md](MASTER_PLAN.md).  
-**HEAD iniziale:** `47049fdd78a45f53d99e3ffb20e6a5c2788b7229`.  
-**Ultimo software verificato:** `f841579d222faf7df358b9d7472631b299198f80` — **0.3.5**, versionCode **7**, database **6**.  
-**CI finale:** [37538929760](https://github.com/HebaDenys/fitness-hub/actions/runs/37538929760), job `112526860176`, conclusione **success**.  
-**Chiusura sessione:** solo documentazione; non modifica runtime o APK del commit verificato.
+**Aggiornamento branch:** 7 ottobre 2026.  
+**Branch:** `feat/canonical-body-metrics-resolver` — PR #2 draft, nessun merge/deploy automatico.  
+**Base main:** `1a72acb1ba3a477a85385aab05f23ddf53b7c542`.  
+**Software branch verificato:** `0bbf25216330adab899ad6a6a221d67ea1db369d`.  
+**CI branch:** [37628927190](https://github.com/HebaDenys/fitness-hub/actions/runs/37628927190), job `112817817582`, conclusione **success**.
+
+## Incremento FH-DATA-05 / FH-BODY-02 / FH-REC-03 verificato sul branch
+
+- `CanonicalBodyMetricResolver`: la recenza dell'evento prevale sulla priorità della fonte. Xiaomi/Health Connect/Scale servono come tie-breaker soltanto a timestamp uguale o quando un `eventKey` esplicito dimostra che due record rappresentano lo stesso evento.
+- Due pesate reali nello stesso giorno restano due osservazioni. Il resolver non muta/cancella gli originali e mantiene le alternative.
+- `CanonicalBodyRepository`: stessa serie corporea per Body, Dashboard e Insights/export, combinando cache Health Connect giornaliera, scala locale/CSV e snapshot Xiaomi già associati.
+- Xiaomi: le versioni con stesso `eventKey` vengono collassate solo nella vista canonica; gli snapshot originali rimangono nel database.
+- Body: peso e grasso corporeo hanno ultimo valore e data indipendenti; i range grafico usano giorni di calendario.
+- Dashboard: il peso non eredita più la data del riepilogo passi/sonno; mostra data e sorgente della misura canonica.
+- Insights/CSV: il trend peso deriva dallo stesso repository canonico usato dalla UI, non da `daily_health.weightKg` separatamente.
+- UI: palette Fitness Hub fissa di default (Material You non sovrascrive più l'identità visiva), sezione Connessioni dati portata in cima alle Impostazioni, spiegazione esplicita di Health Connect/Mi Fitness/Google Fit.
+- Xiaomi login reale resta dietro `AwaitingPrivateSigning`: nessuna rimozione del gate, nessuna password reale usata.
+
+### Verifica effettiva
+
+- Prima CI del nuovo blocco: run `37628388208`, fallita in compilazione per visibilità Kotlin (`internal` resolver esposto da modelli pubblici). Nessun test/lint disabilitato.
+- Correzione: commit `0bbf25216330adab899ad6a6a221d67ea1db369d`.
+- Run finale `37628927190`: **BUILD SUCCESSFUL**.
+- **387 test app / 43 suite, 0 failure, 0 error, 0 skipped**.
+- **11 controlli Python CI/privacy passati**.
+- Lint, assembleDebug, certificato test e checksum passati.
+- APK artifact di PR generato; la pubblicazione rolling release è stata **saltata** perché il run è `pull_request`, quindi nessun deploy/release automatica da questo branch.
+
+### Test aggiunti/estesi
+
+- fonte prioritaria vecchia vs fonte meno prioritaria recente;
+- stesso evento esplicito su due fonti;
+- due pesate nello stesso giorno;
+- conflitto Health Connect giornaliero vs misura scala con timestamp esatto;
+- versioni Xiaomi dello stesso evento collassate nella vista ma conservate in Room;
+- peso e body-fat con date più recenti differenti;
+- integrità delle liste/righe originali dopo risoluzione.
+
+### Limiti attuali
+
+- La cache Health Connect `daily_health` conserva peso/body-fat per giorno, non il timestamp originale preciso di ogni record HC. Il repository canonico evita retrodatazioni cross-day e preferisce una misura esatta nello stesso giorno, ma **non può ricostruire più pesate HC nello stesso giorno** già perse dalla cache. Il completamento corretto richiede persistenza dei body sample HC con timestamp/record ID in un incremento successivo.
+- Deduplica cross-source conservativa: solo `eventKey` dimostrato o timestamp identico usa priorità; non vengono fuse misure “simili” solo per peso/ora.
+- Login Xiaomi reale, challenge CAPTCHA/2FA, S400 Pro fisica e Keystore Redmi non verificati.
+- Nessun merge su main e nessun deploy automatico.
+
+## Prossimo passo sul branch
+
+1. Persistenza timestamp/record ID esatti per Weight/BodyFat Health Connect e migrazione/backup se necessaria.
+2. Test di coerenza Dashboard/Body/Insights con gli stessi fixture e aggiornamento del report/export.
+3. Ulteriore polish UI dopo prova APK su telefono: navigazione, densità delle card e schermata Connections/Sources.
+4. Decisione separata FH-SAFE-03 su firma privata/custodia/migrazione prima di abilitare credenziali Xiaomi reali.
+
+---
+
+## Baseline main prima del branch
 
 ## 1. Prossima attività precisa
 
