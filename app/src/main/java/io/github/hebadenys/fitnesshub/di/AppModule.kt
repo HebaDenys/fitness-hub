@@ -10,6 +10,8 @@ import io.github.hebadenys.fitnesshub.core.ai.AiKeyStore
 import io.github.hebadenys.fitnesshub.core.ai.AiSettingsStore
 import io.github.hebadenys.fitnesshub.core.ai.AiTransport
 import io.github.hebadenys.fitnesshub.core.analytics.InsightsRepository
+import io.github.hebadenys.fitnesshub.core.body.CanonicalBodyMetricResolver
+import io.github.hebadenys.fitnesshub.core.body.CanonicalBodyRepository
 import io.github.hebadenys.fitnesshub.core.backup.BackupService
 import io.github.hebadenys.fitnesshub.core.database.HealthDao
 import io.github.hebadenys.fitnesshub.core.database.HealthDatabase
@@ -27,6 +29,7 @@ import io.github.hebadenys.fitnesshub.core.scale.ScaleDao
 import io.github.hebadenys.fitnesshub.core.sync.AppLogger
 import io.github.hebadenys.fitnesshub.core.sync.DataStoreSyncTokenStore
 import io.github.hebadenys.fitnesshub.core.workout.WorkoutDao
+import io.github.hebadenys.fitnesshub.core.xiaomi.storage.XiaomiArchiveDao
 import io.github.hebadenys.fitnesshub.core.workout.WorkoutRepository
 import io.github.hebadenys.fitnesshub.core.sync.HealthSyncRepository
 import io.github.hebadenys.fitnesshub.core.sync.SyncEnvironment
@@ -52,6 +55,10 @@ object AppModule {
     @Provides @Singleton fun nutrition(dao: NutritionDao, catalog: FoodCatalogConnector) = NutritionRepository(dao, catalog)
 
     @Provides fun scaleDao(db: HealthDatabase): ScaleDao = db.scaleDao()
+    @Provides fun xiaomiArchiveDao(db: HealthDatabase): XiaomiArchiveDao = db.xiaomiArchiveDao()
+    @Provides @Singleton fun bodyResolver() = CanonicalBodyMetricResolver()
+    @Provides @Singleton fun canonicalBody(healthDao: HealthDao, scaleDao: ScaleDao, xiaomiDao: XiaomiArchiveDao, resolver: CanonicalBodyMetricResolver) =
+        CanonicalBodyRepository(healthDao, scaleDao, xiaomiDao, resolver)
     @Provides @Singleton fun bindkeyStore(@ApplicationContext context: Context) = BindkeyStore(context)
     @Provides @Singleton fun scaleConnector(dao: ScaleDao, bindkeyStore: BindkeyStore) = S400ScaleConnector(dao, bindkeyStore)
     @Provides @Singleton fun scaleHistoryImporter(dao: ScaleDao) = ScaleHistoryCsvImporter(dao)
@@ -59,8 +66,8 @@ object AppModule {
     @Provides fun workoutDao(db: HealthDatabase): WorkoutDao = db.workoutDao()
     @Provides @Singleton fun workoutRepository(dao: WorkoutDao) = WorkoutRepository(dao)
 
-    @Provides @Singleton fun insights(healthDao: HealthDao, nutritionDao: NutritionDao, workoutDao: WorkoutDao) =
-        InsightsRepository(healthDao, nutritionDao, workoutDao)
+    @Provides @Singleton fun insights(healthDao: HealthDao, nutritionDao: NutritionDao, workoutDao: WorkoutDao, body: CanonicalBodyRepository) =
+        InsightsRepository(healthDao, nutritionDao, workoutDao, body)
 
     @Provides @Singleton fun backupService(db: HealthDatabase) = BackupService(db)
 

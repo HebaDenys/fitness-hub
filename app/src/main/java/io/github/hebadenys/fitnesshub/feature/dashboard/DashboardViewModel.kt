@@ -3,6 +3,8 @@ package io.github.hebadenys.fitnesshub.feature.dashboard
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
+import io.github.hebadenys.fitnesshub.core.body.CanonicalBodyMetricResolver
+import io.github.hebadenys.fitnesshub.core.body.CanonicalBodyRepository
 import io.github.hebadenys.fitnesshub.core.database.DailySummaryMapper
 import io.github.hebadenys.fitnesshub.core.healthconnect.HealthConnectManager
 import io.github.hebadenys.fitnesshub.core.model.DailySummary
@@ -25,6 +27,7 @@ data class DashboardUiModel(
     val latest: DailySummary?,
     val previous: DailySummary?,
     val recent: List<DailySummary>,
+    val latestWeight: CanonicalBodyMetricResolver.Observation?,
     val stepsDelta: BaselineDelta,
     val activeCaloriesDelta: BaselineDelta,
     val sleepDelta: BaselineDelta,
@@ -39,51 +42,47 @@ data class DashboardUiModel(
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
     val health: HealthConnectManager,
-    private val repo: HealthSyncRepository
+    private val repo: HealthSyncRepository,
+    private val body: CanonicalBodyRepository
 ) : ViewModel() {
 
     private val isSyncing = MutableStateFlow(false)
     private val syncMessage = MutableStateFlow<String?>(null)
     private val selectedRange = MutableStateFlow(TimeRange.SEVEN_DAYS)
     private val grantedMetrics = MutableStateFlow<Set<String>>(emptySet())
+    private val sourceData = combine(repo.observeDaily(), body.observe()) { daily, bodyData -> daily to bodyData }
 
-    init {
-        refreshPermissions()
-    }
+    init { refreshPermissions() }
 
     fun refreshPermissions() {
-        viewModelScope.launch {
-            grantedMetrics.value = health.grantedMetrics()
-        }
+        viewModelScope.launch { grantedMetrics.value = health.grantedMetrics() }
     }
 
-    fun setRange(range: TimeRange) {
-        selectedRange.value = range
-    }
+    fun setRange(range: TimeRange) { selectedRange.value = range }
 
     val uiState: StateFlow<ScreenState<DashboardUiModel>> = combine(
-        repo.observeDaily(),
+        sourceData,
         grantedMetrics,
         isSyncing,
         syncMessage,
         selectedRange
-    ) { entities, granted, syncing, message, range ->
-        if (granted.isEmpty() && health.client != null) {
+    ) { source, granted, syncing, message, range ->
+        val (entities, bodyData) = source
+        if (granted.isEmpty() && health.client != null && entities.isEmpty() && bodyData.latestWeight == null) {
             ScreenState.PermissionMissing(missingMetrics = HealthMetrics.ALL)
-        } else if (entities.isEmpty()) {
+        } else if (entities.isEmpty() && bodyData.latestWeight == null) {
             ScreenState.Empty()
         } else {
             val summaries = entities.map { DailySummaryMapper.toDomain(it) }
             val latest = summaries.firstOrNull()
             val previous = summaries.getOrNull(1)
+            val weights = bodyData.weightTimeline
+            val latestWeight = bodyData.latestWeight?.observation
+            val previousWeight = weights.asReversed().firstOrNull { it != latestWeight }
 
             val filteredForChart = summaries.take(range.days).reversed()
             val chartPoints = filteredForChart.map {
-                ChartPoint(
-                    date = it.date,
-                    value = it.steps?.toDouble(),
-                    provenance = it.provenance
-                )
+                ChartPoint(it.date, it.steps?.toDouble(), it.provenance)
             }
 
             ScreenState.Content(
@@ -91,11 +90,12 @@ class DashboardViewModel @Inject constructor(
                     latest = latest,
                     previous = previous,
                     recent = summaries,
+                    latestWeight = latestWeight,
                     stepsDelta = calculateLongDelta(latest?.steps, previous?.steps),
                     activeCaloriesDelta = calculateDoubleDelta(latest?.activeCalories, previous?.activeCalories, "kcal"),
                     sleepDelta = calculateLongDelta(latest?.sleepMinutes, previous?.sleepMinutes, "min"),
                     restingHrDelta = calculateLongDelta(latest?.restingHeartRate, previous?.restingHeartRate, "bpm"),
-                    weightDelta = calculateDoubleDelta(latest?.weightKg, previous?.weightKg, "kg"),
+                    weightDelta = calculateDoubleDelta(latestWeight?.value, previousWeight?.value, "kg"),
                     chartPoints = chartPoints,
                     selectedRange = range,
                     isSyncing = syncing,
@@ -111,14 +111,7 @@ class DashboardViewModel @Inject constructor(
             isSyncing.value = true
             syncMessage.value = null
             val result = repo.sync()
-            result.fold(
-                onSuccess = {
-                    syncMessage.value = "SUCCESS"
-                },
-                onFailure = {
-                    syncMessage.value = it.message ?: "ERROR"
-                }
-            )
+            syncMessage.value = result.fold(onSuccess = { "SUCCESS" }, onFailure = { it.message ?: "ERROR" })
             isSyncing.value = false
         }
     }

@@ -119,6 +119,18 @@ fun SettingsScreen(
                     .padding(spacing.md),
                 verticalArrangement = Arrangement.spacedBy(spacing.md)
             ) {
+                Text(
+                    text = stringResource(R.string.settings_connections_section),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onBackground,
+                    modifier = Modifier.semantics { heading() }
+                )
+                Text(
+                    text = stringResource(R.string.settings_connections_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
                 XiaomiSourceEntry(onClick = onNavigateToXiaomi)
 
                 // Section: Health Connect Status
@@ -135,7 +147,15 @@ fun SettingsScreen(
                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
                     )
                 ) {
-                    Column(modifier = Modifier.padding(spacing.md)) {
+                    Column(
+                        modifier = Modifier.padding(spacing.md),
+                        verticalArrangement = Arrangement.spacedBy(spacing.sm)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.settings_hc_connection_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                         val statusText = when {
                             !model.isClientAvailable -> stringResource(R.string.settings_hc_unavailable)
                             model.hasAnyPermission -> stringResource(R.string.settings_hc_connected)

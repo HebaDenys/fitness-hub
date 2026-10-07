@@ -1,5 +1,6 @@
 package io.github.hebadenys.fitnesshub.core.analytics
 
+import io.github.hebadenys.fitnesshub.core.body.CanonicalBodyRepository
 import io.github.hebadenys.fitnesshub.core.database.HealthDao
 import io.github.hebadenys.fitnesshub.core.nutrition.NutritionDao
 import io.github.hebadenys.fitnesshub.core.workout.WorkoutDao
@@ -7,13 +8,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import java.time.LocalDate
 
-/**
- * A cross-domain insight, always carrying its own disclaimer.
- *
- * Every card is a statistical observation about how two series move together.
- * None establishes cause, and the advisory travels with the data so a caller
- * cannot render the headline number without it.
- */
 data class InsightCard(
     val id: String,
     val title: String,
@@ -32,32 +26,32 @@ data class InsightsUiData(
 )
 
 /**
- * Builds the cross-domain view.
- *
- * Fluid measurements are smoothed before being drawn, so day-to-day scale noise
- * does not read as real change. Correlation is computed on the raw daily values:
- * smoothing two series before correlating them would manufacture agreement the
- * data does not contain.
+ * Cross-domain analytics uses the same canonical body series as Dashboard and
+ * Body. Original source rows remain untouched in their own stores.
  */
 class InsightsRepository(
     private val healthDao: HealthDao,
     private val nutritionDao: NutritionDao,
-    private val workoutDao: WorkoutDao
+    private val workoutDao: WorkoutDao,
+    private val bodyRepository: CanonicalBodyRepository
 ) {
 
     fun observeInsights(): Flow<InsightsUiData> =
         combine(
+            bodyRepository.observe(),
             healthDao.observeDaily(),
             nutritionDao.observeAllDaily(),
             workoutDao.observeDailyVolume()
-        ) { daily, nutrition, volume ->
+        ) { body, daily, nutrition, volume ->
             val index = linkedMapOf<LocalDate, MutableMap<String, Double?>>()
             fun row(date: LocalDate): MutableMap<String, Double?> =
                 index.getOrPut(date) { linkedMapOf() }
 
+            body.days.forEach { day ->
+                row(day.date)[KEY_WEIGHT] = day.weight?.value
+            }
             daily.forEach { entity ->
                 val date = entity.date.toLocalDateOrNull() ?: return@forEach
-                row(date)[KEY_WEIGHT] = entity.weightKg
                 row(date)[KEY_SLEEP] = entity.sleepMinutes?.toDouble()
             }
             nutrition.forEach { totals ->
@@ -104,7 +98,6 @@ class InsightsRepository(
             )
         }
 
-    /** Seven-day smoothing: enough to flatten daily scale noise without lagging a real trend. */
     private fun smooth(
         observations: List<Observation>,
         selector: (Observation) -> Double?,
@@ -119,19 +112,12 @@ class InsightsRepository(
 
     companion object {
         const val DEFAULT_SMOOTHING_DAYS = 7
-
-        /**
-         * Carried on every correlation card. Phrased as an invariant of the
-         * finding rather than as advice, so it cannot be mistaken for a caveat.
-         */
         const val CORRELATION_DISCLAIMER =
             "These two series move together across the days shown. That is an " +
                 "association, not a cause: changing one would not necessarily " +
                 "change the other."
-
         const val CARD_WEIGHT_VS_INTAKE = "weight_vs_intake"
         const val CARD_SLEEP_VS_VOLUME = "sleep_vs_volume"
-
         private const val KEY_WEIGHT = "weightKg"
         private const val KEY_INTAKE = "intakeKcal"
         private const val KEY_SLEEP = "sleepMinutes"

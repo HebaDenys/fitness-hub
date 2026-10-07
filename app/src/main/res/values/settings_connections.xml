@@ -1,0 +1,5 @@
+<resources>
+    <string name="settings_connections_section">Data connections</string>
+    <string name="settings_connections_description">Connect sources here. Fitness Hub reads the data you authorize and keeps its own local archive.</string>
+    <string name="settings_hc_connection_description">Mi Fitness, Google Fit and other compatible apps can share supported records through Android Health Connect.</string>
+</resources>
