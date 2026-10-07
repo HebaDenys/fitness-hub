@@ -1,0 +1,5 @@
+<resources>
+    <string name="body_latest_section">Latest body measurements</string>
+    <string name="body_measurement_source">%1$s · %2$s</string>
+    <string name="body_history_source">%1$s</string>
+</resources>
