@@ -31,12 +31,16 @@ import androidx.compose.ui.semantics.semantics
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.hebadenys.fitnesshub.R
+import io.github.hebadenys.fitnesshub.core.body.CanonicalBodyMetricResolver
 import io.github.hebadenys.fitnesshub.ui.components.ChartSkeleton
 import io.github.hebadenys.fitnesshub.ui.components.MetricCard
 import io.github.hebadenys.fitnesshub.ui.components.MetricCardSkeleton
 import io.github.hebadenys.fitnesshub.ui.components.TrendChart
 import io.github.hebadenys.fitnesshub.ui.state.ScreenStateHandler
 import io.github.hebadenys.fitnesshub.ui.theme.FitnessHubTheme
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,9 +53,7 @@ fun BodyScreen(
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = viewModel.health.permissionContract
-    ) {
-        viewModel.refreshPermissions()
-    }
+    ) { viewModel.refreshPermissions() }
 
     Scaffold(
         topBar = {
@@ -72,16 +74,11 @@ fun BodyScreen(
         ScreenStateHandler(
             state = uiState,
             modifier = Modifier.padding(padding),
-            onGrantPermissions = {
-                permissionLauncher.launch(viewModel.health.permissions)
-            },
+            onGrantPermissions = { permissionLauncher.launch(viewModel.health.permissions) },
             onAction = onNavigateToSettings,
             loadingContent = {
                 Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(padding)
-                        .padding(spacing.md),
+                    modifier = Modifier.fillMaxSize().padding(spacing.md),
                     verticalArrangement = Arrangement.spacedBy(spacing.md)
                 ) {
                     MetricCardSkeleton()
@@ -90,19 +87,14 @@ fun BodyScreen(
                 }
             }
         ) { model ->
-            val latest = model.latest
-
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = spacing.md),
+                modifier = Modifier.fillMaxSize().padding(horizontal = spacing.md),
                 verticalArrangement = Arrangement.spacedBy(spacing.md)
             ) {
                 item {
-                    Spacer(modifier = Modifier.height(spacing.xs))
+                    Spacer(Modifier.height(spacing.xs))
                     Text(
-                        text = stringResource(R.string.dashboard_today_section),
+                        text = stringResource(R.string.body_latest_section),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.semantics { heading() }
@@ -110,40 +102,54 @@ fun BodyScreen(
                 }
 
                 item {
+                    val value = model.latestWeight
                     MetricCard(
                         label = stringResource(R.string.metric_weight),
-                        value = latest?.weightKg?.let { stringResource(R.string.unit_kg, it) },
+                        value = value?.value?.let { stringResource(R.string.unit_kg, it) },
                         icon = Icons.Default.Home,
                         delta = model.weightDelta,
-                        provenance = latest?.provenance,
-                        algorithm = latest?.algorithm
+                        provenance = value?.toProvenance(),
+                        algorithm = value?.method?.takeIf { it == CanonicalBodyMetricResolver.Method.LOCAL_ESTIMATE }?.name,
+                        subtitle = value?.let {
+                            stringResource(
+                                R.string.body_measurement_source,
+                                formatInstant(it.measuredAt),
+                                it.sourceLabel()
+                            )
+                        }
                     )
                 }
 
                 item {
+                    val value = model.latestBodyFat
                     MetricCard(
                         label = stringResource(R.string.metric_body_fat),
-                        value = latest?.bodyFatPercent?.let { stringResource(R.string.unit_percent, it) },
+                        value = value?.value?.let { stringResource(R.string.unit_percent, it) },
                         icon = Icons.Default.Info,
                         delta = model.bodyFatDelta,
-                        provenance = latest?.provenance,
-                        algorithm = latest?.algorithm
+                        provenance = value?.toProvenance(),
+                        algorithm = value?.method?.takeIf { it == CanonicalBodyMetricResolver.Method.LOCAL_ESTIMATE }?.name,
+                        subtitle = value?.let {
+                            stringResource(
+                                R.string.body_measurement_source,
+                                formatInstant(it.measuredAt),
+                                it.sourceLabel()
+                            )
+                        }
                     )
                 }
 
                 item {
-                    Spacer(modifier = Modifier.height(spacing.xs))
                     TrendChart(
                         title = stringResource(R.string.chart_weight_title),
                         points = model.chartPoints,
                         selectedRange = model.selectedRange,
-                        onRangeSelected = { viewModel.setRange(it) },
+                        onRangeSelected = viewModel::setRange,
                         chartContentDescription = stringResource(R.string.cd_chart_weight)
                     )
                 }
 
                 item {
-                    Spacer(modifier = Modifier.height(spacing.sm))
                     Text(
                         text = stringResource(R.string.body_history_section),
                         style = MaterialTheme.typography.titleMedium,
@@ -153,63 +159,61 @@ fun BodyScreen(
                 }
 
                 items(model.history, key = { it.date }) { day ->
-                    val weightStr = day.weightKg?.let { stringResource(R.string.unit_kg, it) }
-                        ?: stringResource(R.string.value_unavailable)
-                    val fatStr = day.bodyFatPercent?.let { stringResource(R.string.unit_percent, it) }
-                        ?: stringResource(R.string.value_unavailable)
-
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerLow
                         )
                     ) {
-                        Column(modifier = Modifier.padding(spacing.md)) {
+                        Column(
+                            modifier = Modifier.padding(spacing.md),
+                            verticalArrangement = Arrangement.spacedBy(spacing.sm)
+                        ) {
+                            Text(day.date.toString(), style = MaterialTheme.typography.titleMedium)
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween
                             ) {
-                                Text(
-                                    text = day.date.toString(),
-                                    style = MaterialTheme.typography.titleMedium
+                                BodyHistoryValue(
+                                    label = stringResource(R.string.metric_weight),
+                                    value = day.weight?.value?.let { stringResource(R.string.unit_kg, it) }
+                                        ?: stringResource(R.string.value_unavailable),
+                                    source = day.weight?.sourceLabel()
                                 )
-                                when (day.provenance) {
-                                    io.github.hebadenys.fitnesshub.core.model.DailySummary.PROVENANCE_ESTIMATE -> Text(
-                                        text = stringResource(R.string.provenance_estimate),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.tertiary
-                                    )
-                                    io.github.hebadenys.fitnesshub.core.model.DailySummary.PROVENANCE_IMPORTED -> Text(
-                                        text = stringResource(R.string.scale_provenance_imported),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = MaterialTheme.colorScheme.tertiary
-                                    )
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(spacing.xs))
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(
-                                    text = weightStr,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = fatStr,
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                BodyHistoryValue(
+                                    label = stringResource(R.string.metric_body_fat),
+                                    value = day.bodyFat?.value?.let { stringResource(R.string.unit_percent, it) }
+                                        ?: stringResource(R.string.value_unavailable),
+                                    source = day.bodyFat?.sourceLabel()
                                 )
                             }
                         }
                     }
                 }
 
-                item {
-                    Spacer(modifier = Modifier.height(spacing.lg))
-                }
+                item { Spacer(Modifier.height(spacing.lg)) }
             }
         }
     }
 }
+
+@Composable
+private fun BodyHistoryValue(label: String, value: String, source: String?) {
+    Column {
+        Text(label, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(value, style = MaterialTheme.typography.titleMedium)
+        source?.let {
+            Text(
+                stringResource(R.string.body_history_source, it),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun formatInstant(value: java.time.Instant): String =
+    DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
+        .withZone(ZoneId.systemDefault())
+        .format(value)
