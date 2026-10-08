@@ -4,7 +4,7 @@ plugins {
 }
 android {
  namespace="io.github.hebadenys.fitnesshub"; compileSdk=36
- defaultConfig { applicationId="io.github.hebadenys.fitnesshub"; minSdk=28; targetSdk=35; versionCode=13; versionName="0.3.11"; testInstrumentationRunner="androidx.test.runner.AndroidJUnitRunner" }
+ defaultConfig { applicationId="io.github.hebadenys.fitnesshub"; minSdk=28; targetSdk=35; versionCode=14; versionName="0.3.12"; testInstrumentationRunner="androidx.test.runner.AndroidJUnitRunner" }
  buildFeatures { compose=true }
  compileOptions { sourceCompatibility=JavaVersion.VERSION_17; targetCompatibility=JavaVersion.VERSION_17 }
  kotlin {
@@ -15,7 +15,6 @@ android {
     unitTests.all {
         it.useJUnitPlatform()
         it.systemProperty("fitnesshub.schemas", "$projectDir/schemas")
-        it.systemProperty("fitnesshub.visualQaDir", "$projectDir/build/reports/visual-qa")
         it.systemProperty("robolectric.dependency.repo.url", "https://repo.maven.apache.org/maven2")
         it.maxHeapSize = "2g"
         it.testLogging.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL

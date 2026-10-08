@@ -34,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
@@ -225,8 +226,10 @@ fun NutritionScreen(viewModel: NutritionViewModel = hiltViewModel()) {
                     )
                 }
                 Switch(
-                    checked = model.catalogEnabled,
-                    onCheckedChange = viewModel::setCatalogEnabled
+                    checked = false,
+                    onCheckedChange = null,
+                    enabled = false,
+                    modifier = Modifier.testTag("nutrition_catalog_disabled")
                 )
             }
         }

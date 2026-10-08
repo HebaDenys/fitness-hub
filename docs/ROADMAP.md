@@ -2,7 +2,7 @@
 
 **Piano completo:** [MASTER_PLAN.md](MASTER_PLAN.md).  
 **Punto da cui ripartire:** [PROGRESS.md](PROGRESS.md).  
-**Aggiornamento:** 7 ottobre 2026, incremento 0.3.6.
+**Aggiornamento:** 8 ottobre 2026, candidate 0.3.12.
 
 Indice del backlog, non duplicazione. Le vecchie Phase 1–7 e la strategia CSV/BLE principale sono superate: Xiaomi Cloud nello stesso APK, archivio proprio e interoperabilità Health Connect.
 
@@ -36,13 +36,13 @@ Sicurezza e backup iniziano in T0/T1. T7 indica la prova completa di trasferimen
 
 ## Incrementi, non traguardi completi
 
-0.3.2: protocollo/parser Xiaomi. 0.3.3: archivio Room, binding, checkpoint, migrazioni e backup v2. 0.3.4: motore autenticazione/HTTPS/sessione. 0.3.5: schermata sorgente e resolver corporeo condiviso. **0.3.6: peso e body-fat Health Connect conservati con record ID/timestamp esatti nello schema 7**, evitando la perdita di più misure nello stesso giorno. Esiti reali in PROGRESS.
+0.3.2–0.3.6: protocollo/archivio Xiaomi gated, resolver corporeo e record Health Connect esatti. 0.3.7–0.3.10: Centro sorgenti, onboarding, grafici interattivi, timestamp HC, BLE receive-only, basi nutrizionali e CSV canonico. **0.3.11–0.3.12: inserimento corporeo manuale offline, schema 9 e candidate QA con policy no-INTERNET.** Esiti reali in PROGRESS.
 
 **T1 resta incompleto:** runtime bloccato dal gate firma privata; challenge, account/regione/modello e compatibilità fisica non provati. La presenza della schermata non autorizza a dire che l'utente può già collegare Xiaomi. T7 resta incompleto: backup DB non include preferenze/media e trasferimento fisico/cross-schema ancora da completare.
 
 ## Prossimo incremento tecnico
 
-**FH-UX-02/03/04/06 + FH-HC-01/13:** centro Sorgenti e diagnostica read-only più chiari, con gerarchia Material 3 coerente, stato/permessi/capacità/ultima sync e test su schermi piccoli/accessibilità. Il resolver corporeo condiviso e i record esatti HC non vanno riscritti.
+**QA dispositivo + FH-SAFE-03:** installare la candidate sul Redmi, eseguire la checklist fisica/visuale e validare Health Connect/BLE/camera/restore. In parallelo decidere firma privata e migrazione prima di qualsiasi login Xiaomi reale. Dopo il device gate, riprendere checkpoint/tombstone HC e portabilità cross-schema.
 
 In parallelo **FH-SAFE-03** richiede decisione del proprietario su firma privata, custodia e migrazione prima dei login reali. Non cambiare silenziosamente chiavi/package o togliere il gate. La decisione non impedisce test sintetici e lavoro sul dato canonico.
 

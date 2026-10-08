@@ -50,8 +50,11 @@ object AppModule {
 
     @Provides @Singleton fun nutritionPreferences(@ApplicationContext context: Context) = NutritionPreferences(context)
     @Provides fun nutritionDao(db: HealthDatabase): NutritionDao = db.nutritionDao()
-    @Provides @Singleton fun foodCatalog(preferences: NutritionPreferences): FoodCatalogConnector =
-        OpenFoodFactsConnector(enabledProvider = { preferences.isCatalogEnabled() })
+    @Provides @Singleton fun foodCatalog(): FoodCatalogConnector =
+        // Candidate builds intentionally request no INTERNET permission. Keep
+        // remote product lookup hard-disabled so unknown barcodes fall back to
+        // on-device label OCR or manual entry.
+        OpenFoodFactsConnector(enabledProvider = { false })
     @Provides @Singleton fun nutrition(dao: NutritionDao, catalog: FoodCatalogConnector) = NutritionRepository(dao, catalog)
 
     @Provides fun scaleDao(db: HealthDatabase): ScaleDao = db.scaleDao()

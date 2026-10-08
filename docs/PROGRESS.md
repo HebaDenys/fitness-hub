@@ -1,95 +1,43 @@
-# Fitness Hub — Stato operativo e passaggio di consegne
+# Fitness Hub — stato operativo
 
-**Aggiornamento:** 7 ottobre 2026. Piano vincolante: [MASTER_PLAN.md](MASTER_PLAN.md).  
+**Aggiornamento:** 8 ottobre 2026.  
 **Branch operativo:** `main`.  
-**HEAD runtime verificato:** `c184b63261198bbc4a3b7c9d734f078c21adfeb3` — 0.3.6, versionCode 8, database 7.  
-**CI finale:** [37637256417](https://github.com/HebaDenys/fitness-hub/actions/runs/37637256417), job `112846609531`, conclusione **success**.  
-**Commit successivo:** adozione schema/documentazione soltanto; non cambia l'APK verificato.
+**Candidate:** 0.3.12, versionCode 14, database 9.  
+**Checklist:** [qa/0.3.12-functional-checklist.md](qa/0.3.12-functional-checklist.md).
 
-## 1. Consolidamento branch
+## Stato raggiunto
 
-La PR #2 `feat/canonical-body-metrics-resolver` è stata verificata e mergiata in `main` con merge commit `f4c7c185a972242c5067ecbbdb9104d3935c4fc0`. La CI del merge, run [37635000450](https://github.com/HebaDenys/fitness-hub/actions/runs/37635000450), è passata incluse firma/checksum/release.
+Il resolver corporeo è condiviso da Dashboard, Corpo, Insights ed export. Gli eventi distinti sono ordinati prima per tempo; la priorità della sorgente non può far vincere una misura vecchia. Eventi con stesso identificatore esplicito vengono riconciliati senza cancellare gli originali.
 
-Il vecchio branch `feat/phase-1-2-foundation-health-connect` era già confluito storicamente tramite PR #1. Non è stato ri-mergiato perché oggi diverge dal progetto corrente e contiene storia/file obsoleti; un secondo merge non è necessario per conservare il lavoro già integrato.
+Health Connect conserva peso e body-fat a precisione record (ID, timestamp, source package) oltre alla cache giornaliera. Il manifest contiene solo permessi `READ_*` pertinenti e nessun write-back.
 
-Il proprietario ha autorizzato la prosecuzione tecnica direttamente su `main`. Nessun force-push. Il login Xiaomi reale resta bloccato da `AwaitingPrivateSigning` finché firma privata, custodia e migrazione non vengono approvate esplicitamente.
+Lo schema 9 aggiunge `manual_body_measurements`: peso e/o body fat manuali, timestamp esplicito, validazione, source `MANUAL`, timeline canonica e backup. Corpo rimane utilizzabile anche senza permessi Health Connect.
 
-## 2. Dati corporei canonici consolidati
+Nutrizione distingue basi `PER_100G`, `PER_SERVING`, `LEGACY` e `UNKNOWN`; i dati vecchi non vengono reinterpretati. Il parser Open Food Facts è testato su fixture, ma la candidate non richiede INTERNET e il lookup remoto è hard-disabled. Manuale, catalogo locale e OCR on-device restano i fallback.
 
-`CanonicalBodyMetricResolver` usa la **recenza come regola primaria tra eventi distinti**. Una misura Xiaomi vecchia non può battere una Health Connect più recente solo per priorità sorgente. La priorità sorgente/metodo interviene soltanto per lo stesso `eventKey` esplicito o come tie-break a timestamp uguale.
+Il Centro sorgenti non presenta Mi Fitness/Google Fit come account collegati: mostra soltanto package effettivamente osservati nei record Health Connect. Xiaomi cloud rimane `AwaitingPrivateSigning`. AI remota è disabilitata nella candidate no-INTERNET.
 
-`CanonicalBodyRepository` alimenta Body, Dashboard e Insights/export. Originali non vengono modificati o cancellati. Più pesate reali nello stesso giorno restano eventi distinti. Versioni Xiaomi con stesso eventKey possono collassare nella vista canonica ma restano tutte nell'archivio sorgente.
+Backup v2 include 22 tabelle dominio; restore resta stesso-schema, transazionale e conservativo sui conflitti. Export peso usa gli eventi canonici grezzi con timestamp/source/method, non la media mobile analytics.
 
-Peso e grasso hanno ultimo valore e data indipendenti. I range UI usano giorni di calendario, non il numero di righe sparse. La cache giornaliera `daily_health` resta compatibile con installazioni precedenti.
+## Evidenze già verificate
 
-## 3. Incremento 0.3.6 — record corporei Health Connect esatti
+- 0.3.10 runtime `77b70a8d6ce8b1d469e4738debd3e52c71590222`: run 37844340676, 409 test / 50 suite, schema 8, firma/checksum verdi.
+- 0.3.11 manual-body `68012a3e60263e3cbd22d29925673551e74ceb3f`: run 37846599737, **415 test / 52 suite**, 0 failure/error/skip; 11 controlli CI/privacy; schema 9 blob `abc11c83e2f2aba5514b2d0399704168c471da89`; APK SHA-256 `e13a7d8bb9eb60eef89359bc87dc5f10907adb2318e19d51105c1449341ea394`.
 
-Schema 7 aggiunge due tabelle additive:
+## QA visuale
 
-- `hc_weight_samples`
-- `hc_body_fat_samples`
+La chat corrente non dispone di Android emulator/ADB. Sono state tentate vere catture Compose sotto Robolectric, non mockup:
+- run 37847324194: `captureToImage` timeout su 7 schermate;
+- run 37847946367: stesso risultato anche con `GraphicsMode.NATIVE`.
 
-Per WeightRecord e BodyFatRecord vengono conservati `metadata.id`, timestamp originale, valore e package origine. Non vengono inventati ID: campioni senza identità stabile possono continuare a contribuire alla cache giornaliera ma non vengono trasformati in record esatti fittizi.
+La candidate mantiene test di composizione/semantica su 360dp, 840dp, dark theme, font 1.5×, grafici e stati empty/error. Questi non equivalgono a ispezione pixel. La prova visiva reale resta un gate dispositivo.
 
-Il resolver canonico usa i record esatti quando presenti e usa `daily_health` soltanto come fallback per quella metrica/data finché un vecchio archivio non viene risincronizzato. La cache giornaliera originale rimane intatta.
+## Prossimo passo
 
-Un full sync sostituisce atomicamente i record esatti nell'intervallo letto; sync incrementali fanno upsert per record ID senza cancellare l'intera serie. Il backup v2 registra ora **21 tabelle dominio** e include le nuove tabelle; resta stesso-schema e conservativo sui conflitti.
+1. ottenere CI verde della candidate 0.3.12 e verificare che `test-latest` punti allo stesso SHA dell’APK;
+2. installare quella APK sul Redmi senza disinstallare dati importanti;
+3. eseguire la checklist fisica: onboarding, navigazione, Health Connect, manual body, pasti/camera, grafici, backup file/restore di prova, dark/font grande;
+4. provare S400/BLE e companion→Health Connect con dati di test;
+5. solo dopo decidere firma privata/migrazione per aprire Xiaomi cloud login.
 
-## 4. Verifica effettiva
-
-### Tentativo iniziale
-
-Commit `c6fad3430ad30e7c291164bcb0a4e187186f5046`, run [37636543743](https://github.com/HebaDenys/fitness-hub/actions/runs/37636543743):
-
-- compilazione/lint arrivati alla suite;
-- **391 test, 1 failure**;
-- failure: `DatabaseBackupIdentityTest.forgedOwnerInsideSnapshotRollsBackWholeRestore`;
-- causa osservata: il test assumeva `xiaomi_snapshots` come ultima tabella del backup. Le due nuove tabelle rendevano falsa l'assunzione posizionale;
-- schema/release correttamente saltati; nessun gate disabilitato.
-
-Correzione: `c184b63261198bbc4a3b7c9d734f078c21adfeb3` cerca `xiaomi_snapshots` per nome, mantenendo la stessa prova anti-tampering.
-
-### CI finale 0.3.6
-
-Run [37637256417](https://github.com/HebaDenys/fitness-hub/actions/runs/37637256417):
-
-- `./gradlew testDebugUnitTest lintDebug assembleDebug --stacktrace`: **BUILD SUCCESSFUL**;
-- **391 test app / 43 suite, 0 failures, 0 errors, 0 skipped**;
-- **11 test Python CI/privacy passati**;
-- lint e assembleDebug passati;
-- certificato APK confrontato con la chiave test esistente: passato;
-- checksum passato;
-- pubblicazione rolling test riuscita.
-
-Schema KSP 7: blob `4499932af47e58d3eea06aadf68a8f64b0a11f79`, identityHash `b308e71525b3cb0de3b34822fcaa68e7`. Il file `app/schemas/io.github.hebadenys.fitnesshub.core.database.HealthDatabase/7.json` viene adottato byte-per-byte da quell'output CI.
-
-## 5. APK verificato
-
-**FitnessHub-v0.3.6-debug.apk**, versionCode **8**, package `io.github.hebadenys.fitnesshub`, database **7**.
-
-[APK diretto](https://github.com/HebaDenys/fitness-hub/releases/download/test-latest/FitnessHub-v0.3.6-debug.apk) — [Checksum](https://github.com/HebaDenys/fitness-hub/releases/download/test-latest/FitnessHub-v0.3.6-debug.apk.sha256)
-
-SHA-256: `917562343a8caff3ee80df321966ff8b6cca289c5e0ff0820a8ae41a8792e219`.  
-Dimensione: **143578608 byte**.  
-Release `test-latest` punta al runtime commit `c184b63261198bbc4a3b7c9d734f078c21adfeb3`.
-
-## 6. Limiti attuali
-
-- Il login Xiaomi reale è ancora disabilitato. CAPTCHA/2FA, redirect STS e compatibilità S400 Pro/account/regione/firmware non sono testati dal vivo.
-- Health Connect resta a 11 tipi; il nuovo lavoro migliora identità/timestamp di peso e body-fat, non estende ancora tutte le categorie.
-- La Changes API non ha ancora checkpoint/tombstone per tipo: una cancellazione non identificata può ancora richiedere full resync.
-- Deduplica cross-source è intenzionalmente conservativa: non fonde valori soltanto perché simili nel tempo/peso.
-- Backup v2 include righe DB e relazioni, non preferenze/media/credenziali; restore richiede lo stesso schema. Trasferimento fisico resta da provare.
-- Nessuna prova Redmi/S400/Mi Band, hardware Keystore o trasferimento tra telefoni in questa sessione.
-
-## 7. Prossimo passo
-
-Il prossimo blocco pronto è soprattutto **FH-UX-02/03/04/06 + FH-HC-01/13**:
-
-1. trasformare Impostazioni in un centro Sorgenti più leggibile: Health Connect, Xiaomi, companion/Google Fit tramite HC, stato, capacità, ultima sync, permessi e azioni;
-2. rifinire gerarchia visiva, card, spacing, tipografia, dark/light, schermi piccoli e accessibilità;
-3. aggiungere diagnostica read-only per tipi/origini HC osservati e test connessione senza promettere dati che l'app sorgente non espone;
-4. mantenere Xiaomi gated fino alla decisione FH-SAFE-03;
-5. dopo la UX, proseguire su HC per tipo/checkpoint e riconciliazione copie.
-
-Riferimenti: [MASTER_PLAN.md](MASTER_PLAN.md), [ARCHITECTURE.md](ARCHITECTURE.md), [backup-format-v2.md](backup-format-v2.md).
+Non chiamare prodotto finito prima di questi gate.

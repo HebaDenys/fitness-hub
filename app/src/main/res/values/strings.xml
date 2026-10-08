@@ -152,7 +152,7 @@
     <string name="nutrition_barcode_unknown">This barcode is not in the local database. Photograph the nutrition label or enter the values manually.</string>
     <string name="nutrition_entry_summary">%1$s Â· %2$s serving(s) Â· %3$s</string>
     <string name="nutrition_catalog_title">Online product lookup</string>
-    <string name="nutrition_catalog_description">Off by default. When enabled, unknown barcodes are looked up on Open Food Facts and cached locally.</string>
+    <string name="nutrition_catalog_description">Unavailable in this test build: Fitness Hub requests no network permission. Unknown barcodes fall back to on-device label OCR or manual entry.</string>
     <string name="nutrition_confirm_title">Confirm values</string>
     <string name="nutrition_confirm_provenance">Source: %1$s. Check the values before saving.</string>
     <string name="nutrition_field_name">Product name</string>

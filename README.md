@@ -4,7 +4,7 @@
 
 App Android local-first per unificare salute, composizione corporea, alimentazione, attività, sonno, allenamenti, obiettivi, analytics e report.
 
-**Stato: pre-alpha, build di test 0.3.6.** Codice e test non equivalgono a compatibilità hardware verificata o prodotto pronto per credenziali sensibili.
+**Stato: pre-alpha, candidate di test 0.3.12.** Codice e test non equivalgono a compatibilità hardware verificata o prodotto pronto per credenziali sensibili.
 
 ## Piano e continuità
 
@@ -13,7 +13,7 @@ App Android local-first per unificare salute, composizione corporea, alimentazio
 - **[Roadmap](docs/ROADMAP.md):** ordine e dipendenze dei traguardi.
 - **[Istruzioni agenti](AGENTS.md):** cosa leggere e come avanzare in ogni sessione.
 
-La 0.3.6 consolida su `main` il resolver corporeo condiviso e conserva anche i record Health Connect di peso/grasso con ID e timestamp originali. La schermata **Impostazioni -> Xiaomi Home** resta disponibile per stato sorgente, selezione e storico archiviato. Il motore di login, la selezione persona/bilancia e le azioni di importazione sono collegati e testati con risposte sintetiche; **la build pubblica attuale blocca il login reale e non mostra campi per le credenziali**. Il prossimo incremento tecnico è il repository canonico condiviso per le metriche corporee. Il piano guida le sessioni richieste, non attiva lavoro schedulato autonomo.
+La 0.3.12 è una candidate funzionale: dati corporei canonici condivisi, record Health Connect con timestamp/ID, inserimento manuale offline, Centro sorgenti, onboarding, grafici interattivi, pasti con basi nutrizionali esplicite, backup/restore e CSV grezzo. **Xiaomi cloud login resta bloccato dalla firma privata.** La candidate non richiede INTERNET: lookup Open Food Facts e AI remota sono disabilitati invece di simulare una connessione.
 
 ## Obiettivo
 
@@ -50,27 +50,27 @@ Per la Mi Band: companion compatibile -> Health Connect -> Fitness Hub. Modello/
 
 | Area | Stato e limiti |
 |---|---|
-| Fondazione | Kotlin/Compose/Material 3, Hilt, Room schema 7, un modulo Android. |
+| Fondazione | Kotlin/Compose/Material 3, Hilt, Room schema 9, un modulo Android. |
 | Health Connect | Lettura di 11 tipi; peso e grasso ora conservano anche record ID/timestamp esatti oltre alla cache giornaliera. Fasi sonno, tipi aggiuntivi, storico completo e write-back restano da completare; finestra applicativa 30/365 giorni. |
 | Xiaomi | Protocollo, archivio, autenticazione/sessione e UI sorgente verificati con fixture, Room e test Compose. Login reale gated; binding iniziale singolo e immutabile. |
-| Nutrizione | Catalogo locale, diario, barcode/OCR e Open Food Facts prototipali. |
+| Nutrizione | Diario, manuale, barcode locale e OCR on-device; basi per 100g/porzione esplicite. Open Food Facts remoto disabilitato nella candidate no-INTERNET. |
 | Training | Esercizi, sessioni, serie, RPE/RIR e stime 1RM/PR prototipali. |
 | Analytics | Peso corporeo condiviso fra Dashboard, Corpo, Insights/export tramite repository canonico; riconciliazione cross-source resta conservativa e da estendere alle altre metriche. |
-| Backup | Formato v2 delle 19 tabelle dati, ripristino transazionale e conflitti verificati con SQLite nativo. Esclude credenziali, preferenze e media; stesso schema DB richiesto. |
-| AI | BYOK/configurazione/trasporto iniziali, non riconoscimento pasti completo. |
+| Backup | Formato v2 di 22 tabelle dominio, ripristino transazionale e conflitti verificati con SQLite nativo. Esclude credenziali, preferenze e media; stesso schema DB richiesto. |
+| AI | Codice BYOK prototipale presente ma rete/UI disabilitate nella candidate no-INTERNET; nessuna chiave richiesta per il test. |
 | Distribuzione | APK e checksum in release; chiave pubblica TEST-ONLY, non firma privata di produzione. |
 
 Esiti CI, SHA software e limiti di verifica sono in [PROGRESS.md](docs/PROGRESS.md). Test con connessioni simulate, AES di test, Room/SQLite nativo e interazioni Compose sotto Robolectric non sostituiscono account Xiaomi, handshake remoto, hardware Keystore o S400 fisica.
 
 ## Installazione e recupero
 
-[APK 0.3.6](https://github.com/HebaDenys/fitness-hub/releases/download/test-latest/FitnessHub-v0.3.6-debug.apk) dalla [prerelease test-latest](https://github.com/HebaDenys/fitness-hub/releases/tag/test-latest). Controllare versione, commit, checksum e note; la release rolling può essere aggiornata.
+[APK 0.3.12](https://github.com/HebaDenys/fitness-hub/releases/download/test-latest/FitnessHub-v0.3.12-debug.apk) dalla [prerelease test-latest](https://github.com/HebaDenys/fitness-hub/releases/tag/test-latest). Controllare versione, commit, checksum e note; la release rolling può essere aggiornata.
 
 **Impostazioni -> Xiaomi Home** mostra blocco di accesso e archivio locale. Le credenziali non vengono richieste nel canale test attuale. Nessun account o dato dimostrativo è aggiunto al database dell'utente.
 
 La chiave test pubblica mantiene continuità fra build compatibili ma non autentica il distributore contro chi possiede la stessa chiave. Firma privata/custodia/migrazione restano un gate prima del normale uso con login sensibili.
 
-**Non disinstallare una versione con dati importanti per risolvere un errore di firma.** Il vecchio package Open Health Hub e `io.github.hebadenys.fitnesshub` sono identità distinte, senza migrazione automatica dimostrata. La 0.3.6 mantiene package e chiave test, ma migra il database da schema 6 a 7 aggiungendo in modo additivo i record corporei Health Connect a precisione di evento.
+**Non disinstallare una versione con dati importanti per risolvere un errore di firma.** Il vecchio package Open Health Hub e `io.github.hebadenys.fitnesshub` sono identità distinte, senza migrazione automatica dimostrata. La 0.3.12 mantiene package e chiave test e porta il database a schema 9 con migrazioni additive per identità corporea, basi nutrizionali e misure manuali.
 
 Backup v2 in **Insights -> Backup**: file cifrato, apertura e ripristino. Copre righe DB, non l'intero ambiente app. Massimo 32 MiB decifrati, stesso schema; conflitti annullano tutto senza sovrascrivere. V1 parziale solo in archivio salute vuoto; catalogo esercizi e impostazioni del profilo possono rimanere. Prova fisica di trasferimento e portabilità fra schemi ancora da completare. [Formato e limiti](docs/backup-format-v2.md).
 

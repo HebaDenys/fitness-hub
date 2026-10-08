@@ -152,7 +152,7 @@
     <string name="nutrition_barcode_unknown">Questo codice a barre non Ã¨ nel database locale. Fotografa l\'etichetta nutrizionale oppure inserisci i valori manualmente.</string>
     <string name="nutrition_entry_summary">%1$s Â· %2$s porzione/i Â· %3$s</string>
     <string name="nutrition_catalog_title">Ricerca prodotti online</string>
-    <string name="nutrition_catalog_description">Disattivata per impostazione predefinita. Se abilitata, i codici sconosciuti vengono cercati su Open Food Facts e memorizzati in locale.</string>
+    <string name="nutrition_catalog_description">Non disponibile in questa build di test: Fitness Hub non richiede permessi di rete. I codici sconosciuti passano a OCR locale dell’etichetta o inserimento manuale.</string>
     <string name="nutrition_confirm_title">Conferma i valori</string>
     <string name="nutrition_confirm_provenance">Origine: %1$s. Controlla i valori prima di salvare.</string>
     <string name="nutrition_field_name">Nome del prodotto</string>

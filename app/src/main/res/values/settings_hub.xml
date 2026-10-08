@@ -27,6 +27,6 @@
     <string name="source_scale_title">Local scale tools</string>
     <string name="source_scale_description">CSV migration and optional Bluetooth capture. Kept as fallback tools, not the primary Xiaomi flow.</string>
     <string name="source_scale_advanced_notice">Advanced fallback tools. Prefer the Xiaomi source screen for normal cloud history once the signed channel is approved and validated.</string>
-    <string name="source_ai_description">Optional BYOK assistance. Core health, food and training features remain usable without AI.</string>
+    <string name="source_ai_description">Unavailable in this test build: no network permission is requested and no API key is needed. Core health, food and training features remain local.</string>
     <string name="source_privacy_description">Health permissions, rationale and local-first behavior. Fitness Hub does not require its own cloud account.</string>
 </resources>

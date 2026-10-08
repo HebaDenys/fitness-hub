@@ -62,7 +62,6 @@ jobs:
             app/build/test-results/testDebugUnitTest/
             app/build/reports/tests/testDebugUnitTest/
             app/build/reports/lint-results-debug.*
-            app/build/reports/visual-qa/
             app/schemas/
           if-no-files-found: warn
           retention-days: 7

@@ -1,14 +1,12 @@
 package io.github.hebadenys.fitnesshub.visualqa
 
 import android.app.Application
-import android.graphics.Bitmap
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.Density
 import io.github.hebadenys.fitnesshub.core.body.CanonicalBodyData
 import io.github.hebadenys.fitnesshub.core.body.CanonicalBodyDay
@@ -50,15 +48,20 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import org.robolectric.annotation.GraphicsMode
 import org.robolectric.annotation.LooperMode
-import java.io.File
-import java.io.FileOutputStream
 import java.time.Instant
 import java.time.LocalDate
 
+/**
+ * Layout/semantics QA across real production composables.
+ *
+ * Pixel screenshots are intentionally not asserted here: captureToImage timed
+ * out in this unit-test environment in runs 37847324194 and 37847946367, with
+ * both default and native Robolectric renderers. Physical/emulator screenshot
+ * inspection remains a separate device gate.
+ */
 private fun bodyFixture(): CanonicalBodyData {
-    val weightOld = CanonicalBodyMetricResolver.Observation(
+    val older = CanonicalBodyMetricResolver.Observation(
         CanonicalBodyMetricResolver.Metric.WEIGHT, 100.2, "kg",
         Instant.parse("2026-10-07T08:00:00Z"),
         CanonicalBodyMetricResolver.Source.SCALE,
@@ -66,7 +69,7 @@ private fun bodyFixture(): CanonicalBodyData {
         CanonicalBodyMetricResolver.Quality.VALID,
         "fixture-scale-old"
     )
-    val weight = CanonicalBodyMetricResolver.Observation(
+    val latest = CanonicalBodyMetricResolver.Observation(
         CanonicalBodyMetricResolver.Metric.WEIGHT, 99.4, "kg",
         Instant.parse("2026-10-08T18:00:00Z"),
         CanonicalBodyMetricResolver.Source.MANUAL,
@@ -83,16 +86,16 @@ private fun bodyFixture(): CanonicalBodyData {
         "fixture-manual-fat"
     )
     val resolver = CanonicalBodyMetricResolver()
-    val all = listOf(weightOld, weight, fat)
+    val all = listOf(older, latest, fat)
     val resolved = resolver.resolve(all)
     return CanonicalBodyData(
-        latestWeight = resolved[CanonicalBodyMetricResolver.Metric.WEIGHT],
-        latestBodyFat = resolved[CanonicalBodyMetricResolver.Metric.BODY_FAT],
-        weightTimeline = resolver.timeline(all, CanonicalBodyMetricResolver.Metric.WEIGHT),
-        bodyFatTimeline = resolver.timeline(all, CanonicalBodyMetricResolver.Metric.BODY_FAT),
-        days = listOf(
-            CanonicalBodyDay(LocalDate.of(2026, 10, 8), weight, fat),
-            CanonicalBodyDay(LocalDate.of(2026, 10, 7), weightOld, null)
+        resolved[CanonicalBodyMetricResolver.Metric.WEIGHT],
+        resolved[CanonicalBodyMetricResolver.Metric.BODY_FAT],
+        resolver.timeline(all, CanonicalBodyMetricResolver.Metric.WEIGHT),
+        resolver.timeline(all, CanonicalBodyMetricResolver.Metric.BODY_FAT),
+        listOf(
+            CanonicalBodyDay(LocalDate.of(2026, 10, 8), latest, fat),
+            CanonicalBodyDay(LocalDate.of(2026, 10, 7), older, null)
         )
     )
 }
@@ -108,26 +111,13 @@ private fun settingsFixture() = SettingsUiModel(
     lastLocalSyncMillis = Instant.parse("2026-10-08T18:00:00Z").toEpochMilli()
 )
 
-private fun saveScreenshot(rule: androidx.compose.ui.test.junit4.AndroidComposeTestRule<*, *>, name: String) {
-    rule.waitForIdle()
-    val bitmap = rule.onRoot(useUnmergedTree = true).captureToImage().asAndroidBitmap()
-    val directory = File(requireNotNull(System.getProperty("fitnesshub.visualQaDir")))
-    check(directory.exists() || directory.mkdirs()) { "Could not create visual QA directory" }
-    val file = File(directory, name)
-    FileOutputStream(file).use { output ->
-        check(bitmap.compress(Bitmap.CompressFormat.PNG, 100, output))
-    }
-    check(file.length() > 1_000L) { "Screenshot was unexpectedly small: $name" }
-}
-
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28], application = Application::class, qualifiers = "en-rUS-w360dp-h720dp")
 @LooperMode(LooperMode.Mode.PAUSED)
-@GraphicsMode(GraphicsMode.Mode.NATIVE)
-class VisualQaCompactTest {
+class VisualQaCompactSemanticsTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
-    @Test fun dashboardCompactLight() {
+    @Test fun dashboardComposesAtCompactWidthWithSyntheticData() {
         val repo = mock<HealthSyncRepository>()
         whenever(repo.observeDaily()).thenReturn(flowOf(listOf(
             DailyHealthEntity(
@@ -135,7 +125,10 @@ class VisualQaCompactTest {
                 sleepMinutes = 438, restingHeartRate = 58, syncedAt = 1,
                 dataOrigins = "fixture.health.source"
             ),
-            DailyHealthEntity(date = "2026-10-07", steps = 8100, activeCalories = 550.0, sleepMinutes = 420, restingHeartRate = 60, syncedAt = 1)
+            DailyHealthEntity(
+                date = "2026-10-07", steps = 8100, activeCalories = 550.0,
+                sleepMinutes = 420, restingHeartRate = 60, syncedAt = 1
+            )
         )))
         val body = mock<CanonicalBodyRepository>()
         whenever(body.observe()).thenReturn(flowOf(bodyFixture()))
@@ -146,26 +139,29 @@ class VisualQaCompactTest {
                 DashboardScreen(onNavigateToSettings = {}, viewModel = vm)
             }
         }
-        compose.waitForIdle()
-        saveScreenshot(compose, "dashboard-compact-light.png")
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("Dashboard").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("Dashboard").assertExists()
+        compose.onNodeWithText("99.4 kg").assertExists()
+        compose.onNodeWithText("Steps").assertExists()
     }
 
-    @Test fun bodyCompactDark() {
+    @Test fun bodyComposesDarkAndManualEntryIsAvailableWithoutHealthConnect() {
         val body = mock<CanonicalBodyRepository>()
         whenever(body.observe()).thenReturn(flowOf(bodyFixture()))
-        val dao = mock<HealthDao>()
-        val vm = BodyViewModel(HealthConnectManager(compose.activity), body, dao)
+        val vm = BodyViewModel(HealthConnectManager(compose.activity), body, mock<HealthDao>())
 
         compose.setContent {
             FitnessHubTheme(darkTheme = true) {
                 BodyScreen(onNavigateToSettings = {}, viewModel = vm)
             }
         }
-        compose.waitForIdle()
-        saveScreenshot(compose, "body-compact-dark.png")
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("manual_body_card").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("manual_body_card").assertExists()
+        compose.onNodeWithTag("manual_save").assertIsEnabled()
+        compose.onNodeWithText("99.4 kg").assertExists()
     }
 
-    @Test fun nutritionCompactLight() {
+    @Test fun nutritionComposesAndRemoteCatalogIsExplicitlyDisabled() {
         val repo = mock<NutritionRepository>()
         whenever(repo.observeEntries(any())).thenReturn(flowOf(listOf(
             NutritionEntryWithFood(
@@ -186,23 +182,20 @@ class VisualQaCompactTest {
         ))
         val vm = NutritionViewModel(repo, NutritionPreferences(compose.activity.applicationContext))
 
-        compose.setContent {
-            FitnessHubTheme(darkTheme = false) { NutritionScreen(viewModel = vm) }
-        }
-        compose.waitForIdle()
-        saveScreenshot(compose, "nutrition-compact-light.png")
+        compose.setContent { FitnessHubTheme { NutritionScreen(viewModel = vm) } }
+        compose.waitUntil(5_000) { compose.onAllNodesWithText("Synthetic rice bowl").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("Synthetic rice bowl").assertExists()
+        compose.onNodeWithTag("nutrition_catalog_disabled").assertIsNotEnabled()
     }
 
-    @Test fun interactiveChartSelectedPoint() {
+    @Test fun interactiveChartExposesSelectedValuesAndSources() {
         compose.setContent {
-            FitnessHubTheme(darkTheme = false) {
+            FitnessHubTheme {
                 TrendChart(
                     title = "Synthetic weight trend",
                     points = listOf(
                         ChartPoint(LocalDate.of(2026,10,4), 101.2, DailySummary.PROVENANCE_MEASURED, "Scale"),
-                        ChartPoint(LocalDate.of(2026,10,5), 100.7, DailySummary.PROVENANCE_MEASURED, "Scale"),
                         ChartPoint(LocalDate.of(2026,10,6), null),
-                        ChartPoint(LocalDate.of(2026,10,7), 100.0, DailySummary.PROVENANCE_MEASURED, "Health Connect"),
                         ChartPoint(LocalDate.of(2026,10,8), 99.4, DailySummary.PROVENANCE_MEASURED, "Manual")
                     ),
                     selectedRange = TimeRange.SEVEN_DAYS,
@@ -211,58 +204,68 @@ class VisualQaCompactTest {
                 )
             }
         }
-        saveScreenshot(compose, "chart-interactive.png")
+        compose.onNodeWithText("Source: Manual").assertExists()
+        compose.onNodeWithTag("chart_point_selector")
+            .performSemanticsAction(SemanticsActions.SetProgress) { it(0f) }
+        compose.onNodeWithText("Source: Scale").assertExists()
     }
 
-    @Test fun emptyAndErrorStates() {
+    @Test fun emptyAndErrorStatesRemainDistinct() {
         compose.setContent {
             FitnessHubTheme {
                 ScreenStateHandler<Unit>(state = ScreenState.Empty(), content = {})
             }
         }
-        saveScreenshot(compose, "state-empty.png")
+        compose.onNodeWithText("No health data available").assertExists()
+
         compose.setContent {
             FitnessHubTheme {
-                ScreenStateHandler<Unit>(state = ScreenState.Error(message = "Synthetic offline failure"), content = {})
+                ScreenStateHandler<Unit>(
+                    state = ScreenState.Error(message = "Synthetic offline failure"),
+                    content = {}
+                )
             }
         }
-        saveScreenshot(compose, "state-error.png")
+        compose.onNodeWithText("Something went wrong").assertExists()
+        compose.onNodeWithText("Synthetic offline failure").assertExists()
     }
 }
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28], application = Application::class, qualifiers = "en-rUS-w840dp-h900dp")
 @LooperMode(LooperMode.Mode.PAUSED)
-@GraphicsMode(GraphicsMode.Mode.NATIVE)
-class VisualQaWideDarkTest {
+class VisualQaWideDarkSemanticsTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
-    @Test fun sourcesWideDark() {
+    @Test fun sourcesHubComposesWideDarkAndUnavailableAiCannotBeOpened() {
         compose.setContent {
-            FitnessHubTheme(darkTheme = true) {
-                SettingsHubContent(model = settingsFixture())
-            }
+            FitnessHubTheme(darkTheme = true) { SettingsHubContent(settingsFixture()) }
         }
-        saveScreenshot(compose, "sources-wide-dark.png")
+        compose.onNodeWithTag("settings_hub").assertExists()
+        compose.onNodeWithTag("source_health_connect").assertExists()
+        compose.onNodeWithTag("source_xiaomi").assertExists()
+        compose.onNodeWithTag("source_scale").assertExists()
+        compose.onNodeWithTag("settings_ai").assertIsNotEnabled()
     }
 }
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28], application = Application::class, qualifiers = "en-rUS-w360dp-h720dp")
 @LooperMode(LooperMode.Mode.PAUSED)
-@GraphicsMode(GraphicsMode.Mode.NATIVE)
-class VisualQaLargeTextTest {
+class VisualQaLargeTextSemanticsTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
-    @Test fun onboardingCompactLargeText() {
+    @Test fun onboardingActionsRemainReachableAtLargeTextScale() {
         compose.setContent {
-            FitnessHubTheme(darkTheme = false) {
+            FitnessHubTheme {
                 val base = LocalDensity.current
                 CompositionLocalProvider(LocalDensity provides Density(base.density, 1.5f)) {
                     OnboardingScreen(onContinue = {}, onSkip = {})
                 }
             }
         }
-        saveScreenshot(compose, "onboarding-compact-large-text.png")
+        compose.onNodeWithTag("onboarding").performScrollToNode(hasTestTag("onboarding_skip"))
+        compose.onNodeWithTag("onboarding_skip").assertIsEnabled()
+        compose.onNodeWithTag("onboarding_continue").assertExists()
     }
 }

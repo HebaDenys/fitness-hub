@@ -198,10 +198,11 @@ internal fun SettingsHubContent(
                 icon = Icons.Default.Refresh,
                 title = stringResource(R.string.ai_section_title),
                 description = stringResource(R.string.source_ai_description),
-                status = stringResource(R.string.source_status_optional),
-                tone = SourceTone.NEUTRAL,
+                status = stringResource(R.string.source_status_unavailable),
+                tone = SourceTone.BLOCKED,
                 onClick = onAi,
-                testTag = "settings_ai"
+                testTag = "settings_ai",
+                enabled = false
             )
         }
 
@@ -227,11 +228,13 @@ private fun HubCard(
     status: String,
     tone: SourceTone,
     onClick: () -> Unit,
-    testTag: String
+    testTag: String,
+    enabled: Boolean = true
 ) {
     val spacing = FitnessHubTheme.spacing
     Card(
         onClick = onClick,
+        enabled = enabled,
         modifier = Modifier.fillMaxWidth().testTag(testTag),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)

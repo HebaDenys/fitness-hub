@@ -27,6 +27,6 @@
     <string name="source_scale_title">Strumenti bilancia locali</string>
     <string name="source_scale_description">Migrazione CSV e acquisizione Bluetooth facoltativa. Restano strumenti di fallback, non il flusso Xiaomi principale.</string>
     <string name="source_scale_advanced_notice">Strumenti di fallback avanzati. Per lo storico normale usa la sorgente Xiaomi quando il canale firmato sarà approvato e verificato.</string>
-    <string name="source_ai_description">Assistenza BYOK facoltativa. Salute, alimentazione e allenamenti restano utilizzabili senza AI.</string>
+    <string name="source_ai_description">Non disponibile in questa build di test: non viene richiesto alcun permesso di rete né una chiave API. Salute, pasti e allenamenti restano locali.</string>
     <string name="source_privacy_description">Permessi salute, informativa e funzionamento local-first. Fitness Hub non richiede un proprio account cloud.</string>
 </resources>
