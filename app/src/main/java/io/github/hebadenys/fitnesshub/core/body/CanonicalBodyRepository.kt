@@ -4,6 +4,7 @@ import io.github.hebadenys.fitnesshub.core.database.DailySummaryMapper
 import io.github.hebadenys.fitnesshub.core.database.HealthBodyFatSampleEntity
 import io.github.hebadenys.fitnesshub.core.database.HealthDao
 import io.github.hebadenys.fitnesshub.core.database.HealthWeightSampleEntity
+import io.github.hebadenys.fitnesshub.core.database.ManualBodyMeasurementEntity
 import io.github.hebadenys.fitnesshub.core.scale.BodyCompositionEstimateEntity
 import io.github.hebadenys.fitnesshub.core.scale.ScaleDao
 import io.github.hebadenys.fitnesshub.core.scale.ScaleMeasurementEntity
@@ -42,14 +43,16 @@ class CanonicalBodyRepository(
 ) {
     private data class ExactHealthBody(
         val weights: List<HealthWeightSampleEntity>,
-        val bodyFats: List<HealthBodyFatSampleEntity>
+        val bodyFats: List<HealthBodyFatSampleEntity>,
+        val manual: List<ManualBodyMeasurementEntity>
     )
 
     fun observe(): Flow<CanonicalBodyData> {
         val exactHealth = combine(
             healthDao.observeWeightSamples(),
-            healthDao.observeBodyFatSamples()
-        ) { weights, bodyFats -> ExactHealthBody(weights, bodyFats) }
+            healthDao.observeBodyFatSamples(),
+            healthDao.observeManualBodyMeasurements()
+        ) { weights, bodyFats, manual -> ExactHealthBody(weights, bodyFats, manual) }
 
         return combine(
             healthDao.observeDaily(),
@@ -80,6 +83,27 @@ class CanonicalBodyRepository(
                         "hc-body-fat:" + row.dataOrigin + ":" + row.recordId,
                         eventKey = "hc-body-fat:" + row.recordId
                     ))
+                }
+                exact.manual.forEach { row ->
+                    val at = Instant.ofEpochMilli(row.measuredAtMillis)
+                    row.weightKg?.takeIf { it.isFinite() && it in 1.0..500.0 }?.let { value ->
+                        add(observation(
+                            CanonicalBodyMetricResolver.Metric.WEIGHT, value, "kg", at,
+                            CanonicalBodyMetricResolver.Source.MANUAL,
+                            CanonicalBodyMetricResolver.Method.MEASURED,
+                            "manual-weight:" + row.id,
+                            eventKey = "manual:" + row.id
+                        ))
+                    }
+                    row.bodyFatPercent?.takeIf { it.isFinite() && it in 0.0..100.0 }?.let { value ->
+                        add(observation(
+                            CanonicalBodyMetricResolver.Metric.BODY_FAT, value, "%", at,
+                            CanonicalBodyMetricResolver.Source.MANUAL,
+                            CanonicalBodyMetricResolver.Method.MEASURED,
+                            "manual-body-fat:" + row.id,
+                            eventKey = "manual:" + row.id
+                        ))
+                    }
                 }
                 daily.map(DailySummaryMapper::toDomain).forEach { day ->
                     val measuredAt = day.date.atStartOfDay(zone).toInstant()

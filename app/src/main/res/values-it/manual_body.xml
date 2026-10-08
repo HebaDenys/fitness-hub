@@ -1,0 +1,19 @@
+<resources>
+    <string name="body_manual_title">Aggiungi misurazione</string>
+    <string name="body_manual_description">Le misure manuali restano locali e usano la stessa timeline canonica di Health Connect, bilancia e dati Xiaomi. Serve almeno un valore.</string>
+    <string name="body_manual_weight">Peso (kg)</string>
+    <string name="body_manual_body_fat">Grasso corporeo (%)</string>
+    <string name="body_manual_timestamp">Data e ora misura</string>
+    <string name="body_manual_timestamp_hint">Formato: AAAA-MM-GG HH:MM, nel fuso orario del telefono.</string>
+    <string name="body_manual_save">Salva misurazione</string>
+    <string name="body_manual_saved">Misurazione manuale salvata.</string>
+    <string name="body_manual_storage_error">Impossibile salvare la misurazione. I dati esistenti non sono stati modificati.</string>
+    <string name="body_manual_error_missing">Inserisci peso, grasso corporeo o entrambi.</string>
+    <string name="body_manual_error_weight">Il peso deve essere un numero tra 1 e 500 kg.</string>
+    <string name="body_manual_error_body_fat">Il grasso corporeo deve essere un numero tra 0 e 100%.</string>
+    <string name="body_manual_error_timestamp">Usa una data e ora valida nel formato AAAA-MM-GG HH:MM.</string>
+    <string name="body_manual_error_future">La data della misurazione non può essere nel futuro.</string>
+    <string name="body_manual_hc_optional">Health Connect è facoltativo. Le misure manuali funzionano senza autorizzare dati salute.</string>
+    <string name="body_manual_connect_hc">Collega Health Connect</string>
+    <string name="body_history_empty">Nessuna misura corporea. Aggiungine una manualmente o collega una sorgente supportata.</string>
+</resources>

@@ -6,6 +6,7 @@ import io.github.hebadenys.fitnesshub.core.database.DailyHealthEntity
 import io.github.hebadenys.fitnesshub.core.database.HealthBodyFatSampleEntity
 import io.github.hebadenys.fitnesshub.core.database.HealthDatabase
 import io.github.hebadenys.fitnesshub.core.database.HealthWeightSampleEntity
+import io.github.hebadenys.fitnesshub.core.database.ManualBodyMeasurementEntity
 import io.github.hebadenys.fitnesshub.core.scale.ScaleMeasurementEntity
 import io.github.hebadenys.fitnesshub.core.xiaomi.storage.SourceIdentityEntity
 import io.github.hebadenys.fitnesshub.core.xiaomi.storage.XiaomiBindingEntity
@@ -129,6 +130,27 @@ class CanonicalBodyRepositoryTest {
         assertEquals(99.4, data.latestWeight!!.observation.value, 0.001)
         assertEquals(evening, data.latestWeight!!.observation.measuredAt.toEpochMilli())
         assertEquals(2, db.healthDao().dumpWeightSamples().size)
+    }
+
+    @Test fun manualMeasurementJoinsCanonicalTimelineWithoutHealthConnect() = runBlocking {
+        val time = Instant.parse("2026-10-08T18:30:00Z").toEpochMilli()
+        val id = db.healthDao().insertManualBodyMeasurement(
+            ManualBodyMeasurementEntity(
+                measuredAtMillis = time,
+                weightKg = 88.5,
+                bodyFatPercent = 19.2
+            )
+        )
+
+        val data = repository.observe().first()
+
+        assertEquals(88.5, data.latestWeight!!.observation.value, 0.001)
+        assertEquals(19.2, data.latestBodyFat!!.observation.value, 0.001)
+        assertEquals(CanonicalBodyMetricResolver.Source.MANUAL, data.latestWeight!!.observation.source)
+        assertEquals(CanonicalBodyMetricResolver.Source.MANUAL, data.latestBodyFat!!.observation.source)
+        assertEquals("manual:$id", data.latestWeight!!.observation.eventKey)
+        assertEquals(time, data.latestWeight!!.observation.measuredAt.toEpochMilli())
+        assertEquals(1, db.healthDao().dumpManualBodyMeasurements().size)
     }
 
     @Test fun exactHealthRecordsSuppressOnlyCanonicalFallbackAndPreserveDailyCache() = runBlocking {

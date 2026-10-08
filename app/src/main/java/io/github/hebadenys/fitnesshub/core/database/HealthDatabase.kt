@@ -122,6 +122,18 @@ data class HealthBodyFatSampleEntity(
     val dataOrigin: String
 )
 
+@Entity(
+    tableName = "manual_body_measurements",
+    indices = [Index(value = ["measuredAtMillis"])]
+)
+data class ManualBodyMeasurementEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val measuredAtMillis: Long,
+    val weightKg: Double? = null,
+    val bodyFatPercent: Double? = null,
+    val createdAtMillis: Long = System.currentTimeMillis()
+)
+
 @Dao
 interface HealthDao {
     @Query("SELECT * FROM daily_health ORDER BY date DESC")
@@ -130,6 +142,12 @@ interface HealthDao {
     fun observeWeightSamples(): Flow<List<HealthWeightSampleEntity>>
     @Query("SELECT * FROM hc_body_fat_samples ORDER BY timeEpochMillis DESC, recordId")
     fun observeBodyFatSamples(): Flow<List<HealthBodyFatSampleEntity>>
+    @Query("SELECT * FROM manual_body_measurements ORDER BY measuredAtMillis DESC, id DESC")
+    fun observeManualBodyMeasurements(): Flow<List<ManualBodyMeasurementEntity>>
+    @Insert
+    suspend fun insertManualBodyMeasurement(item: ManualBodyMeasurementEntity): Long
+    @Query("SELECT * FROM manual_body_measurements ORDER BY measuredAtMillis, id")
+    suspend fun dumpManualBodyMeasurements(): List<ManualBodyMeasurementEntity>
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertDaily(items: List<DailyHealthEntity>)
     @Query("SELECT * FROM daily_health ORDER BY date")
@@ -173,13 +191,14 @@ interface HealthDao {
         DailyHealthEntity::class, ExerciseEntity::class, HeartRateSampleEntity::class,
         OxygenSampleEntity::class, RestingHeartRateSampleEntity::class,
         HealthWeightSampleEntity::class, HealthBodyFatSampleEntity::class,
+        ManualBodyMeasurementEntity::class,
         FoodEntity::class, NutritionEntryEntity::class, NutritionDailyEntity::class,
         ScaleMeasurementEntity::class, BodyCompositionEstimateEntity::class, UserProfileEntity::class,
         WorkoutExerciseEntity::class, WorkoutSessionEntity::class, WorkoutSetEntity::class,
         WorkoutTemplateEntity::class, WorkoutTemplateExerciseEntity::class,
         SourceIdentityEntity::class, XiaomiBindingEntity::class, XiaomiSnapshotEntity::class, XiaomiCheckpointEntity::class
     ],
-    version = 8,
+    version = 9,
     exportSchema = true
 )
 abstract class HealthDatabase : RoomDatabase() {
@@ -192,7 +211,7 @@ abstract class HealthDatabase : RoomDatabase() {
     companion object {
         fun create(context: Context): HealthDatabase =
             Room.databaseBuilder(context, HealthDatabase::class.java, "fitness-hub.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
                 .build()
     }
 }

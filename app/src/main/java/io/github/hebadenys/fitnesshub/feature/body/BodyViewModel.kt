@@ -6,6 +6,11 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.hebadenys.fitnesshub.core.body.CanonicalBodyDay
 import io.github.hebadenys.fitnesshub.core.body.CanonicalBodyMetricResolver
 import io.github.hebadenys.fitnesshub.core.body.CanonicalBodyRepository
+import io.github.hebadenys.fitnesshub.core.body.ManualBodyInputError
+import io.github.hebadenys.fitnesshub.core.body.ManualBodyInputResult
+import io.github.hebadenys.fitnesshub.core.body.parseManualBodyInput
+import io.github.hebadenys.fitnesshub.core.database.HealthDao
+import io.github.hebadenys.fitnesshub.core.database.ManualBodyMeasurementEntity
 import io.github.hebadenys.fitnesshub.core.healthconnect.HealthConnectManager
 import io.github.hebadenys.fitnesshub.core.model.DailySummary
 import io.github.hebadenys.fitnesshub.core.model.HealthMetrics
@@ -16,9 +21,11 @@ import io.github.hebadenys.fitnesshub.ui.state.ScreenState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Locale
@@ -31,17 +38,31 @@ data class BodyUiModel(
     val weightDelta: BaselineDelta,
     val bodyFatDelta: BaselineDelta,
     val chartPoints: List<ChartPoint>,
-    val selectedRange: TimeRange
+    val selectedRange: TimeRange,
+    val healthConnectAvailable: Boolean,
+    val hasHealthConnectBodyPermission: Boolean
 )
+
+sealed interface ManualBodyEntryState {
+    data object Idle : ManualBodyEntryState
+    data object Working : ManualBodyEntryState
+    data class Saved(val id: Long) : ManualBodyEntryState
+    data class Invalid(val error: ManualBodyInputError) : ManualBodyEntryState
+    data object StorageError : ManualBodyEntryState
+}
 
 @HiltViewModel
 class BodyViewModel @Inject constructor(
     val health: HealthConnectManager,
-    private val body: CanonicalBodyRepository
+    private val body: CanonicalBodyRepository,
+    private val healthDao: HealthDao
 ) : ViewModel() {
 
     private val selectedRange = MutableStateFlow(TimeRange.SEVEN_DAYS)
     private val grantedMetrics = MutableStateFlow<Set<String>>(emptySet())
+    private val manualEntry = MutableStateFlow<ManualBodyEntryState>(ManualBodyEntryState.Idle)
+
+    val manualEntryState: StateFlow<ManualBodyEntryState> = manualEntry.asStateFlow()
 
     init { refreshPermissions() }
 
@@ -56,46 +77,73 @@ class BodyViewModel @Inject constructor(
         grantedMetrics,
         selectedRange
     ) { data, granted, range ->
-        val required = setOf(HealthMetrics.WEIGHT, HealthMetrics.BODY_FAT)
-        val hasBodyData = data.latestWeight != null || data.latestBodyFat != null
+        val weights = data.weightTimeline
+        val fats = data.bodyFatTimeline
+        val latestWeight = data.latestWeight?.observation
+        val latestFat = data.latestBodyFat?.observation
+        val previousWeight = weights.asReversed().firstOrNull { it != latestWeight }
+        val previousFat = fats.asReversed().firstOrNull { it != latestFat }
+        val cutoff = LocalDate.now(ZoneId.systemDefault()).minusDays(range.days.toLong() - 1)
+        val chartPoints = data.days
+            .filter { !it.date.isBefore(cutoff) }
+            .sortedBy { it.date }
+            .map { day ->
+                ChartPoint(
+                    date = day.date,
+                    value = day.weight?.value,
+                    provenance = day.weight?.toProvenance(),
+                    sourceLabel = day.weight?.sourceLabel()
+                )
+            }
 
-        if (!hasBodyData && granted.none { it in required } && health.client != null) {
-            ScreenState.PermissionMissing(missingMetrics = required)
-        } else if (!hasBodyData) {
-            ScreenState.Empty()
-        } else {
-            val weights = data.weightTimeline
-            val fats = data.bodyFatTimeline
-            val latestWeight = data.latestWeight?.observation
-            val latestFat = data.latestBodyFat?.observation
-            val previousWeight = weights.asReversed().firstOrNull { it != latestWeight }
-            val previousFat = fats.asReversed().firstOrNull { it != latestFat }
-            val cutoff = LocalDate.now(ZoneId.systemDefault()).minusDays(range.days.toLong() - 1)
-            val chartPoints = data.days
-                .filter { !it.date.isBefore(cutoff) }
-                .sortedBy { it.date }
-                .map { day ->
-                    ChartPoint(
-                        date = day.date,
-                        value = day.weight?.value,
-                        provenance = day.weight?.toProvenance(),
-                        sourceLabel = day.weight?.sourceLabel()
+        ScreenState.Content(
+            BodyUiModel(
+                latestWeight = latestWeight,
+                latestBodyFat = latestFat,
+                history = data.days,
+                weightDelta = delta(latestWeight?.value, previousWeight?.value, "kg"),
+                bodyFatDelta = delta(latestFat?.value, previousFat?.value, "%"),
+                chartPoints = chartPoints,
+                selectedRange = range,
+                healthConnectAvailable = health.client != null,
+                hasHealthConnectBodyPermission =
+                    HealthMetrics.WEIGHT in granted || HealthMetrics.BODY_FAT in granted
+            )
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ScreenState.Loading)
+
+    fun saveManualMeasurement(weightRaw: String, bodyFatRaw: String, timestampRaw: String) {
+        if (manualEntry.value is ManualBodyEntryState.Working) return
+        when (val parsed = parseManualBodyInput(weightRaw, bodyFatRaw, timestampRaw)) {
+            is ManualBodyInputResult.Invalid -> {
+                manualEntry.value = ManualBodyEntryState.Invalid(parsed.error)
+            }
+            is ManualBodyInputResult.Valid -> {
+                manualEntry.value = ManualBodyEntryState.Working
+                viewModelScope.launch {
+                    val input = parsed.input
+                    manualEntry.value = runCatching {
+                        healthDao.insertManualBodyMeasurement(
+                            ManualBodyMeasurementEntity(
+                                measuredAtMillis = input.measuredAtMillis,
+                                weightKg = input.weightKg,
+                                bodyFatPercent = input.bodyFatPercent
+                            )
+                        )
+                    }.fold(
+                        onSuccess = { ManualBodyEntryState.Saved(it) },
+                        onFailure = { ManualBodyEntryState.StorageError }
                     )
                 }
-
-            ScreenState.Content(
-                BodyUiModel(
-                    latestWeight = latestWeight,
-                    latestBodyFat = latestFat,
-                    history = data.days,
-                    weightDelta = delta(latestWeight?.value, previousWeight?.value, "kg"),
-                    bodyFatDelta = delta(latestFat?.value, previousFat?.value, "%"),
-                    chartPoints = chartPoints,
-                    selectedRange = range
-                )
-            )
+            }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ScreenState.Loading)
+    }
+
+    fun dismissManualEntryState() {
+        if (manualEntry.value !is ManualBodyEntryState.Working) {
+            manualEntry.value = ManualBodyEntryState.Idle
+        }
+    }
 
     private fun delta(current: Double?, previous: Double?, unit: String): BaselineDelta {
         if (current == null || previous == null) return BaselineDelta.None

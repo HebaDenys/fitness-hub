@@ -9,7 +9,7 @@ import java.util.UUID
 
 internal fun testDatabase(name: String = UUID.randomUUID().toString()): HealthDatabase =
     Room.databaseBuilder(RuntimeEnvironment.getApplication(), HealthDatabase::class.java, name)
-        .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
+        .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
         .allowMainThreadQueries()
         .build().also { it.openHelper.writableDatabase }
 
@@ -37,6 +37,10 @@ internal fun seedLegacyTables(db: SupportSQLiteDatabase) {
     db.execSQL(
         "INSERT INTO hc_body_fat_samples (recordId,date,timeEpochMillis,percentage,dataOrigin) VALUES (?,?,?,?,?)",
         arrayOf("synthetic_body_fat_record", "2026-01-02", 1767312060000L, 21.5, "synthetic.health")
+    )
+    db.execSQL(
+        "INSERT INTO manual_body_measurements (measuredAtMillis,weightKg,bodyFatPercent,createdAtMillis) VALUES (?,?,?,?)",
+        arrayOf(1767312120000L, 72.0, 20.0, 1767312125000L)
     )
 }
 

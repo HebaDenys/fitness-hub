@@ -1,0 +1,19 @@
+<resources>
+    <string name="body_manual_title">Add a measurement</string>
+    <string name="body_manual_description">Manual entries are stored locally and join the same canonical timeline as Health Connect, scale and Xiaomi data. At least one value is required.</string>
+    <string name="body_manual_weight">Weight (kg)</string>
+    <string name="body_manual_body_fat">Body fat (%)</string>
+    <string name="body_manual_timestamp">Measured at</string>
+    <string name="body_manual_timestamp_hint">Format: YYYY-MM-DD HH:MM, using this phone’s time zone.</string>
+    <string name="body_manual_save">Save measurement</string>
+    <string name="body_manual_saved">Manual measurement saved.</string>
+    <string name="body_manual_storage_error">The measurement could not be stored. Existing data was not changed.</string>
+    <string name="body_manual_error_missing">Enter weight, body fat, or both.</string>
+    <string name="body_manual_error_weight">Weight must be a number between 1 and 500 kg.</string>
+    <string name="body_manual_error_body_fat">Body fat must be a number between 0 and 100%.</string>
+    <string name="body_manual_error_timestamp">Use a valid date and time in YYYY-MM-DD HH:MM format.</string>
+    <string name="body_manual_error_future">The measurement time cannot be in the future.</string>
+    <string name="body_manual_hc_optional">Health Connect is optional. Manual measurements work without granting health permissions.</string>
+    <string name="body_manual_connect_hc">Connect Health Connect</string>
+    <string name="body_history_empty">No body measurements yet. Add one manually or connect a supported source.</string>
+</resources>
