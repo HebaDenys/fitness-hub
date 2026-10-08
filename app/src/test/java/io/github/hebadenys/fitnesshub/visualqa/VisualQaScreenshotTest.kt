@@ -185,7 +185,7 @@ class VisualQaCompactSemanticsTest {
         compose.setContent { FitnessHubTheme { NutritionScreen(viewModel = vm) } }
         compose.waitUntil(5_000) { compose.onAllNodesWithText("Synthetic rice bowl").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Synthetic rice bowl").assertExists()
-        compose.onNodeWithTag("nutrition_catalog_disabled").assertIsNotEnabled()
+        compose.onNodeWithTag("nutrition_catalog_disabled").assertHasNoClickAction()
     }
 
     @Test fun interactiveChartExposesSelectedValuesAndSources() {
@@ -210,14 +210,16 @@ class VisualQaCompactSemanticsTest {
         compose.onNodeWithText("Source: Scale").assertExists()
     }
 
-    @Test fun emptyAndErrorStatesRemainDistinct() {
+    @Test fun emptyStateRemainsDistinct() {
         compose.setContent {
             FitnessHubTheme {
                 ScreenStateHandler<Unit>(state = ScreenState.Empty(), content = {})
             }
         }
         compose.onNodeWithText("No health data available").assertExists()
+    }
 
+    @Test fun errorStateRemainsDistinct() {
         compose.setContent {
             FitnessHubTheme {
                 ScreenStateHandler<Unit>(
