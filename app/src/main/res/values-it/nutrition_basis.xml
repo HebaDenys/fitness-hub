@@ -1,0 +1,12 @@
+<resources>
+    <string name="nutrition_basis_title">I valori nutrizionali sono</string>
+    <string name="nutrition_basis_100g">Per 100 g</string>
+    <string name="nutrition_basis_serving">Per porzione</string>
+    <string name="nutrition_basis_legacy_hint">Alimento legacy: il vecchio calcolo resta invariato finché non scegli esplicitamente una base.</string>
+    <string name="nutrition_basis_choose_hint">Scegli se i valori dell’etichetta sono per 100 g o per porzione prima di salvare.</string>
+    <string name="nutrition_serving_size">Peso della porzione</string>
+    <string name="nutrition_basis_suffix_100g">/ 100 g</string>
+    <string name="nutrition_basis_suffix_serving">/ porzione</string>
+    <string name="nutrition_basis_suffix_legacy">(legacy)</string>
+    <string name="nutrition_basis_suffix_unknown">(base richiesta)</string>
+</resources>

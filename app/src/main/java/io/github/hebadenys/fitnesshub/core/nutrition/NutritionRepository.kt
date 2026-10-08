@@ -43,6 +43,7 @@ class NutritionRepository(
                 name = product.name.orEmpty(),
                 brand = product.brand,
                 servingSizeGrams = product.servingSizeGrams,
+                nutrientBasis = NutritionBasis.PER_100G.storedValue,
                 energyKcal = product.energyKcal,
                 proteinGrams = product.proteinGrams,
                 carbsGrams = product.carbsGrams,
@@ -74,6 +75,14 @@ class NutritionRepository(
         servings: Double
     ): Long {
         val food = dao.findById(foodId) ?: throw IllegalArgumentException("Unknown food id $foodId")
+        require(servings.isFinite() && servings > 0.0) { "Servings must be positive" }
+        val basis = NutritionBasis.fromStored(food.nutrientBasis)
+        require(basis != NutritionBasis.UNKNOWN) { "Nutrition basis must be confirmed" }
+        if (basis == NutritionBasis.PER_100G) {
+            require(food.servingSizeGrams?.let { it.isFinite() && it > 0.0 } == true) {
+                "Serving size is required for per-100g food"
+            }
+        }
         val id = dao.insertEntry(
             NutritionEntryEntity(
                 foodId = foodId,
@@ -108,18 +117,18 @@ class NutritionRepository(
             return
         }
         val portions = entries.mapNotNull { entry ->
-            dao.findById(entry.foodId)?.let { food -> food to entry.servings }
+            dao.findById(entry.foodId)?.let { food -> food to entry }
         }
         dao.upsertDaily(
             NutritionDailyEntity(
                 date = date.toString(),
-                energyKcal = portions.sumKnown { food, _ -> food.energyKcal },
-                proteinGrams = portions.sumKnown { food, _ -> food.proteinGrams },
-                carbsGrams = portions.sumKnown { food, _ -> food.carbsGrams },
-                fatGrams = portions.sumKnown { food, _ -> food.fatGrams },
-                sugarGrams = portions.sumKnown { food, _ -> food.sugarGrams },
-                fiberGrams = portions.sumKnown { food, _ -> food.fiberGrams },
-                saltGrams = portions.sumKnown { food, _ -> food.saltGrams },
+                energyKcal = portions.sumKnown { food -> food.energyKcal },
+                proteinGrams = portions.sumKnown { food -> food.proteinGrams },
+                carbsGrams = portions.sumKnown { food -> food.carbsGrams },
+                fatGrams = portions.sumKnown { food -> food.fatGrams },
+                sugarGrams = portions.sumKnown { food -> food.sugarGrams },
+                fiberGrams = portions.sumKnown { food -> food.fiberGrams },
+                saltGrams = portions.sumKnown { food -> food.saltGrams },
                 entryCount = entries.size
             )
         )
@@ -158,14 +167,34 @@ class NutritionRepository(
          * Sums a nutrient across portions, scaled by servings, and returns null
          * when no portion carries it: absent data must never total to zero.
          */
-        internal fun List<Pair<FoodEntity, Double>>.sumKnown(
-            selector: (FoodEntity, Double) -> Double?
+        internal fun scaledValue(
+            value: Double?,
+            basisValue: String,
+            servings: Double,
+            servingGrams: Double?
+        ): Double? {
+            val nutrient = value?.takeIf { it.isFinite() } ?: return null
+            val factor = when (NutritionBasis.fromStored(basisValue)) {
+                NutritionBasis.PER_100G -> servingGrams?.takeIf { it.isFinite() && it > 0.0 }?.div(100.0)
+                NutritionBasis.PER_SERVING, NutritionBasis.LEGACY -> servings.takeIf { it.isFinite() && it > 0.0 }
+                NutritionBasis.UNKNOWN -> null
+            } ?: return null
+            return nutrient * factor
+        }
+
+        internal fun List<Pair<FoodEntity, NutritionEntryEntity>>.sumKnown(
+            selector: (FoodEntity) -> Double?
         ): Double? {
             var total = 0.0
             var seen = false
-            forEach { (food, servings) ->
-                val value = selector(food, servings) ?: return@forEach
-                total += value * servings
+            forEach { (food, entry) ->
+                val scaled = scaledValue(
+                    selector(food),
+                    food.nutrientBasis,
+                    entry.servings,
+                    entry.servingGrams
+                ) ?: return@forEach
+                total += scaled
                 seen = true
             }
             return if (seen) total else null

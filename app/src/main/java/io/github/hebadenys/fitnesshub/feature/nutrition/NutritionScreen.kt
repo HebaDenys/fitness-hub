@@ -49,6 +49,7 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import io.github.hebadenys.fitnesshub.core.nutrition.FoodEntity
 import io.github.hebadenys.fitnesshub.core.nutrition.MealType
+import io.github.hebadenys.fitnesshub.core.nutrition.NutritionBasis
 import io.github.hebadenys.fitnesshub.ui.components.MetricCard
 import io.github.hebadenys.fitnesshub.ui.state.ScreenStateHandler
 import io.github.hebadenys.fitnesshub.ui.theme.FitnessHubTheme
@@ -284,28 +285,71 @@ private fun NutritionDraftDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
+                Text(
+                    text = stringResource(R.string.nutrition_basis_title),
+                    style = MaterialTheme.typography.labelLarge
+                )
+                Row(horizontalArrangement = Arrangement.spacedBy(spacing.xs)) {
+                    FilterChip(
+                        selected = draft.nutrientBasis == NutritionBasis.PER_100G,
+                        onClick = { onChange { it.copy(nutrientBasis = NutritionBasis.PER_100G) } },
+                        label = { Text(stringResource(R.string.nutrition_basis_100g)) }
+                    )
+                    FilterChip(
+                        selected = draft.nutrientBasis == NutritionBasis.PER_SERVING,
+                        onClick = { onChange { it.copy(nutrientBasis = NutritionBasis.PER_SERVING) } },
+                        label = { Text(stringResource(R.string.nutrition_basis_serving)) }
+                    )
+                }
+                if (draft.nutrientBasis == NutritionBasis.LEGACY) {
+                    Text(
+                        stringResource(R.string.nutrition_basis_legacy_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else if (draft.nutrientBasis == NutritionBasis.UNKNOWN) {
+                    Text(
+                        stringResource(R.string.nutrition_basis_choose_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+                if (draft.nutrientBasis == NutritionBasis.PER_100G) {
+                    NumericField(
+                        label = stringResource(R.string.nutrition_serving_size),
+                        value = draft.servingSizeGrams,
+                        suffix = "g",
+                        onChange = { value -> onChange { it.copy(servingSizeGrams = value) } }
+                    )
+                }
+                val basisLabel = when (draft.nutrientBasis) {
+                    NutritionBasis.PER_100G -> stringResource(R.string.nutrition_basis_suffix_100g)
+                    NutritionBasis.PER_SERVING -> stringResource(R.string.nutrition_basis_suffix_serving)
+                    NutritionBasis.LEGACY -> stringResource(R.string.nutrition_basis_suffix_legacy)
+                    NutritionBasis.UNKNOWN -> stringResource(R.string.nutrition_basis_suffix_unknown)
+                }
                 NumericField(
                     label = stringResource(R.string.metric_energy),
                     value = draft.energyKcal,
-                    suffix = "kcal",
+                    suffix = "kcal $basisLabel",
                     onChange = { value -> onChange { it.copy(energyKcal = value) } }
                 )
                 NumericField(
                     label = stringResource(R.string.metric_protein),
                     value = draft.proteinGrams,
-                    suffix = "g",
+                    suffix = "g $basisLabel",
                     onChange = { value -> onChange { it.copy(proteinGrams = value) } }
                 )
                 NumericField(
                     label = stringResource(R.string.metric_carbs),
                     value = draft.carbsGrams,
-                    suffix = "g",
+                    suffix = "g $basisLabel",
                     onChange = { value -> onChange { it.copy(carbsGrams = value) } }
                 )
                 NumericField(
                     label = stringResource(R.string.metric_fat),
                     value = draft.fatGrams,
-                    suffix = "g",
+                    suffix = "g $basisLabel",
                     onChange = { value -> onChange { it.copy(fatGrams = value) } }
                 )
                 Text(
@@ -337,7 +381,10 @@ private fun NutritionDraftDialog(
                     val amount = servings.replace(',', '.').toDoubleOrNull() ?: 1.0
                     onConfirm(mealType, if (amount > 0.0) amount else 1.0)
                 },
-                enabled = draft.name.isNotBlank()
+                enabled = draft.name.isNotBlank() &&
+                    draft.nutrientBasis != NutritionBasis.UNKNOWN &&
+                    (draft.nutrientBasis != NutritionBasis.PER_100G ||
+                        draft.servingSizeGrams?.let { it.isFinite() && it > 0.0 } == true)
             ) {
                 Text(stringResource(R.string.action_save))
             }

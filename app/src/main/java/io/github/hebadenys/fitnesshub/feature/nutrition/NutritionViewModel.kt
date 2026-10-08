@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.hebadenys.fitnesshub.core.nutrition.FoodEntity
 import io.github.hebadenys.fitnesshub.core.nutrition.MealType
+import io.github.hebadenys.fitnesshub.core.nutrition.NutritionBasis
 import io.github.hebadenys.fitnesshub.core.nutrition.NutritionLabelParser
 import io.github.hebadenys.fitnesshub.core.nutrition.NutritionRepository
 import io.github.hebadenys.fitnesshub.core.nutrition.NutritionPreferences
@@ -55,6 +56,7 @@ data class NutritionDraft(
     val brand: String? = null,
     val barcode: String? = null,
     val servingSizeGrams: Double? = null,
+    val nutrientBasis: NutritionBasis = NutritionBasis.UNKNOWN,
     val energyKcal: Double? = null,
     val proteinGrams: Double? = null,
     val carbsGrams: Double? = null,
@@ -69,6 +71,7 @@ data class NutritionDraft(
         name = name,
         brand = brand,
         servingSizeGrams = servingSizeGrams,
+        nutrientBasis = nutrientBasis.storedValue,
         energyKcal = energyKcal,
         proteinGrams = proteinGrams,
         carbsGrams = carbsGrams,
@@ -113,7 +116,12 @@ class NutritionViewModel @Inject constructor(
                             brand = entry.brand,
                             mealType = MealType.fromStored(entry.mealType),
                             servings = entry.servings,
-                            energyKcal = entry.energyKcal?.times(entry.servings),
+                            energyKcal = NutritionRepository.scaledValue(
+                                entry.energyKcal,
+                                entry.nutrientBasis,
+                                entry.servings,
+                                entry.servingGrams
+                            ),
                             provenance = FoodEntity.PROVENANCE_MEASURED
                         )
                     },
@@ -167,6 +175,7 @@ class NutritionViewModel @Inject constructor(
                             brand = it.brand,
                             barcode = it.barcode,
                             servingSizeGrams = it.servingSizeGrams,
+                            nutrientBasis = NutritionBasis.fromStored(it.nutrientBasis),
                             energyKcal = it.energyKcal,
                             proteinGrams = it.proteinGrams,
                             carbsGrams = it.carbsGrams,
@@ -185,6 +194,7 @@ class NutritionViewModel @Inject constructor(
                         brand = food.brand,
                         barcode = food.barcode,
                         servingSizeGrams = food.servingSizeGrams,
+                        nutrientBasis = NutritionBasis.fromStored(food.nutrientBasis),
                         energyKcal = food.energyKcal,
                         proteinGrams = food.proteinGrams,
                         carbsGrams = food.carbsGrams,
@@ -215,6 +225,11 @@ class NutritionViewModel @Inject constructor(
         pendingDraft.value = NutritionDraft(
             name = "",
             servingSizeGrams = per100g.servingSizeGrams,
+            nutrientBasis = when (per100g.basis) {
+                NutritionLabelParser.Basis.PER_100G -> NutritionBasis.PER_100G
+                NutritionLabelParser.Basis.PER_SERVING -> NutritionBasis.PER_SERVING
+                NutritionLabelParser.Basis.UNKNOWN -> NutritionBasis.UNKNOWN
+            },
             energyKcal = per100g.energyKcal,
             proteinGrams = per100g.proteinGrams,
             carbsGrams = per100g.carbsGrams,
@@ -232,7 +247,11 @@ class NutritionViewModel @Inject constructor(
     }
 
     fun startManualEntry() {
-        pendingDraft.value = NutritionDraft(name = "", provenance = FoodEntity.PROVENANCE_USER_ENTERED)
+        pendingDraft.value = NutritionDraft(
+            name = "",
+            nutrientBasis = NutritionBasis.PER_SERVING,
+            provenance = FoodEntity.PROVENANCE_USER_ENTERED
+        )
     }
 
     fun discardDraft() {
@@ -242,7 +261,10 @@ class NutritionViewModel @Inject constructor(
     /** Saves the confirmed food and logs [servings] of it in [mealType] for the selected day. */
     fun confirmDraft(mealType: MealType, servings: Double) {
         val current = pendingDraft.value ?: return
-        if (current.name.isBlank()) return
+        if (current.name.isBlank() || current.nutrientBasis == NutritionBasis.UNKNOWN) return
+        if (current.nutrientBasis == NutritionBasis.PER_100G &&
+            current.servingSizeGrams?.let { it.isFinite() && it > 0.0 } != true
+        ) return
         viewModelScope.launch {
             val existing = current.barcode?.let { repository.findLocalByBarcode(it) }
             val foodId = if (existing != null) {

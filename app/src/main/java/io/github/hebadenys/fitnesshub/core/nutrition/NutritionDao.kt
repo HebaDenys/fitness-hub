@@ -31,7 +31,7 @@ interface NutritionDao {
     @Query(
         "SELECT n.id AS id, n.foodId AS foodId, n.date AS date, n.mealType AS mealType, " +
             "n.servings AS servings, n.servingGrams AS servingGrams, n.loggedAt AS loggedAt, " +
-            "f.name AS name, f.brand AS brand, f.energyKcal AS energyKcal, " +
+            "f.name AS name, f.brand AS brand, f.nutrientBasis AS nutrientBasis, f.energyKcal AS energyKcal, " +
             "f.proteinGrams AS proteinGrams, f.carbsGrams AS carbsGrams, f.fatGrams AS fatGrams, " +
             "f.sugarGrams AS sugarGrams, f.fiberGrams AS fiberGrams, f.saltGrams AS saltGrams " +
             "FROM nutrition_entries n " +
@@ -83,6 +83,7 @@ data class NutritionEntryWithFood(
     val loggedAt: Long,
     val name: String,
     val brand: String?,
+    val nutrientBasis: String,
     val energyKcal: Double?,
     val proteinGrams: Double?,
     val carbsGrams: Double?,

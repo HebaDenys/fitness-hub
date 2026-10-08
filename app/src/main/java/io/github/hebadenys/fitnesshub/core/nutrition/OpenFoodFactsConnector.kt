@@ -16,7 +16,7 @@ import java.net.URL
  */
 class OpenFoodFactsConnector(
     private val enabledProvider: suspend () -> Boolean,
-    private val userAgent: String = "FitnessHub/0.2.0 (local-first Android app)"
+    private val userAgent: String = "FitnessHub/0.3.10 (https://github.com/HebaDenys/fitness-hub)"
 ) : FoodCatalogConnector {
 
     override val sourceId: String = FoodEntity.PROVENANCE_OPEN_FOOD_FACTS
@@ -42,9 +42,7 @@ class OpenFoodFactsConnector(
                 null
             } else {
                 connection.inputStream.bufferedReader().use { body ->
-                    val product = JSONObject(body.readText()).optJSONObject("product")
-                    if (product == null || product.optInt("status", 0) == 0) null
-                    else product.toCatalogProduct(barcode)
+                    parseResponse(body.readText(), barcode)
                 }
             }
         } finally {
@@ -52,6 +50,13 @@ class OpenFoodFactsConnector(
         }
     } catch (error: Exception) {
         null
+    }
+
+    internal fun parseResponse(body: String, barcode: String): CatalogProduct? {
+        val root = runCatching { JSONObject(body) }.getOrNull() ?: return null
+        if (root.optInt("status", 0) != 1) return null
+        val product = root.optJSONObject("product") ?: return null
+        return product.toCatalogProduct(barcode).takeIf { it.isUsable }
     }
 
     private fun JSONObject.toCatalogProduct(barcode: String): CatalogProduct {

@@ -1,0 +1,12 @@
+<resources>
+    <string name="nutrition_basis_title">Nutrition values are</string>
+    <string name="nutrition_basis_100g">Per 100 g</string>
+    <string name="nutrition_basis_serving">Per serving</string>
+    <string name="nutrition_basis_legacy_hint">Legacy food: its old calculation is preserved until you explicitly choose a basis.</string>
+    <string name="nutrition_basis_choose_hint">Choose whether the label values are per 100 g or per serving before saving.</string>
+    <string name="nutrition_serving_size">Serving size</string>
+    <string name="nutrition_basis_suffix_100g">/ 100 g</string>
+    <string name="nutrition_basis_suffix_serving">/ serving</string>
+    <string name="nutrition_basis_suffix_legacy">(legacy)</string>
+    <string name="nutrition_basis_suffix_unknown">(basis required)</string>
+</resources>

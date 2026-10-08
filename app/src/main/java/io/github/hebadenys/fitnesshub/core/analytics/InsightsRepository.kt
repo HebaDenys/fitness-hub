@@ -1,5 +1,6 @@
 package io.github.hebadenys.fitnesshub.core.analytics
 
+import io.github.hebadenys.fitnesshub.core.body.CanonicalBodyMetricResolver
 import io.github.hebadenys.fitnesshub.core.body.CanonicalBodyRepository
 import io.github.hebadenys.fitnesshub.core.database.HealthDao
 import io.github.hebadenys.fitnesshub.core.nutrition.NutritionDao
@@ -22,7 +23,8 @@ data class SmoothedPoint(val date: LocalDate, val value: Double?)
 data class InsightsUiData(
     val cards: List<InsightCard>,
     val weightTrend: List<SmoothedPoint>,
-    val intakeTrend: List<SmoothedPoint>
+    val intakeTrend: List<SmoothedPoint>,
+    val canonicalWeightEvents: List<CanonicalBodyMetricResolver.Observation>
 )
 
 /**
@@ -94,7 +96,8 @@ class InsightsRepository(
                     )
                 ),
                 weightTrend = smooth(weightAndIntake, { it.x }),
-                intakeTrend = smooth(weightAndIntake, { it.y })
+                intakeTrend = smooth(weightAndIntake, { it.y }),
+                canonicalWeightEvents = body.weightTimeline
             )
         }
 

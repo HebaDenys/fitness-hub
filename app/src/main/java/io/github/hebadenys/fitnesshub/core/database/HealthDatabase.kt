@@ -179,7 +179,7 @@ interface HealthDao {
         WorkoutTemplateEntity::class, WorkoutTemplateExerciseEntity::class,
         SourceIdentityEntity::class, XiaomiBindingEntity::class, XiaomiSnapshotEntity::class, XiaomiCheckpointEntity::class
     ],
-    version = 7,
+    version = 8,
     exportSchema = true
 )
 abstract class HealthDatabase : RoomDatabase() {
@@ -192,7 +192,7 @@ abstract class HealthDatabase : RoomDatabase() {
     companion object {
         fun create(context: Context): HealthDatabase =
             Room.databaseBuilder(context, HealthDatabase::class.java, "fitness-hub.db")
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7, MIGRATION_7_8)
                 .build()
     }
 }

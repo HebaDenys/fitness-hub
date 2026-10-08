@@ -6,6 +6,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.hebadenys.fitnesshub.core.analytics.InsightCard
 import io.github.hebadenys.fitnesshub.core.analytics.InsightsRepository
 import io.github.hebadenys.fitnesshub.core.backup.BackupCrypto
+import io.github.hebadenys.fitnesshub.core.body.CanonicalBodyMetricResolver
 import io.github.hebadenys.fitnesshub.core.backup.DatabaseBackupService
 import io.github.hebadenys.fitnesshub.core.export.CsvWriter
 import kotlinx.coroutines.CancellationException
@@ -36,10 +37,7 @@ class InsightsViewModel @Inject constructor(
     private val backupState = MutableStateFlow<BackupState>(BackupState.Idle)
     val backup: StateFlow<BackupState> = backupState.asStateFlow()
     val uiState: StateFlow<InsightsUiModel?> = repository.observeInsights().map { data ->
-        InsightsUiModel(data.cards, CsvWriter.document(
-            headers = listOf("date", "weightKg"),
-            rows = data.weightTrend.map { point -> listOf(point.date.toString(), CsvWriter.number(point.value, 2)) }
-        ))
+        InsightsUiModel(data.cards, canonicalWeightCsv(data.canonicalWeightEvents))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     fun createBackup(passphrase: String) {
@@ -75,3 +73,19 @@ class InsightsViewModel @Inject constructor(
         else -> "backup_failed"
     }
 }
+
+
+internal fun canonicalWeightCsv(events: List<CanonicalBodyMetricResolver.Observation>): String =
+    CsvWriter.document(
+        headers = listOf("measuredAt", "weightKg", "unit", "source", "method", "quality"),
+        rows = events.sortedBy { it.measuredAt }.map { point ->
+            listOf(
+                point.measuredAt.toString(),
+                CsvWriter.number(point.value, 2),
+                point.unit,
+                point.source.name,
+                point.method.name,
+                point.quality.name
+            )
+        }
+    )

@@ -24,6 +24,7 @@ data class FoodEntity(
     val brand: String? = null,
     val servingSizeGrams: Double? = null,
     val servingLabel: String? = null,
+    @ColumnInfo(defaultValue = "LEGACY") val nutrientBasis: String = NutritionBasis.LEGACY.storedValue,
     val energyKcal: Double? = null,
     val proteinGrams: Double? = null,
     val carbsGrams: Double? = null,
@@ -76,6 +77,18 @@ data class NutritionDailyEntity(
     val entryCount: Int = 0,
     val updatedAt: Long = System.currentTimeMillis()
 )
+
+enum class NutritionBasis(val storedValue: String) {
+    PER_100G("PER_100G"),
+    PER_SERVING("PER_SERVING"),
+    LEGACY("LEGACY"),
+    UNKNOWN("UNKNOWN");
+
+    companion object {
+        fun fromStored(value: String): NutritionBasis =
+            entries.firstOrNull { it.storedValue == value } ?: UNKNOWN
+    }
+}
 
 enum class MealType(val storedValue: String) {
     BREAKFAST("BREAKFAST"),
