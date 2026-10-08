@@ -3,15 +3,8 @@ package io.github.hebadenys.fitnesshub.feature.settings
 import android.app.Application
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.ui.test.assertExists
-import androidx.compose.ui.test.assertIsEnabled
-import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollToNode
-import androidx.compose.ui.test.hasTestTag
 import io.github.hebadenys.fitnesshub.core.model.HealthMetrics
 import org.junit.Assert.assertEquals
 import org.junit.Rule
