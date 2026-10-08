@@ -23,6 +23,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
@@ -112,7 +114,7 @@ internal fun ScaleProfileEditor(
                     stringResource(R.string.profile_validation_error),
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodyMedium,
-                    modifier = Modifier.testTag("profile_validation")
+                    modifier = Modifier.testTag("profile_validation").semantics { liveRegion = LiveRegionMode.Polite }
                 )
             }
             Button(
@@ -136,7 +138,7 @@ internal fun ScaleProfileEditor(
                     stringResource(it),
                     style = MaterialTheme.typography.bodyMedium,
                     color = if (result == ProfileSaveResult.FAILED) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.testTag("profile_save_status")
+                    modifier = Modifier.testTag("profile_save_status").semantics { liveRegion = LiveRegionMode.Polite }
                 )
             }
         }

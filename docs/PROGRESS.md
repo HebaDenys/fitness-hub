@@ -46,12 +46,12 @@ La candidate mantiene test di composizione/semantica su 360dp, 840dp, dark theme
 
 ## FH-UX-02/03/06 — Profilo e connessioni leggibili (0.3.14)
 
-- IMPLEMENTED: card profilo locale in Impostazioni con route dedicata allo stesso `user_profile` Room già esistente. Nessun account cloud, nuovo profilo o migrazione. L'editor condiviso precarica i campi salvati anche nella schermata Bilancia.
+- IMPLEMENTED: card profilo locale in Impostazioni con route dedicata allo stesso `user_profile` Room già esistente. Nessun account cloud, nuovo profilo o migrazione. La schermata Bilancia rimanda allo stesso editor dedicato, che precarica i campi salvati; nessun percorso alternativo aggira la conferma scarto.
 - Validazione finita dei parametri (altezza >100–300 cm, età 10–120 già supportata dalle formule, sesso richiesto), virgola decimale, stato salvataggio e blocco doppio invio. Fallimento storage distinto dal profilo salvato con aggiornamento stime incompleto. Originali non modificati.
 - Form ripristinabile tramite saved state Compose; uscita da modifiche non salvate con Annulla/Scarta. Il salvataggio conserva il comportamento di aggiornamento delle stime locali preesistente, ora dichiarato nel form.
 - Hub raggruppato: profilo, sorgenti facoltative, inserimento corporeo manuale, dati/privacy. Manuale apre la vera schermata Corpo anche da Health Connect senza permessi/disponibilità. AI resta disabilitata e Xiaomi conserva il gate.
 - Tema B esteso soltanto ai dettagli HC/Bilancia/profilo; testo secondario e status portati almeno a 14sp nei componenti coinvolti. Azioni HC e permessi impilati per font grandi.
-- Dodici regressioni aggiunte: input/persistenza UI, virgola e NaN, scarto/cancel, saved-state, navigazione profilo, font 2×, validazione e salvataggio ripetuto/fallito. I test mock non sono prove Room/dispositivo.
+- Tredici regressioni aggiunte: input/persistenza UI, virgola e NaN, scarto/cancel, saved-state, navigazione profilo, font 2×, validazione e salvataggio ripetuto/fallito. I test mock non sono prove Room/dispositivo.
 - CI/APK dell'esatto nuovo commit da verificare; il precedente runtime 39bc6c2 rimane la baseline verde. Nessun test disabilitato; nessuna build locale o nuova cattura pixel.
 
 ## Prossimo passo

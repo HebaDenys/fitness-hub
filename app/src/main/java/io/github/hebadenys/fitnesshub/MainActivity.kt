@@ -230,7 +230,12 @@ internal fun FitnessHubAppRoot(
                 }
             }
             composable(Screen.LOCAL_SCALE_ROUTE) {
-                PerformanceTheme { LocalScaleSettingsScreen(onBack = { navController.popBackStack() }) }
+                PerformanceTheme {
+                    LocalScaleSettingsScreen(
+                        onBack = { navController.popBackStack() },
+                        onOpenProfile = { navController.navigate(Screen.PROFILE_ROUTE) { launchSingleTop = true } }
+                    )
+                }
             }
             composable(Screen.PROFILE_ROUTE) {
                 PerformanceTheme { profileContent { navController.popBackStack() } }

@@ -7,6 +7,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.StateRestorationTester
@@ -66,8 +68,21 @@ class LocalProfileScreenTest {
         }
         compose.onNodeWithTag("profile_height").performTextReplacement("NaN")
         compose.onNodeWithTag("profile_save").performScrollTo().performClick()
-        compose.onNodeWithTag("profile_validation").assertExists()
+        compose.onNodeWithTag("profile_validation")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite))
         compose.runOnIdle { assertEquals(0, saves) }
+    }
+
+    @Test fun saveResultExposesAnAccessibleAnnouncement() {
+        compose.setContent {
+            FitnessHubTheme {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    ScaleProfileEditor(profile(), ProfileSaveResult.SAVED, onSave = { _, _, _ -> })
+                }
+            }
+        }
+        compose.onNodeWithTag("profile_save_status").performScrollTo()
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.LiveRegion, LiveRegionMode.Polite))
     }
 
     @Test fun unsavedFormSurvivesSavedStateRestoration() {

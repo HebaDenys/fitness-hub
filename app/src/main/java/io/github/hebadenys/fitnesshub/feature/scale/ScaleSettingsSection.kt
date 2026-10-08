@@ -46,13 +46,13 @@ import io.github.hebadenys.fitnesshub.ui.theme.FitnessHubTheme
  */
 @Composable
 fun ScaleSettingsSection(
+    onOpenProfile: () -> Unit,
     viewModel: ScaleViewModel = hiltViewModel(),
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val bindkeyState by viewModel.bindkeyState.collectAsStateWithLifecycle()
     val historyImportState by viewModel.historyImportState.collectAsStateWithLifecycle()
-    val profileResult by viewModel.profileSaveResult.collectAsStateWithLifecycle()
     val spacing = FitnessHubTheme.spacing
     val context = LocalContext.current
 
@@ -209,14 +209,11 @@ fun ScaleSettingsSection(
 
         Spacer(Modifier.height(spacing.xs))
 
-        (uiState as? ScreenState.Content)?.data?.let { model ->
-            ScaleProfileEditor(
-                model = model,
-                result = profileResult,
-                onSave = viewModel::saveProfile,
-                onEdit = viewModel::dismissProfileResult
-            )
-        }
+        OutlinedButton(
+            onClick = onOpenProfile,
+            modifier = Modifier.fillMaxWidth()
+        ) { Text(stringResource(R.string.scale_profile_title)) }
+
 
         Spacer(Modifier.height(spacing.xs))
 

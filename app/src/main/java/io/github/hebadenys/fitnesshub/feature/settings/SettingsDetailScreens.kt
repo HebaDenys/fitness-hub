@@ -24,7 +24,7 @@ import io.github.hebadenys.fitnesshub.ui.theme.FitnessHubTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LocalScaleSettingsScreen(onBack: () -> Unit) {
+fun LocalScaleSettingsScreen(onBack: () -> Unit, onOpenProfile: () -> Unit) {
     val spacing = FitnessHubTheme.spacing
     Scaffold(topBar = {
         TopAppBar(
@@ -46,7 +46,7 @@ fun LocalScaleSettingsScreen(onBack: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = spacing.md)
             )
-            ScaleSettingsSection()
+            ScaleSettingsSection(onOpenProfile = onOpenProfile)
         }
     }
 }
