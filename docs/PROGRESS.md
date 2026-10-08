@@ -39,12 +39,14 @@ La candidate mantiene test di composizione/semantica su 360dp, 840dp, dark theme
 - Cards sorgenti con titolo, descrizione e stato in verticale per evitare competizione orizzontale a font grandi. Nessun controllo fittizio o modifica dei connettori.
 - Il profilo per le stime già esistente rimane in Impostazioni -> Bilancia locale; non è stato introdotto un profilo generale.
 - Quattro regressioni Compose/Robolectric aggiunte: accesso in tutti gli stati, sync, apertura/ritorno ripetuti con flag setup conservato e ripristino dello stato salvato della navigazione. Usano schermate reali con ViewModel di test, non Hilt/telefono.
-- Verifica di questo incremento: CI dell'esatto commit da completare prima della consegna; nessuna build locale eseguita. Baseline ee7d577 / run 37849786913 verificata verde.
+- Verifica automatica completata: software `39bc6c2c4d0e74c5a583a893abe78603b32332a5`, [CI 37852052322](https://github.com/HebaDenys/fitness-hub/actions/runs/37852052322) verde. `testDebugUnitTest lintDebug assembleDebug`: **427 test / 56 suite, 0 failure/error/skip**, inclusi i quattro test nuovi; **14 controlli Python CI/privacy** verdi. Nessuna build locale eseguita.
+- APK `FitnessHub-v0.3.13-debug.apk`, versionCode 15, SHA-256 `bbe84f0761ed847ff3a9c73252e8bcb166094b721a4627d736612b763ec860a4`. Firma test/checksum verificati dalla CI. Release target, tag `test-latest` e asset confrontati con lo stesso SHA software; artifact APK `11581959201`, report `11583235412`.
+- Review read-only del design: token B e navigazione coerenti; descrizioni/stati delle cards mantengono font 12/11sp ereditati e restano da portare a 14sp insieme alla verifica font grande. Nessun claim di conformità visuale completo.
 - QA pixel e ciclo di vita reale Android restano AWAITING_DEVICE; saved-state Compose non equivale a process death sul Redmi.
 
 ## Prossimo passo
 
-1. ottenere CI verde della candidate 0.3.13 e verificare che `test-latest` punti allo stesso SHA dell’APK;
+1. rifinire la leggibilità delle cards e verificare insets/barre di sistema, poi proseguire il redesign per incrementi senza cambiare le sei tab in questo fix;
 2. installare quella APK sul Redmi senza disinstallare dati importanti;
 3. eseguire la checklist fisica: onboarding, navigazione, Health Connect, manual body, pasti/camera, grafici, backup file/restore di prova, dark/font grande;
 4. provare S400/BLE e companion→Health Connect con dati di test;
