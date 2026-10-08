@@ -27,6 +27,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.hebadenys.fitnesshub.R
@@ -51,6 +53,7 @@ import java.time.format.FormatStyle
 @Composable
 fun HealthConnectSourceScreen(
     onBack: () -> Unit,
+    onManualBody: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -67,7 +70,8 @@ fun HealthConnectSourceScreen(
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.cd_navigate_back))
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
         snackbarHost = { SnackbarHost(snackbar) }
@@ -84,7 +88,8 @@ fun HealthConnectSourceScreen(
                 model = model,
                 onPermissions = { permissionLauncher.launch(viewModel.health.permissions) },
                 onSync = viewModel::sync,
-                onRefresh = viewModel::refresh
+                onRefresh = viewModel::refresh,
+                onManualBody = onManualBody
             )
         }
     }
@@ -95,12 +100,13 @@ internal fun HealthConnectSourceContent(
     model: SettingsUiModel,
     onPermissions: () -> Unit = {},
     onSync: () -> Unit = {},
-    onRefresh: () -> Unit = {}
+    onRefresh: () -> Unit = {},
+    onManualBody: () -> Unit = {}
 ) {
     val spacing = FitnessHubTheme.spacing
     LazyColumn(
         modifier = Modifier.fillMaxSize().testTag("health_connect_source"),
-        contentPadding = androidx.compose.foundation.layout.PaddingValues(spacing.md),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp),
         verticalArrangement = Arrangement.spacedBy(spacing.md)
     ) {
         item {
@@ -134,7 +140,7 @@ internal fun HealthConnectSourceContent(
                         model.lastLocalSyncMillis?.let {
                             stringResource(R.string.source_health_last_sync, formatSourceTime(it))
                         } ?: stringResource(R.string.source_health_never_sync),
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
             }
@@ -149,7 +155,7 @@ internal fun HealthConnectSourceContent(
                         stringResource(
                             if (model.historyGranted) R.string.source_hc_history_granted else R.string.source_hc_history_limited
                         ),
-                        style = MaterialTheme.typography.bodySmall
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
             }
@@ -164,11 +170,11 @@ internal fun HealthConnectSourceContent(
                     Column(Modifier.padding(spacing.md), verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
                         Text(stringResource(R.string.source_hc_observed_origins), style = MaterialTheme.typography.titleMedium)
                         model.observedOrigins.forEach { origin ->
-                            Text(origin, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(origin, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         Text(
                             stringResource(R.string.source_hc_observed_origins_hint),
-                            style = MaterialTheme.typography.labelSmall,
+                            style = MaterialTheme.typography.labelLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -177,11 +183,11 @@ internal fun HealthConnectSourceContent(
         }
 
         item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
+            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(spacing.sm)) {
                 Button(
                     onClick = onPermissions,
                     enabled = model.isClientAvailable && !model.isSyncing,
-                    modifier = Modifier.weight(1f).testTag("health_permissions")
+                    modifier = Modifier.fillMaxWidth().testTag("health_permissions")
                 ) {
                     Text(stringResource(R.string.source_hc_manage_access))
                 }
@@ -207,16 +213,29 @@ internal fun HealthConnectSourceContent(
             }
         }
 
+        if (!model.isClientAvailable || !model.hasAnyPermission) {
+            item {
+                Text(
+                    stringResource(R.string.settings_manual_body_description),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                OutlinedButton(
+                    onClick = onManualBody,
+                    modifier = Modifier.fillMaxWidth().testTag("health_manual_body")
+                ) { Text(stringResource(R.string.settings_manual_body_title)) }
+            }
+        }
+
         item {
             Text(stringResource(R.string.source_hc_permissions_title), style = MaterialTheme.typography.titleLarge)
         }
 
         items(model.metricStatuses, key = { it.metricKey }) { status ->
             Card(Modifier.fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLowest)) {
-                Row(
+                Column(
                     Modifier.fillMaxWidth().padding(spacing.md),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalArrangement = Arrangement.spacedBy(spacing.sm)
                 ) {
                     Text(metricLabel(status.metricKey), style = MaterialTheme.typography.bodyMedium)
                     Row(verticalAlignment = Alignment.CenterVertically) {
@@ -230,7 +249,7 @@ internal fun HealthConnectSourceContent(
                                 if (status.isGranted) R.string.settings_permission_granted
                                 else R.string.settings_permission_denied
                             ),
-                            style = MaterialTheme.typography.labelMedium
+                            style = MaterialTheme.typography.labelLarge
                         )
                     }
                 }

@@ -244,9 +244,13 @@ class VisualQaWideDarkSemanticsTest {
             FitnessHubTheme(darkTheme = true) { SettingsHubContent(settingsFixture()) }
         }
         compose.onNodeWithTag("settings_hub").assertExists()
+        compose.onNodeWithTag("settings_hub").performScrollToNode(hasTestTag("source_health_connect"))
         compose.onNodeWithTag("source_health_connect").assertExists()
+        compose.onNodeWithTag("settings_hub").performScrollToNode(hasTestTag("source_xiaomi"))
         compose.onNodeWithTag("source_xiaomi").assertExists()
+        compose.onNodeWithTag("settings_hub").performScrollToNode(hasTestTag("source_scale"))
         compose.onNodeWithTag("source_scale").assertExists()
+        compose.onNodeWithTag("settings_hub").performScrollToNode(hasTestTag("settings_ai"))
         compose.onNodeWithTag("settings_ai").assertIsNotEnabled()
     }
 }

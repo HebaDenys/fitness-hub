@@ -2,6 +2,9 @@ package io.github.hebadenys.fitnesshub
 
 import android.app.Application
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.test.*
@@ -62,7 +65,7 @@ class SettingsNavigationTest {
                 dashboardContent = { openSettings ->
                     DashboardScreen(onNavigateToSettings = openSettings, viewModel = dashboard)
                 },
-                settingsContent = { back, _ ->
+                settingsContent = { back, navigate ->
                     SettingsScreen(
                         onBack = back,
                         onNavigateToHealthConnect = {},
@@ -70,8 +73,16 @@ class SettingsNavigationTest {
                         onNavigateToScale = {},
                         onNavigateToInsights = {},
                         onNavigateToAi = {},
+                        onNavigateToProfile = { navigate("settings/profile") },
+                        onNavigateToManualBody = {},
                         viewModel = settings
                     )
+                },
+                profileContent = { back ->
+                    Column {
+                        Text("Profile route")
+                        Button(onClick = back) { Text("Back to settings") }
+                    }
                 }
             )
         }
@@ -133,6 +144,19 @@ class SettingsNavigationTest {
         compose.runOnIdle {
             assertTrue(OnboardingViewModel(OnboardingStore(compose.activity.applicationContext)).completed.value)
         }
+    }
+
+    @Test fun profileRouteReturnsToSettingsRatherThanRestartingOnboarding() {
+        val vm = dashboard(MutableStateFlow(ScreenState.Empty()))
+        val settings = settings()
+        compose.setContent { App(vm, settings) }
+        compose.onNodeWithTag("dashboard_settings").performClick()
+        compose.onNodeWithTag("settings_profile").performClick()
+        compose.onNodeWithText("Profile route").assertExists()
+        compose.onNodeWithText("Back to settings").performClick()
+        compose.onNodeWithTag("settings_hub").assertExists()
+        compose.onNodeWithContentDescription("Navigate back").performClick()
+        compose.onNodeWithTag("dashboard_settings").assertIsDisplayed()
     }
 
     @Test fun settingsAndBackStackSurviveSavedStateRecreation() {

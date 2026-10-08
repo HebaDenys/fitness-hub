@@ -18,6 +18,7 @@ import io.github.hebadenys.fitnesshub.core.scale.ScaleHistoryCsvImporter
 import io.github.hebadenys.fitnesshub.core.scale.ScaleHistoryImportResult
 import io.github.hebadenys.fitnesshub.core.scale.Sex
 import io.github.hebadenys.fitnesshub.ui.state.ScreenState
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -47,6 +48,12 @@ sealed interface ScaleHistoryImportState {
     data class Failure(val reason: String) : ScaleHistoryImportState
 }
 
+enum class ProfileSaveResult { IDLE, SAVING, SAVED, SAVED_ESTIMATES_PENDING, INVALID, FAILED }
+
+internal fun validScaleProfile(heightCm: Double?, ageYears: Int?, sex: Sex?): Boolean =
+    heightCm != null && heightCm.isFinite() && heightCm > 100.0 && heightCm <= 300.0 &&
+        ageYears != null && ageYears in 10..120 && sex != null
+
 sealed interface BindkeyResult {
     data object Idle : BindkeyResult
     data object Saved : BindkeyResult
@@ -65,6 +72,9 @@ class ScaleViewModel @Inject constructor(
     private val scanning = MutableStateFlow(false)
     private val bluetoothAvailable = MutableStateFlow(false)
     private val bindkeyResult = MutableStateFlow<BindkeyResult>(BindkeyResult.Idle)
+    private val profileResult = MutableStateFlow(ProfileSaveResult.IDLE)
+    val profileSaveResult: StateFlow<ProfileSaveResult> = profileResult.asStateFlow()
+
     private val historyImportResult = MutableStateFlow<ScaleHistoryImportState>(ScaleHistoryImportState.Idle)
 
     val bindkeyState: StateFlow<BindkeyResult> = bindkeyResult.asStateFlow()
@@ -123,11 +133,30 @@ class ScaleViewModel @Inject constructor(
         bindkeyResult.value = BindkeyResult.Idle
     }
 
+    fun dismissProfileResult() {
+        if (profileResult.value != ProfileSaveResult.SAVING) profileResult.value = ProfileSaveResult.IDLE
+    }
+
     fun saveProfile(heightCm: Double?, ageYears: Int?, sex: Sex?) {
+        if (profileResult.value == ProfileSaveResult.SAVING) return
+        if (!validScaleProfile(heightCm, ageYears, sex)) {
+            profileResult.value = ProfileSaveResult.INVALID
+            return
+        }
+        profileResult.value = ProfileSaveResult.SAVING
         viewModelScope.launch {
-            connector.saveProfile(heightCm, ageYears, sex)
-            dao.measurementsSince(0L).forEach { measurement ->
-                connector.estimateComposition(Instant.ofEpochMilli(measurement.measuredAtMillis))
+            var stored = false
+            try {
+                connector.saveProfile(heightCm, ageYears, sex)
+                stored = true
+                dao.measurementsSince(0L).forEach { measurement ->
+                    connector.estimateComposition(Instant.ofEpochMilli(measurement.measuredAtMillis))
+                }
+                profileResult.value = ProfileSaveResult.SAVED
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (_: Exception) {
+                profileResult.value = if (stored) ProfileSaveResult.SAVED_ESTIMATES_PENDING else ProfileSaveResult.FAILED
             }
         }
     }

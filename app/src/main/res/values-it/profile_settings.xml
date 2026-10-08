@@ -1,0 +1,20 @@
+<resources>
+    <string name="profile_local_title">Profilo locale</string>
+    <string name="profile_local_device_notice">Salvato sul dispositivo. Nessun account Fitness Hub richiesto.</string>
+    <string name="profile_card_description">Rivedi altezza, età e i parametri delle stime corporee locali.</string>
+    <string name="profile_local_description">Questi sono i valori del profilo locale già esistente. Collegare una bilancia è facoltativo.</string>
+    <string name="profile_estimates_notice">Il salvataggio aggiorna le stime locali delle misure della bilancia. Le misure originali restano invariate. Le formule non sono una valutazione medica.</string>
+    <string name="profile_height_hint">Altezza supportata: oltre 100 e fino a 300 cm. Virgola o punto decimale accettati.</string>
+    <string name="profile_age_hint">Età supportata dalle formule di stima esistenti: 10–120 anni.</string>
+    <string name="profile_sex_label">Sesso utilizzato dalle formule di stima</string>
+    <string name="profile_validation_error">Controlla altezza ed età, poi seleziona il sesso per le formule.</string>
+    <string name="profile_saving">Salvataggio…</string>
+    <string name="profile_saved">Profilo salvato sul dispositivo.</string>
+    <string name="profile_saved_estimates_pending">Profilo salvato. Alcune stime locali non sono state aggiornate: riprova il salvataggio per aggiornarle.</string>
+    <string name="profile_save_failed">Impossibile salvare il profilo. I valori precedenti restano invariati: riprova.</string>
+    <string name="profile_discard_title">Scartare le modifiche non salvate?</string>
+    <string name="profile_discard_description">Il profilo salvato resterà invariato.</string>
+    <string name="profile_discard_action">Scarta modifiche</string>
+    <string name="settings_manual_body_title">Aggiungi una misura corporea</string>
+    <string name="settings_manual_body_description">Peso e grasso corporeo si possono inserire manualmente in Corpo, senza collegare sorgenti né concedere accesso a Health Connect.</string>
+</resources>

@@ -20,6 +20,8 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -63,6 +65,8 @@ fun SettingsScreen(
     onNavigateToScale: () -> Unit,
     onNavigateToInsights: () -> Unit,
     onNavigateToAi: () -> Unit,
+    onNavigateToProfile: () -> Unit,
+    onNavigateToManualBody: () -> Unit,
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -94,6 +98,8 @@ fun SettingsScreen(
                 onScale = onNavigateToScale,
                 onInsights = onNavigateToInsights,
                 onAi = onNavigateToAi,
+                onProfile = onNavigateToProfile,
+                onManualBody = onNavigateToManualBody,
                 onPrivacy = { context.startActivity(Intent(context, PrivacyRationaleActivity::class.java)) }
             )
         }
@@ -108,7 +114,9 @@ internal fun SettingsHubContent(
     onScale: () -> Unit = {},
     onInsights: () -> Unit = {},
     onAi: () -> Unit = {},
-    onPrivacy: () -> Unit = {}
+    onPrivacy: () -> Unit = {},
+    onProfile: () -> Unit = {},
+    onManualBody: () -> Unit = {}
 ) {
     val spacing = FitnessHubTheme.spacing
     val healthStatus = when {
@@ -122,6 +130,30 @@ internal fun SettingsHubContent(
         contentPadding = androidx.compose.foundation.layout.PaddingValues(20.dp),
         verticalArrangement = Arrangement.spacedBy(spacing.md)
     ) {
+        item {
+            Text(
+                stringResource(R.string.profile_local_title),
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.semantics { heading() }
+            )
+            Text(
+                stringResource(R.string.profile_local_device_notice),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        item {
+            HubCard(
+                icon = Icons.Default.Person,
+                title = stringResource(R.string.scale_profile_title),
+                description = stringResource(R.string.profile_card_description),
+                status = stringResource(R.string.source_status_local),
+                tone = SourceTone.GOOD,
+                onClick = onProfile,
+                testTag = "settings_profile"
+            )
+        }
+
         item {
             Text(
                 stringResource(R.string.settings_hub_sources_title),
@@ -172,6 +204,18 @@ internal fun SettingsHubContent(
                 tone = SourceTone.NEUTRAL,
                 onClick = onScale,
                 testTag = "source_scale"
+            )
+        }
+
+        item {
+            HubCard(
+                icon = Icons.Default.Edit,
+                title = stringResource(R.string.settings_manual_body_title),
+                description = stringResource(R.string.settings_manual_body_description),
+                status = stringResource(R.string.source_status_local),
+                tone = SourceTone.GOOD,
+                onClick = onManualBody,
+                testTag = "settings_manual_body"
             )
         }
 
@@ -266,7 +310,7 @@ private fun HubCard(
                 Text(title, style = MaterialTheme.typography.titleMedium)
                 Text(
                     description,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 SourceStatus(status, tone)
@@ -291,6 +335,6 @@ private fun SourceStatus(text: String, tone: SourceTone) {
         SourceTone.NEUTRAL -> MaterialTheme.colorScheme.surfaceVariant to MaterialTheme.colorScheme.onSurfaceVariant
     }
     Surface(color = colors.first, contentColor = colors.second, shape = RoundedCornerShape(999.dp)) {
-        Text(text, style = MaterialTheme.typography.labelSmall, modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp))
+        Text(text, style = MaterialTheme.typography.labelLarge, modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp))
     }
 }

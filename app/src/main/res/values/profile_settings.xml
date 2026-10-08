@@ -1,0 +1,20 @@
+<resources>
+    <string name="profile_local_title">Local profile</string>
+    <string name="profile_local_device_notice">Stored on this device. No Fitness Hub account required.</string>
+    <string name="profile_card_description">Review height, age and the inputs used for local body estimates.</string>
+    <string name="profile_local_description">These are the existing local profile values. Connecting a scale is optional.</string>
+    <string name="profile_estimates_notice">Saving updates local estimates from scale measurements. Original measurements stay unchanged. These formulas are not a medical assessment.</string>
+    <string name="profile_height_hint">Supported height: more than 100 and up to 300 cm. Decimal comma or point accepted.</string>
+    <string name="profile_age_hint">Age supported by the existing estimate formulas: 10–120 years.</string>
+    <string name="profile_sex_label">Sex used by the estimate formulas</string>
+    <string name="profile_validation_error">Check height and age, then select a sex for the formulas.</string>
+    <string name="profile_saving">Saving…</string>
+    <string name="profile_saved">Profile saved on this device.</string>
+    <string name="profile_saved_estimates_pending">Profile saved. Some local estimates could not be updated; retry saving to refresh them.</string>
+    <string name="profile_save_failed">Profile could not be saved. Your previous values are unchanged; please retry.</string>
+    <string name="profile_discard_title">Discard unsaved changes?</string>
+    <string name="profile_discard_description">Your saved profile will remain unchanged.</string>
+    <string name="profile_discard_action">Discard changes</string>
+    <string name="settings_manual_body_title">Add a body measurement</string>
+    <string name="settings_manual_body_description">Weight and body fat can be entered manually in Body, without connecting a source or granting Health Connect access.</string>
+</resources>

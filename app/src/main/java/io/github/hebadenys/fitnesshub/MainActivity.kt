@@ -42,6 +42,7 @@ import io.github.hebadenys.fitnesshub.feature.onboarding.OnboardingViewModel
 import io.github.hebadenys.fitnesshub.feature.settings.AiSettingsScreen
 import io.github.hebadenys.fitnesshub.feature.settings.HealthConnectSourceScreen
 import io.github.hebadenys.fitnesshub.feature.settings.LocalScaleSettingsScreen
+import io.github.hebadenys.fitnesshub.feature.settings.LocalProfileScreen
 import io.github.hebadenys.fitnesshub.feature.settings.SettingsScreen
 import io.github.hebadenys.fitnesshub.feature.sleep.SleepScreen
 import io.github.hebadenys.fitnesshub.feature.workout.WorkoutScreen
@@ -91,6 +92,7 @@ private enum class Screen(
         const val HEALTH_CONNECT_ROUTE = "sources/health-connect"
         const val LOCAL_SCALE_ROUTE = "sources/local-scale"
         const val AI_ROUTE = "settings/ai"
+        const val PROFILE_ROUTE = "settings/profile"
     }
 }
 
@@ -106,8 +108,13 @@ internal fun FitnessHubAppRoot(
             onNavigateToXiaomi = { navigate(Screen.XIAOMI_ROUTE) },
             onNavigateToScale = { navigate(Screen.LOCAL_SCALE_ROUTE) },
             onNavigateToInsights = { navigate(Screen.INSIGHTS_ROUTE) },
-            onNavigateToAi = { navigate(Screen.AI_ROUTE) }
+            onNavigateToAi = { navigate(Screen.AI_ROUTE) },
+            onNavigateToProfile = { navigate(Screen.PROFILE_ROUTE) },
+            onNavigateToManualBody = { navigate(Screen.Body.route) }
         )
+    },
+    profileContent: @Composable (onBack: () -> Unit) -> Unit = { onBack ->
+        LocalProfileScreen(onBack = onBack)
     }
 ) {
     val navController = rememberNavController()
@@ -215,10 +222,18 @@ internal fun FitnessHubAppRoot(
                 XiaomiSourceScreen(onBack = { navController.popBackStack() })
             }
             composable(Screen.HEALTH_CONNECT_ROUTE) {
-                HealthConnectSourceScreen(onBack = { navController.popBackStack() })
+                PerformanceTheme {
+                    HealthConnectSourceScreen(
+                        onBack = { navController.popBackStack() },
+                        onManualBody = { navController.navigate(Screen.Body.route) { launchSingleTop = true } }
+                    )
+                }
             }
             composable(Screen.LOCAL_SCALE_ROUTE) {
-                LocalScaleSettingsScreen(onBack = { navController.popBackStack() })
+                PerformanceTheme { LocalScaleSettingsScreen(onBack = { navController.popBackStack() }) }
+            }
+            composable(Screen.PROFILE_ROUTE) {
+                PerformanceTheme { profileContent { navController.popBackStack() } }
             }
             composable(Screen.AI_ROUTE) {
                 AiSettingsScreen(onBack = { navController.popBackStack() })

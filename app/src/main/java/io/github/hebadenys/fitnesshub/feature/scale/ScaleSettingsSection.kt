@@ -52,6 +52,7 @@ fun ScaleSettingsSection(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val bindkeyState by viewModel.bindkeyState.collectAsStateWithLifecycle()
     val historyImportState by viewModel.historyImportState.collectAsStateWithLifecycle()
+    val profileResult by viewModel.profileSaveResult.collectAsStateWithLifecycle()
     val spacing = FitnessHubTheme.spacing
     val context = LocalContext.current
 
@@ -65,9 +66,6 @@ fun ScaleSettingsSection(
     }
 
     var bindkeyInput by remember { mutableStateOf("") }
-    var heightInput by remember { mutableStateOf("") }
-    var ageInput by remember { mutableStateOf("") }
-    var sex by remember { mutableStateOf<Sex?>(null) }
     var historyUserFilter by remember { mutableStateOf("") }
 
     val historyFileLauncher = rememberLauncherForActivityResult(
@@ -92,7 +90,7 @@ fun ScaleSettingsSection(
         )
         Text(
             text = stringResource(R.string.scale_section_description),
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
@@ -112,7 +110,7 @@ fun ScaleSettingsSection(
                 )
                 Text(
                     text = stringResource(R.string.scale_history_description),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 OutlinedTextField(
@@ -148,7 +146,7 @@ fun ScaleSettingsSection(
                             result.duplicates,
                             result.skipped
                         ),
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.primary
                     )
                     is ScaleHistoryImportState.MultipleUsers -> Text(
@@ -156,12 +154,12 @@ fun ScaleSettingsSection(
                             R.string.scale_history_multiple_users,
                             result.users.joinToString(", ")
                         ),
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error
                     )
                     is ScaleHistoryImportState.Failure -> Text(
                         text = stringResource(R.string.scale_history_failed, result.reason),
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error
                     )
                     ScaleHistoryImportState.Idle,
@@ -184,12 +182,12 @@ fun ScaleSettingsSection(
         when (bindkeyState) {
             BindkeyResult.Saved -> Text(
                 text = stringResource(R.string.scale_bindkey_saved),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary
             )
             BindkeyResult.Invalid -> Text(
                 text = stringResource(R.string.scale_bindkey_invalid),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error
             )
             BindkeyResult.Idle -> Unit
@@ -211,62 +209,14 @@ fun ScaleSettingsSection(
 
         Spacer(Modifier.height(spacing.xs))
 
-        Text(
-            text = stringResource(R.string.scale_profile_title),
-            style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.semantics { heading() }
-        )
-        Text(
-            text = stringResource(R.string.scale_profile_description),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Row(horizontalArrangement = Arrangement.spacedBy(spacing.sm)) {
-            OutlinedTextField(
-                value = heightInput,
-                onValueChange = { heightInput = it },
-                label = { Text(stringResource(R.string.scale_profile_height)) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                singleLine = true,
-                modifier = Modifier.weight(1f)
-            )
-            OutlinedTextField(
-                value = ageInput,
-                onValueChange = { ageInput = it },
-                label = { Text(stringResource(R.string.scale_profile_age)) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                singleLine = true,
-                modifier = Modifier.weight(1f)
+        (uiState as? ScreenState.Content)?.data?.let { model ->
+            ScaleProfileEditor(
+                model = model,
+                result = profileResult,
+                onSave = viewModel::saveProfile,
+                onEdit = viewModel::dismissProfileResult
             )
         }
-
-        Row(horizontalArrangement = Arrangement.spacedBy(spacing.xs)) {
-            Sex.entries.forEach { option ->
-                FilterChip(
-                    selected = sex == option,
-                    onClick = { sex = if (sex == option) null else option },
-                    label = {
-                        Text(
-                            stringResource(
-                                if (option == Sex.MALE) R.string.sex_male else R.string.sex_female
-                            )
-                        )
-                    }
-                )
-            }
-        }
-
-        TextButton(
-            onClick = {
-                viewModel.saveProfile(
-                    heightInput.replace(',', '.').toDoubleOrNull(),
-                    ageInput.toIntOrNull(),
-                    sex
-                )
-            },
-            enabled = heightInput.isNotBlank() && ageInput.isNotBlank() && sex != null
-        ) { Text(stringResource(R.string.action_save)) }
 
         Spacer(Modifier.height(spacing.xs))
 
@@ -274,7 +224,7 @@ fun ScaleSettingsSection(
             if (!model.bluetoothAvailable) {
                 Text(
                     text = stringResource(R.string.scale_bluetooth_unavailable),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error
                 )
             }
@@ -298,7 +248,7 @@ fun ScaleSettingsSection(
             if (model.isScanning) {
                 Text(
                     text = stringResource(R.string.scale_scanning_hint),
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -331,28 +281,28 @@ fun ScaleSettingsSection(
                                 measurement.impedanceOhms?.toString()
                                     ?: stringResource(R.string.value_unavailable)
                             ),
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         model.lastEstimate?.let { estimate ->
                             estimate.bodyFatPercent?.let {
                                 Text(
                                     text = stringResource(R.string.scale_body_fat_reading, it.toString()),
-                                    style = MaterialTheme.typography.bodySmall,
+                                    style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                             estimate.bodyWaterPercent?.let {
                                 Text(
                                     text = stringResource(R.string.scale_body_water_reading, it.toString()),
-                                    style = MaterialTheme.typography.bodySmall,
+                                    style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                             estimate.visceralFatIndex?.let {
                                 Text(
                                     text = stringResource(R.string.scale_visceral_fat_reading, it.toString()),
-                                    style = MaterialTheme.typography.bodySmall,
+                                    style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
@@ -364,7 +314,7 @@ fun ScaleSettingsSection(
                                         R.string.provenance_estimate
                                     }
                                 ),
-                                style = MaterialTheme.typography.labelSmall,
+                                style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.tertiary
                             )
                         }

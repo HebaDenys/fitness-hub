@@ -2,7 +2,7 @@
 
 **Aggiornamento:** 8 ottobre 2026.  
 **Branch operativo:** `main`.  
-**Candidate:** 0.3.13, versionCode 15, database 9.  
+**Candidate:** 0.3.14, versionCode 16, database 9.  
 **Checklist:** [qa/0.3.12-functional-checklist.md](qa/0.3.12-functional-checklist.md).
 
 ## Stato raggiunto
@@ -44,9 +44,19 @@ La candidate mantiene test di composizione/semantica su 360dp, 840dp, dark theme
 - Review read-only del design: token B e navigazione coerenti; descrizioni/stati delle cards mantengono font 12/11sp ereditati e restano da portare a 14sp insieme alla verifica font grande. Nessun claim di conformità visuale completo.
 - QA pixel e ciclo di vita reale Android restano AWAITING_DEVICE; saved-state Compose non equivale a process death sul Redmi.
 
+## FH-UX-02/03/06 — Profilo e connessioni leggibili (0.3.14)
+
+- IMPLEMENTED: card profilo locale in Impostazioni con route dedicata allo stesso `user_profile` Room già esistente. Nessun account cloud, nuovo profilo o migrazione. L'editor condiviso precarica i campi salvati anche nella schermata Bilancia.
+- Validazione finita dei parametri (altezza >100–300 cm, età 10–120 già supportata dalle formule, sesso richiesto), virgola decimale, stato salvataggio e blocco doppio invio. Fallimento storage distinto dal profilo salvato con aggiornamento stime incompleto. Originali non modificati.
+- Form ripristinabile tramite saved state Compose; uscita da modifiche non salvate con Annulla/Scarta. Il salvataggio conserva il comportamento di aggiornamento delle stime locali preesistente, ora dichiarato nel form.
+- Hub raggruppato: profilo, sorgenti facoltative, inserimento corporeo manuale, dati/privacy. Manuale apre la vera schermata Corpo anche da Health Connect senza permessi/disponibilità. AI resta disabilitata e Xiaomi conserva il gate.
+- Tema B esteso soltanto ai dettagli HC/Bilancia/profilo; testo secondario e status portati almeno a 14sp nei componenti coinvolti. Azioni HC e permessi impilati per font grandi.
+- Dodici regressioni aggiunte: input/persistenza UI, virgola e NaN, scarto/cancel, saved-state, navigazione profilo, font 2×, validazione e salvataggio ripetuto/fallito. I test mock non sono prove Room/dispositivo.
+- CI/APK dell'esatto nuovo commit da verificare; il precedente runtime 39bc6c2 rimane la baseline verde. Nessun test disabilitato; nessuna build locale o nuova cattura pixel.
+
 ## Prossimo passo
 
-1. rifinire la leggibilità delle cards e verificare insets/barre di sistema, poi proseguire il redesign per incrementi senza cambiare le sei tab in questo fix;
+1. verificare CI/APK della 0.3.14; poi ispezionare su dispositivo insets/barre di sistema e proseguire il redesign per incrementi, mantenendo sei tab finché non viene eseguito un incremento dedicato;
 2. installare quella APK sul Redmi senza disinstallare dati importanti;
 3. eseguire la checklist fisica: onboarding, navigazione, Health Connect, manual body, pasti/camera, grafici, backup file/restore di prova, dark/font grande;
 4. provare S400/BLE e companion→Health Connect con dati di test;

@@ -44,9 +44,12 @@ class SettingsHubScreenTest {
             }
         }
 
+        compose.onNodeWithTag("settings_hub").performScrollToNode(hasTestTag("source_health_connect"))
         compose.onNodeWithText("2 of 11 metric groups authorized").assertExists()
         compose.onNodeWithTag("source_health_connect").performClick()
+        compose.onNodeWithTag("settings_hub").performScrollToNode(hasTestTag("source_xiaomi"))
         compose.onNodeWithTag("source_xiaomi").performClick()
+        compose.onNodeWithTag("settings_hub").performScrollToNode(hasTestTag("source_scale"))
         compose.onNodeWithTag("source_scale").performClick()
         compose.runOnIdle {
             assertEquals(1, health)
@@ -70,7 +73,9 @@ class SettingsHubScreenTest {
             }
         }
 
+        compose.onNodeWithTag("health_connect_source").performScrollToNode(hasTestTag("health_permissions"))
         compose.onNodeWithTag("health_permissions").assertIsEnabled().performClick()
+        compose.onNodeWithTag("health_connect_source").performScrollToNode(hasTestTag("health_check_access"))
         compose.onNodeWithTag("health_check_access").assertIsEnabled().performClick()
         compose.onNodeWithTag("health_connect_source").performScrollToNode(hasTestTag("health_sync"))
         compose.onNodeWithTag("health_sync").assertIsEnabled().performClick()
@@ -83,9 +88,15 @@ class SettingsHubScreenTest {
 
     @Test fun unavailableHealthConnectCannotRequestPermissionsOrSync() {
         val unavailable = model(emptySet()).copy(isClientAvailable = false)
-        compose.setContent { MaterialTheme { HealthConnectSourceContent(unavailable) } }
+        var manual = 0
+        compose.setContent { MaterialTheme { HealthConnectSourceContent(unavailable, onManualBody = { manual++ }) } }
 
+        compose.onNodeWithTag("health_connect_source").performScrollToNode(hasTestTag("health_permissions"))
         compose.onNodeWithTag("health_permissions").assertIsNotEnabled()
+        compose.onNodeWithTag("health_connect_source").performScrollToNode(hasTestTag("health_sync"))
         compose.onNodeWithTag("health_sync").assertIsNotEnabled()
+        compose.onNodeWithTag("health_connect_source").performScrollToNode(hasTestTag("health_manual_body"))
+        compose.onNodeWithTag("health_manual_body").assertIsEnabled().performClick()
+        compose.runOnIdle { assertEquals(1, manual) }
     }
 }
