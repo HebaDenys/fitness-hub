@@ -78,7 +78,8 @@ class BodyViewModel @Inject constructor(
                     ChartPoint(
                         date = day.date,
                         value = day.weight?.value,
-                        provenance = day.weight?.toProvenance()
+                        provenance = day.weight?.toProvenance(),
+                        sourceLabel = day.weight?.sourceLabel()
                     )
                 }
 

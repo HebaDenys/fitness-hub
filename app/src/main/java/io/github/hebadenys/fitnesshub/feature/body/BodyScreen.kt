@@ -145,7 +145,8 @@ fun BodyScreen(
                         points = model.chartPoints,
                         selectedRange = model.selectedRange,
                         onRangeSelected = viewModel::setRange,
-                        chartContentDescription = stringResource(R.string.cd_chart_weight)
+                        chartContentDescription = stringResource(R.string.cd_chart_weight),
+                        valueSuffix = "kg"
                     )
                 }
 

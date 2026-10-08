@@ -82,7 +82,13 @@ class DashboardViewModel @Inject constructor(
 
             val filteredForChart = summaries.take(range.days).reversed()
             val chartPoints = filteredForChart.map {
-                ChartPoint(it.date, it.steps?.toDouble(), it.provenance)
+                ChartPoint(
+                    date = it.date,
+                    value = it.steps?.toDouble(),
+                    provenance = it.provenance,
+                    sourceLabel = it.dataOrigins.takeIf { origins -> origins.isNotEmpty() }
+                        ?.sorted()?.joinToString(", ")
+                )
             }
 
             ScreenState.Content(

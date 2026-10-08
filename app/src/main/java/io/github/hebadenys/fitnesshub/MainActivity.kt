@@ -26,12 +26,16 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.hebadenys.fitnesshub.feature.activity.ActivityScreen
 import io.github.hebadenys.fitnesshub.feature.body.BodyScreen
 import io.github.hebadenys.fitnesshub.feature.dashboard.DashboardScreen
 import io.github.hebadenys.fitnesshub.feature.insights.InsightsScreen
 import io.github.hebadenys.fitnesshub.feature.nutrition.NutritionScreen
+import io.github.hebadenys.fitnesshub.feature.onboarding.OnboardingScreen
+import io.github.hebadenys.fitnesshub.feature.onboarding.OnboardingViewModel
 import io.github.hebadenys.fitnesshub.feature.settings.AiSettingsScreen
 import io.github.hebadenys.fitnesshub.feature.settings.HealthConnectSourceScreen
 import io.github.hebadenys.fitnesshub.feature.settings.LocalScaleSettingsScreen
@@ -47,9 +51,19 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             FitnessHubTheme {
-                FitnessHubAppRoot()
+                FitnessHubRoot()
             }
         }
+    }
+}
+
+@Composable
+private fun FitnessHubRoot(viewModel: OnboardingViewModel = hiltViewModel()) {
+    val completed by viewModel.completed.collectAsStateWithLifecycle()
+    if (completed) {
+        FitnessHubAppRoot()
+    } else {
+        OnboardingScreen(onContinue = viewModel::complete, onSkip = viewModel::complete)
     }
 }
 

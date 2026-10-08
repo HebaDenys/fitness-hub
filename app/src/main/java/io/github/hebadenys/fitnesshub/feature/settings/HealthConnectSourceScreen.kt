@@ -24,11 +24,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -54,6 +57,7 @@ fun HealthConnectSourceScreen(
     val permissionLauncher = rememberLauncherForActivityResult(viewModel.health.permissionContract) {
         viewModel.refresh()
     }
+    val snackbar = remember { SnackbarHostState() }
 
     Scaffold(
         topBar = {
@@ -65,16 +69,15 @@ fun HealthConnectSourceScreen(
                     }
                 }
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbar) }
     ) { padding ->
         ScreenStateHandler(state = state, modifier = Modifier.padding(padding)) { model ->
             model.syncOutcome?.let { outcome ->
                 val success = stringResource(R.string.dashboard_sync_success)
                 val failure = stringResource(R.string.dashboard_sync_failed)
                 LaunchedEffect(outcome) {
-                    // No raw exception message reaches the UI; the sync repository logs only safe classes.
-                    @Suppress("UNUSED_VARIABLE")
-                    val visibleMessage = if (outcome is SyncOutcome.Success) success else failure
+                    snackbar.showSnackbar(if (outcome is SyncOutcome.Success) success else failure)
                 }
             }
             HealthConnectSourceContent(
@@ -148,6 +151,27 @@ internal fun HealthConnectSourceContent(
                         ),
                         style = MaterialTheme.typography.bodySmall
                     )
+                }
+            }
+        }
+
+        if (model.observedOrigins.isNotEmpty()) {
+            item {
+                Card(
+                    Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+                ) {
+                    Column(Modifier.padding(spacing.md), verticalArrangement = Arrangement.spacedBy(spacing.xs)) {
+                        Text(stringResource(R.string.source_hc_observed_origins), style = MaterialTheme.typography.titleMedium)
+                        model.observedOrigins.forEach { origin ->
+                            Text(origin, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Text(
+                            stringResource(R.string.source_hc_observed_origins_hint),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
         }

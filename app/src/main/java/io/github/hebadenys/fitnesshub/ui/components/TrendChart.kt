@@ -14,9 +14,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,6 +33,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -51,7 +58,8 @@ import kotlin.math.roundToInt
 data class ChartPoint(
     val date: LocalDate,
     val value: Double?,
-    val provenance: String? = null
+    val provenance: String? = null,
+    val sourceLabel: String? = null
 )
 
 /**
@@ -68,7 +76,8 @@ fun TrendChart(
     onRangeSelected: (TimeRange) -> Unit,
     modifier: Modifier = Modifier,
     lineColor: Color = MaterialTheme.colorScheme.primary,
-    chartContentDescription: String = title
+    chartContentDescription: String = title,
+    valueSuffix: String? = null
 ) {
     val spacing = FitnessHubTheme.spacing
     val cornerRadius = FitnessHubTheme.cornerRadius
@@ -91,6 +100,18 @@ fun TrendChart(
     }
     val valuesByDate = remember(points) { points.associate { it.date to it.value } }
     val presentValues = dates.mapNotNull { valuesByDate[it] }
+    val recordedPoints = remember(points, dates) {
+        val allowed = dates.toSet()
+        points.filter { it.date in allowed && it.value != null }.sortedBy { it.date }
+    }
+    var selectedEpochDay by rememberSaveable(title) { mutableStateOf<Long?>(null) }
+    LaunchedEffect(recordedPoints, selectedRange) {
+        if (recordedPoints.none { it.date.toEpochDay() == selectedEpochDay }) {
+            selectedEpochDay = recordedPoints.lastOrNull()?.date?.toEpochDay()
+        }
+    }
+    val selectedPoint = recordedPoints.firstOrNull { it.date.toEpochDay() == selectedEpochDay }
+        ?: recordedPoints.lastOrNull()
 
     val segments = remember(dates, valuesByDate) { buildSegments(dates, valuesByDate) }
     val dateFormatter = remember { DateTimeFormatter.ofPattern("d/M", Locale.getDefault()) }
@@ -259,6 +280,71 @@ fun TrendChart(
                         plotRight = plotRight,
                         plotBottom = plotBottom
                     )
+                }
+
+                if (recordedPoints.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(spacing.sm))
+                    if (recordedPoints.size > 1) {
+                        val selectedIndex = recordedPoints.indexOf(selectedPoint).coerceAtLeast(0)
+                        Slider(
+                            value = selectedIndex.toFloat(),
+                            onValueChange = { raw ->
+                                val index = raw.roundToInt().coerceIn(0, recordedPoints.lastIndex)
+                                selectedEpochDay = recordedPoints[index].date.toEpochDay()
+                            },
+                            valueRange = 0f..recordedPoints.lastIndex.toFloat(),
+                            steps = (recordedPoints.size - 2).coerceAtLeast(0),
+                            modifier = Modifier.testTag("chart_point_selector")
+                        )
+                        Text(
+                            text = stringResource(R.string.chart_scrub_hint),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    selectedPoint?.value?.let { selectedValue ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth().testTag("chart_selected_point"),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+                        ) {
+                            Column(
+                                Modifier.padding(spacing.sm),
+                                verticalArrangement = Arrangement.spacedBy(spacing.xxs)
+                            ) {
+                                val suffix = valueSuffix?.takeIf { it.isNotBlank() }?.let { " $it" } ?: ""
+                                Text(
+                                    stringResource(
+                                        R.string.chart_selected_value,
+                                        selectedPoint.date.format(dateFormatter),
+                                        valueFormatter.format(selectedValue),
+                                        suffix
+                                    ),
+                                    style = MaterialTheme.typography.titleSmall
+                                )
+                                selectedPoint.sourceLabel?.let { source ->
+                                    Text(
+                                        stringResource(R.string.chart_selected_source, source),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                                selectedPoint.provenance?.let { provenance ->
+                                    Text(
+                                        stringResource(
+                                            R.string.chart_selected_provenance,
+                                            stringResource(
+                                                if (provenance == DailySummary.PROVENANCE_ESTIMATE)
+                                                    R.string.provenance_estimate
+                                                else R.string.provenance_measured
+                                            )
+                                        ),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(spacing.xs))

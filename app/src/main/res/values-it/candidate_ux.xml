@@ -1,0 +1,25 @@
+<resources>
+    <string name="source_hc_observed_origins">Origini dati osservate</string>
+    <string name="source_hc_observed_origins_hint">I package mostrati qui sono realmente comparsi nei record importati da Health Connect. La loro presenza non dimostra che ogni metrica di quell’app sia disponibile.</string>
+
+    <string name="chart_scrub_hint">Sposta il selettore per ispezionare i punti registrati.</string>
+    <string name="chart_selected_value">%1$s · %2$s%3$s</string>
+    <string name="chart_selected_source">Sorgente: %1$s</string>
+    <string name="chart_selected_provenance">Provenienza: %1$s</string>
+
+    <string name="nutrition_today">Oggi</string>
+    <string name="nutrition_go_today">Torna a oggi</string>
+    <string name="nutrition_previous_day">Giorno precedente</string>
+    <string name="nutrition_next_day">Giorno successivo</string>
+
+    <string name="onboarding_title">I tuoi dati salute, in un solo posto</string>
+    <string name="onboarding_description">Fitness Hub funziona prima di tutto in locale. Puoi usarlo senza collegare ogni sorgente e cambiare scelta in seguito.</string>
+    <string name="onboarding_local_title">Archivio local-first</string>
+    <string name="onboarding_local_description">Il database Room dell’app è l’archivio operativo. Health Connect è una sorgente di interoperabilità, non l’unica copia.</string>
+    <string name="onboarding_sources_title">Sorgenti facoltative</string>
+    <string name="onboarding_sources_description">Health Connect legge solo i tipi autorizzati. Il login cloud Xiaomi resta disabilitato in questo canale di test; CSV e Bluetooth restano fallback facoltativi.</string>
+    <string name="onboarding_control_title">Mantieni il controllo</string>
+    <string name="onboarding_control_description">Non serve un account cloud Fitness Hub. Backup ed export sono azioni esplicite e questo onboarding non richiede credenziali di account reali.</string>
+    <string name="onboarding_continue">Entra in Fitness Hub</string>
+    <string name="onboarding_skip">Salta la configurazione per ora</string>
+</resources>

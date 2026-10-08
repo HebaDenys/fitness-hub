@@ -1,0 +1,25 @@
+<resources>
+    <string name="source_hc_observed_origins">Observed data origins</string>
+    <string name="source_hc_observed_origins_hint">Package names shown here were actually present in imported Health Connect records. Their presence does not prove that every metric from that app is available.</string>
+
+    <string name="chart_scrub_hint">Move the selector to inspect recorded points.</string>
+    <string name="chart_selected_value">%1$s · %2$s%3$s</string>
+    <string name="chart_selected_source">Source: %1$s</string>
+    <string name="chart_selected_provenance">Provenance: %1$s</string>
+
+    <string name="nutrition_today">Today</string>
+    <string name="nutrition_go_today">Return to today</string>
+    <string name="nutrition_previous_day">Previous day</string>
+    <string name="nutrition_next_day">Next day</string>
+
+    <string name="onboarding_title">Your health data, in one place</string>
+    <string name="onboarding_description">Fitness Hub works locally first. You can use it without connecting every source and change your choices later.</string>
+    <string name="onboarding_local_title">Local-first archive</string>
+    <string name="onboarding_local_description">Your own Room database is the working archive. Health Connect is an interoperability source, not the only copy.</string>
+    <string name="onboarding_sources_title">Optional data sources</string>
+    <string name="onboarding_sources_description">Health Connect reads only authorized types. Xiaomi cloud login is still disabled in this test channel; CSV and Bluetooth remain optional fallback tools.</string>
+    <string name="onboarding_control_title">You stay in control</string>
+    <string name="onboarding_control_description">No Fitness Hub cloud account is required. Backup/export are explicit actions and real account credentials are never requested by this onboarding.</string>
+    <string name="onboarding_continue">Enter Fitness Hub</string>
+    <string name="onboarding_skip">Skip setup for now</string>
+</resources>

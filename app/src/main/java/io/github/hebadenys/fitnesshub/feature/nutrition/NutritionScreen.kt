@@ -14,6 +14,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -42,6 +44,9 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.hebadenys.fitnesshub.R
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import io.github.hebadenys.fitnesshub.core.nutrition.FoodEntity
 import io.github.hebadenys.fitnesshub.core.nutrition.MealType
 import io.github.hebadenys.fitnesshub.ui.components.MetricCard
@@ -67,6 +72,13 @@ fun NutritionScreen(viewModel: NutritionViewModel = hiltViewModel()) {
                 text = stringResource(R.string.nutrition_title),
                 style = MaterialTheme.typography.headlineMedium,
                 modifier = Modifier.semantics { heading() }
+            )
+
+            NutritionDateHeader(
+                date = model.date,
+                onPrevious = { viewModel.selectDate(model.date.minusDays(1)) },
+                onNext = { viewModel.selectDate(model.date.plusDays(1)) },
+                onToday = { viewModel.selectDate(LocalDate.now()) }
             )
 
             NutritionQuickActions(
@@ -362,3 +374,42 @@ private fun provenanceLabel(provenance: String): String = stringResource(
         else -> R.string.provenance_measured
     }
 )
+
+
+@Composable
+internal fun NutritionDateHeader(
+    date: LocalDate,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+    onToday: () -> Unit
+) {
+    val spacing = FitnessHubTheme.spacing
+    val today = LocalDate.now()
+    val formatter = remember { DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM) }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(spacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            IconButton(onClick = onPrevious) {
+                Icon(Icons.Default.KeyboardArrowLeft, contentDescription = stringResource(R.string.nutrition_previous_day))
+            }
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    if (date == today) stringResource(R.string.nutrition_today) else date.format(formatter),
+                    style = MaterialTheme.typography.titleMedium
+                )
+                if (date != today) {
+                    TextButton(onClick = onToday) { Text(stringResource(R.string.nutrition_go_today)) }
+                }
+            }
+            IconButton(onClick = onNext, enabled = date.isBefore(today)) {
+                Icon(Icons.Default.KeyboardArrowRight, contentDescription = stringResource(R.string.nutrition_next_day))
+            }
+        }
+    }
+}

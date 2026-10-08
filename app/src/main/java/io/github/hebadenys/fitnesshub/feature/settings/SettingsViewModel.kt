@@ -29,6 +29,7 @@ data class SettingsUiModel(
     val hasAnyPermission: Boolean,
     val historyGranted: Boolean,
     val metricStatuses: List<MetricPermissionStatus>,
+    val observedOrigins: List<String> = emptyList(),
     val lastLocalSyncMillis: Long? = null,
     val isSyncing: Boolean = false,
     val syncOutcome: SyncOutcome? = null
@@ -54,6 +55,12 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch {
             val localRows = repo.observeDaily().first()
             val lastSync = localRows.maxOfOrNull { it.syncedAt }?.takeIf { it > 0L }
+            val observedOrigins = localRows
+                .flatMap { it.dataOrigins.split(",") }
+                .map { it.trim() }
+                .filter { it.isNotEmpty() }
+                .distinct()
+                .sorted()
             val isAvailable = health.client != null
             if (!isAvailable) {
                 _uiState.value = ScreenState.Content(
@@ -62,6 +69,7 @@ class SettingsViewModel @Inject constructor(
                         hasAnyPermission = false,
                         historyGranted = false,
                         metricStatuses = HealthMetrics.ALL.map { MetricPermissionStatus(it, false) },
+                        observedOrigins = observedOrigins,
                         lastLocalSyncMillis = lastSync,
                         isSyncing = isSyncing.value,
                         syncOutcome = syncOutcome.value
@@ -80,6 +88,7 @@ class SettingsViewModel @Inject constructor(
                     metricStatuses = HealthMetrics.ALL.map { metric ->
                         MetricPermissionStatus(metric, metric in granted)
                     },
+                    observedOrigins = observedOrigins,
                     lastLocalSyncMillis = lastSync,
                     isSyncing = isSyncing.value,
                     syncOutcome = syncOutcome.value
