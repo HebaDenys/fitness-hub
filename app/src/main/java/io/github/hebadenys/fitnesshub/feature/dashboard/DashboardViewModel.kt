@@ -73,23 +73,14 @@ class DashboardViewModel @Inject constructor(
         } else if (entities.isEmpty() && bodyData.latestWeight == null) {
             ScreenState.Empty()
         } else {
-            val summaries = entities.map { DailySummaryMapper.toDomain(it) }
+            val summaries = entities.map { DailySummaryMapper.toDomain(it) }.sortedByDescending { it.date }
             val latest = summaries.firstOrNull()
             val previous = summaries.getOrNull(1)
             val weights = bodyData.weightTimeline
             val latestWeight = bodyData.latestWeight?.observation
             val previousWeight = weights.asReversed().firstOrNull { it != latestWeight }
 
-            val filteredForChart = summaries.take(range.days).reversed()
-            val chartPoints = filteredForChart.map {
-                ChartPoint(
-                    date = it.date,
-                    value = it.steps?.toDouble(),
-                    provenance = it.provenance,
-                    sourceLabel = it.dataOrigins.takeIf { origins -> origins.isNotEmpty() }
-                        ?.sorted()?.joinToString(", ")
-                )
-            }
+            val chartPoints = dashboardStepPoints(summaries, range)
 
             ScreenState.Content(
                 DashboardUiModel(

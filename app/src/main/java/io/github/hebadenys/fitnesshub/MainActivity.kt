@@ -35,6 +35,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import io.github.hebadenys.fitnesshub.feature.activity.ActivityScreen
 import io.github.hebadenys.fitnesshub.feature.body.BodyScreen
 import io.github.hebadenys.fitnesshub.feature.dashboard.DashboardScreen
+import io.github.hebadenys.fitnesshub.feature.dashboard.DashboardStepsScreen
 import io.github.hebadenys.fitnesshub.feature.insights.InsightsScreen
 import io.github.hebadenys.fitnesshub.feature.nutrition.NutritionScreen
 import io.github.hebadenys.fitnesshub.feature.onboarding.OnboardingScreen
@@ -93,14 +94,13 @@ private enum class Screen(
         const val LOCAL_SCALE_ROUTE = "sources/local-scale"
         const val AI_ROUTE = "settings/ai"
         const val PROFILE_ROUTE = "settings/profile"
+        const val STEPS_ROUTE = "dashboard/steps"
     }
 }
 
 @Composable
 internal fun FitnessHubAppRoot(
-    dashboardContent: @Composable (onSettings: () -> Unit) -> Unit = { onSettings ->
-        DashboardScreen(onNavigateToSettings = onSettings)
-    },
+    dashboardContent: (@Composable (onSettings: () -> Unit) -> Unit)? = null,
     settingsContent: @Composable (onBack: () -> Unit, navigate: (String) -> Unit) -> Unit = { onBack, navigate ->
         SettingsScreen(
             onBack = onBack,
@@ -167,13 +167,19 @@ internal fun FitnessHubAppRoot(
         ) {
             composable(Screen.Dashboard.route) {
                 PerformanceTheme {
-                    dashboardContent(
-                        {
-                            navController.navigate(Screen.SETTINGS_ROUTE) {
-                                launchSingleTop = true
-                            }
-                        }
-                    )
+                    val openSettings = {
+                        navController.navigate(Screen.SETTINGS_ROUTE) { launchSingleTop = true }
+                    }
+                    if (dashboardContent != null) {
+                        dashboardContent(openSettings)
+                    } else {
+                        DashboardScreen(
+                            onNavigateToSettings = openSettings,
+                            onNavigateToBody = { navController.navigate(Screen.Body.route) { launchSingleTop = true } },
+                            onNavigateToNutrition = { navController.navigate(Screen.Nutrition.route) { launchSingleTop = true } },
+                            onNavigateToSteps = { navController.navigate(Screen.STEPS_ROUTE) { launchSingleTop = true } }
+                        )
+                    }
                 }
             }
             composable(Screen.Activity.route) {
@@ -212,6 +218,14 @@ internal fun FitnessHubAppRoot(
                         { route ->
                             navController.navigate(route) { launchSingleTop = true }
                         }
+                    )
+                }
+            }
+            composable(Screen.STEPS_ROUTE) {
+                PerformanceTheme {
+                    DashboardStepsScreen(
+                        onBack = { navController.popBackStack() },
+                        onAddBody = { navController.navigate(Screen.Body.route) { launchSingleTop = true } }
                     )
                 }
             }

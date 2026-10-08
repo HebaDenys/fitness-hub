@@ -139,8 +139,8 @@ class VisualQaCompactSemanticsTest {
                 DashboardScreen(onNavigateToSettings = {}, viewModel = vm)
             }
         }
-        compose.waitUntil(5_000) { compose.onAllNodesWithText("Dashboard").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithText("Dashboard").assertExists()
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("dashboard_title").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("dashboard_title").assertExists()
         compose.onNodeWithText("99.4 kg").assertExists()
         compose.onNodeWithText("Steps").assertExists()
     }

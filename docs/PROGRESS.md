@@ -2,7 +2,7 @@
 
 **Aggiornamento:** 8 ottobre 2026.  
 **Branch operativo:** `main`.  
-**Candidate:** 0.3.14, versionCode 16, database 9.  
+**Candidate:** 0.3.15, versionCode 17, database 9.  
 **Checklist:** [qa/0.3.12-functional-checklist.md](qa/0.3.12-functional-checklist.md).
 
 ## Stato raggiunto
@@ -52,11 +52,23 @@ La candidate mantiene test di composizione/semantica su 360dp, 840dp, dark theme
 - Hub raggruppato: profilo, sorgenti facoltative, inserimento corporeo manuale, dati/privacy. Manuale apre la vera schermata Corpo anche da Health Connect senza permessi/disponibilità. AI resta disabilitata e Xiaomi conserva il gate.
 - Tema B esteso soltanto ai dettagli HC/Bilancia/profilo; testo secondario e status portati almeno a 14sp nei componenti coinvolti. Azioni HC e permessi impilati per font grandi.
 - Tredici regressioni aggiunte: input/persistenza UI, virgola e NaN, scarto/cancel, saved-state, navigazione profilo, font 2×, validazione e salvataggio ripetuto/fallito. I test mock non sono prove Room/dispositivo.
-- Run 37854102958: 440 test / 58 suite, 439 passati e 1 fallito; regressione reale trovata nel bottone HC Controlla stato (weight verticale, altezza nulla). Corretto a fillMaxWidth e aggiunta asserzione di visibilità; CI/APK dell'esatto nuovo commit da verificare; il precedente runtime 39bc6c2 rimane la baseline verde. Nessun test disabilitato; nessuna build locale o nuova cattura pixel.
+- Run 37854102958 aveva trovato un bottone HC ad altezza nulla (weight verticale): corretto a fillMaxWidth senza rimuovere il test, aggiungendo una verifica di visibilità.
+- VERIFICA AUTOMATICA: runtime `c18906e1c262797b08dcac795a77000bed19a2fa`, [CI 37854727080](https://github.com/HebaDenys/fitness-hub/actions/runs/37854727080) verde: **440 test / 58 suite, 0 failure/error/skip**, 14 controlli Python, test/lint/build e firma/checksum superati. Main, tag e release verificati allo stesso SHA prima dell'incremento successivo.
+- APK 0.3.14/code16 SHA-256 `d981c15079c85322e2162bd447814a7210d69c007149fee7cb123c03545603ba`. Nessun test disabilitato; nessuna build locale o nuova cattura pixel.
+
+## FH-UX-03/04/06 — Dashboard Performance e dettaglio passi (0.3.15)
+
+- IMPLEMENTED: gerarchia Dashboard nero/lime con passi in evidenza, sonno/peso, contesto temporale esplicito, scorciatoie vere verso Corpo e Nutrizione. Dati giornalieri vecchi indicati come ultimi disponibili, peso con data/fonte indipendente.
+- Vuoto e permessi mancanti rimangono distinti; entrambe le viste permettono inserimento corporeo manuale e connessioni. Nessun obiettivo 8000 o orario fittizio del concept viene aggiunto.
+- Nuova route dettaglio passi con barre, selezione touch/slider e lista equivalente di tutti i giorni. Range 7/30/90 persistito nel saved state; ritorno normale alla Dashboard. Totale limitato ai valori disponibili e copertura mostrata.
+- Corretto il campionamento del grafico: N giorni di calendario ancorati a oggi, non N righe sparse; giorni mancanti null, zeri conservati, record fuori intervallo/futuri esclusi dalla vista senza cancellarli.
+- Contenuto Dashboard ora applica una volta il padding della toolbar anche a loading/content, che il vecchio handler non applicava nei propri slot.
+- Otto regressioni aggiunte su finestre sparse/anno nuovo/null/zero, scorciatoie, stato vuoto/font2×, tap/slider/lista e ripristino range/lista. Grafici delle altre feature non riscritti.
+- CI dell'esatto commit da completare. Screenshot reali e valutazione pixel/TalkBack sul dispositivo ancora AWAITING_DEVICE.
 
 ## Prossimo passo
 
-1. verificare CI/APK della 0.3.14; poi ispezionare su dispositivo insets/barre di sistema e proseguire il redesign per incrementi, mantenendo sei tab finché non viene eseguito un incremento dedicato;
+1. verificare CI/APK della 0.3.15; poi ispezionare su dispositivo insets, grafici e font grandi e proseguire il redesign per incrementi, mantenendo sei tab;
 2. installare quella APK sul Redmi senza disinstallare dati importanti;
 3. eseguire la checklist fisica: onboarding, navigazione, Health Connect, manual body, pasti/camera, grafici, backup file/restore di prova, dark/font grande;
 4. provare S400/BLE e companion→Health Connect con dati di test;

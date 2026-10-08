@@ -1,0 +1,19 @@
+<resources>
+    <string name="dashboard_latest_available">Latest available</string>
+    <string name="dashboard_open_steps">Open steps and daily history</string>
+    <string name="dashboard_open_meals">Open food diary</string>
+    <string name="dashboard_start_title">Start with your data</string>
+    <string name="dashboard_start_description">Connect an optional source or enter a body measurement manually. Missing data will never be shown as zero.</string>
+    <string name="dashboard_open_connections">Open connections</string>
+    <string name="dashboard_settings_available">Your profile and settings remain available at any time.</string>
+    <string name="dashboard_last_days">Last %1$d days</string>
+    <string name="dashboard_recorded_steps">Recorded steps in this period</string>
+    <string name="dashboard_days_coverage">%1$d of %2$d days have a step value</string>
+    <string name="dashboard_no_steps_period">No step values in this period. Choose another range or review your connections.</string>
+    <string name="dashboard_selected_steps">%1$s · %2$s steps</string>
+    <string name="dashboard_date_interval">%1$s – %2$s</string>
+    <string name="dashboard_daily_sources">Daily record sources: %1$s</string>
+    <string name="dashboard_source_unreported">Source not reported for this day</string>
+    <string name="dashboard_show_list">Show daily data list</string>
+    <string name="dashboard_hide_list">Hide daily data list</string>
+</resources>

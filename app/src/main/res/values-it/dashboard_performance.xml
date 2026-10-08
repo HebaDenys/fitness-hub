@@ -1,0 +1,19 @@
+<resources>
+    <string name="dashboard_latest_available">Ultimi dati disponibili</string>
+    <string name="dashboard_open_steps">Apri passi e storico giornaliero</string>
+    <string name="dashboard_open_meals">Apri diario alimentare</string>
+    <string name="dashboard_start_title">Inizia dai tuoi dati</string>
+    <string name="dashboard_start_description">Collega una sorgente facoltativa oppure inserisci una misura corporea a mano. I dati mancanti non vengono mostrati come zero.</string>
+    <string name="dashboard_open_connections">Apri connessioni</string>
+    <string name="dashboard_settings_available">Il profilo e le impostazioni restano sempre accessibili.</string>
+    <string name="dashboard_last_days">Ultimi %1$d giorni</string>
+    <string name="dashboard_recorded_steps">Passi registrati nel periodo</string>
+    <string name="dashboard_days_coverage">%1$d giorni su %2$d hanno un valore dei passi</string>
+    <string name="dashboard_no_steps_period">Nessun valore dei passi nel periodo. Scegli un altro intervallo oppure controlla le connessioni.</string>
+    <string name="dashboard_selected_steps">%1$s · %2$s passi</string>
+    <string name="dashboard_date_interval">%1$s – %2$s</string>
+    <string name="dashboard_daily_sources">Sorgenti dei record giornalieri: %1$s</string>
+    <string name="dashboard_source_unreported">Sorgente non riportata per questo giorno</string>
+    <string name="dashboard_show_list">Mostra elenco giornaliero</string>
+    <string name="dashboard_hide_list">Nascondi elenco giornaliero</string>
+</resources>
