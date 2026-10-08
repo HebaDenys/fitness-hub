@@ -63,7 +63,8 @@ La candidate mantiene test di composizione/semantica su 360dp, 840dp, dark theme
 - Nuova route dettaglio passi con barre, selezione touch/slider e lista equivalente di tutti i giorni. Range 7/30/90 persistito nel saved state; ritorno normale alla Dashboard. Totale limitato ai valori disponibili e copertura mostrata.
 - Corretto il campionamento del grafico: N giorni di calendario ancorati a oggi, non N righe sparse; giorni mancanti null, zeri conservati, record fuori intervallo/futuri esclusi dalla vista senza cancellarli.
 - Contenuto Dashboard ora applica una volta il padding della toolbar anche a loading/content, che il vecchio handler non applicava nei propri slot.
-- Otto regressioni aggiunte su finestre sparse/anno nuovo/null/zero, scorciatoie, stato vuoto/font2×, tap/slider/lista e ripristino range/lista. Grafici delle altre feature non riscritti.
+- Dieci regressioni aggiunte su finestre sparse/anno nuovo/null/zero, scorciatoie, stato vuoto/font2×, tap/slider/lista e ripristino range/lista. Grafici delle altre feature non riscritti.
+- Review grafico: lo zero usa un anello sulla baseline, null resta un vuoto; asse verticale max/metà/zero allineato alle griglie e assente senza valori. Il NavHost consuma gli inset del root e usa background B solo sulle route ridisegnate; test geometrico evita il doppio padding.
 - CI dell'esatto commit da completare. Screenshot reali e valutazione pixel/TalkBack sul dispositivo ancora AWAITING_DEVICE.
 
 ## Prossimo passo

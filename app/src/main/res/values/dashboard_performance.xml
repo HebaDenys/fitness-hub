@@ -16,4 +16,5 @@
     <string name="dashboard_source_unreported">Source not reported for this day</string>
     <string name="dashboard_show_list">Show daily data list</string>
     <string name="dashboard_hide_list">Hide daily data list</string>
+    <string name="dashboard_zero_and_gaps">A circle on the baseline means recorded zero; gaps mean no measurement.</string>
 </resources>

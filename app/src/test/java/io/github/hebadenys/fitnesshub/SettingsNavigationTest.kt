@@ -3,6 +3,13 @@ package io.github.hebadenys.fitnesshub
 import android.app.Application
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -86,6 +93,24 @@ class SettingsNavigationTest {
                 }
             )
         }
+    }
+
+    @Test fun rootConsumesItsInsetsBeforeNestedScreensApplyThem() {
+        compose.setContent {
+            val insets = WindowInsets(top = 24.dp)
+            FitnessHubTheme {
+                FitnessHubAppRoot(
+                    contentWindowInsets = insets,
+                    dashboardContent = {
+                        Box(Modifier.windowInsetsPadding(insets)) {
+                            Box(Modifier.size(8.dp).testTag("inset_probe"))
+                        }
+                    }
+                )
+            }
+        }
+        val bounds = compose.onNodeWithTag("inset_probe").getUnclippedBoundsInRoot()
+        assertEquals(24f, bounds.top.value, 0.5f)
     }
 
     @Test fun gearIsAvailableInLoadingEmptyPermissionAndErrorStates() {

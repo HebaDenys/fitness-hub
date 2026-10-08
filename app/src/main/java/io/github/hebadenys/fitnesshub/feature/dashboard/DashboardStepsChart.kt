@@ -7,15 +7,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.rememberTextMeasurer
 import io.github.hebadenys.fitnesshub.R
 import io.github.hebadenys.fitnesshub.ui.components.ChartPoint
 import io.github.hebadenys.fitnesshub.ui.components.RangeSelector
@@ -41,8 +45,15 @@ internal fun DashboardStepsChart(
     val selected = points.getOrNull(selectedIndex)
     val known = points.mapNotNull { it.value }
     val total = known.takeIf { it.isNotEmpty() }?.sum()
-    val max = (known.maxOrNull() ?: 0.0).coerceAtLeast(1.0)
+    val max = (known.maxOrNull() ?: 0.0).coerceAtLeast(2.0)
     val number = remember { NumberFormat.getIntegerInstance() }
+    val axisNumber = remember { NumberFormat.getNumberInstance().apply { maximumFractionDigits = 1 } }
+    val labelStyle = MaterialTheme.typography.bodyMedium
+    val textMeasurer = rememberTextMeasurer()
+    val axisLabels = listOf(axisNumber.format(max), axisNumber.format(max / 2), "0")
+    val axisLabelHeightPixels = textMeasurer.measure("0", labelStyle).size.height.toFloat()
+    val axisWidthPixels = axisLabels.maxOf { textMeasurer.measure(it, labelStyle).size.width }
+    val axisWidth = with(LocalDensity.current) { axisWidthPixels.toDp() } + 8.dp
     val dateFormat = remember { DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM) }
     val selectedValue = selected?.value?.let(number::format) ?: stringResource(R.string.value_unavailable)
     val selectedDescription = selected?.let {
@@ -80,42 +91,62 @@ internal fun DashboardStepsChart(
             if (known.isEmpty()) {
                 Text(stringResource(R.string.dashboard_no_steps_period), style = MaterialTheme.typography.bodyMedium)
             }
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("0", style = MaterialTheme.typography.bodyMedium)
-                Text(number.format(known.maxOrNull() ?: 0.0), style = MaterialTheme.typography.bodyMedium)
-            }
-            Canvas(
-                Modifier.fillMaxWidth().height(if (compact) 140.dp else 200.dp)
-                    .testTag("steps_bars")
-                    .semantics { contentDescription = chartDescription }
-                    .pointerInput(points) {
-                        detectTapGestures { position ->
-                            if (compact) {
-                                onOpen()
-                            } else if (points.isNotEmpty() && size.width > 0) {
-                                val index = (position.x / size.width * points.size).toInt().coerceIn(0, points.lastIndex)
-                                selectedEpoch = points[index].date.toEpochDay()
+            if (known.isNotEmpty()) {
+                Row(Modifier.fillMaxWidth().height(if (compact) 140.dp else 200.dp)) {
+                    Column(
+                        Modifier.width(axisWidth).fillMaxHeight(),
+                        verticalArrangement = Arrangement.SpaceBetween,
+                        horizontalAlignment = Alignment.End
+                    ) {
+                        axisLabels.forEach { Text(it, style = labelStyle) }
+                    }
+                    Canvas(
+                        Modifier.weight(1f).fillMaxHeight().padding(start = 8.dp)
+                            .testTag("steps_bars")
+                            .semantics { contentDescription = chartDescription }
+                            .pointerInput(points, compact) {
+                                detectTapGestures { position ->
+                                    if (compact) {
+                                        onOpen()
+                                    } else if (points.isNotEmpty() && size.width > 0) {
+                                        val index = (position.x / size.width * points.size).toInt().coerceIn(0, points.lastIndex)
+                                        selectedEpoch = points[index].date.toEpochDay()
+                                    }
+                                }
+                            }
+                    ) {
+                        if (points.isEmpty()) return@Canvas
+                        val slot = size.width / points.size
+                        val barWidth = (slot * 0.68f).coerceAtLeast(1f)
+                        val markerRadius = 3.dp.toPx()
+                        val top = (axisLabelHeightPixels / 2).coerceAtMost(size.height / 3)
+                        val bottom = size.height - top
+                        val plotHeight = bottom - top
+                        repeat(3) { line ->
+                            val y = top + plotHeight * line / 2f
+                            drawLine(axis, Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx())
+                        }
+                        points.forEachIndexed { index, point ->
+                            point.value?.let { value ->
+                                val color = if (index == selectedIndex) lime else cyan
+                                val centerX = index * slot + slot / 2
+                                if (value == 0.0) {
+                                    // A baseline ring means recorded zero; null has no mark at all.
+                                    drawCircle(
+                                        color, radius = markerRadius,
+                                        center = Offset(centerX, bottom),
+                                        style = Stroke(width = 1.5.dp.toPx())
+                                    )
+                                } else {
+                                    val barHeight = ((value / max).coerceIn(0.0, 1.0) * plotHeight).toFloat()
+                                    drawRect(
+                                        color = color,
+                                        topLeft = Offset(centerX - barWidth / 2, bottom - barHeight),
+                                        size = Size(barWidth, barHeight)
+                                    )
+                                }
                             }
                         }
-                    }
-            ) {
-                if (points.isEmpty()) return@Canvas
-                val slot = size.width / points.size
-                val barWidth = (slot * 0.68f).coerceAtLeast(1f)
-                val bottom = size.height - 2.dp.toPx()
-                repeat(3) { line ->
-                    val y = bottom * line / 2f
-                    drawLine(axis, Offset(0f, y), Offset(size.width, y), strokeWidth = 1.dp.toPx())
-                }
-                points.forEachIndexed { index, point ->
-                    point.value?.let { value ->
-                        val barHeight = ((value / max).coerceIn(0.0, 1.0) * (bottom - 2.dp.toPx())).toFloat()
-                            .coerceAtLeast(2.dp.toPx())
-                        drawRect(
-                            color = if (index == selectedIndex) lime else cyan,
-                            topLeft = Offset(index * slot + (slot - barWidth) / 2, bottom - barHeight),
-                            size = Size(barWidth, barHeight)
-                        )
                     }
                 }
             }
@@ -128,7 +159,7 @@ internal fun DashboardStepsChart(
                         ),
                         style = MaterialTheme.typography.bodyMedium
                     )
-                    Text(stringResource(R.string.chart_gaps_note), style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.dashboard_zero_and_gaps), style = MaterialTheme.typography.bodyMedium)
                 }
             }
             if (!compact && selected != null) {

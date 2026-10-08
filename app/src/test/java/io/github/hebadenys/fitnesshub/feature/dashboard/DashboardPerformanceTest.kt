@@ -146,6 +146,22 @@ class DashboardPerformanceTest {
         compose.onNodeWithTag("steps_day_$first").assertDoesNotExist()
     }
 
+    @Test fun missingPeriodDoesNotRenderNumericTotalOrZeroAxes() {
+        val points = dashboardStepPoints(emptyList(), TimeRange.SEVEN_DAYS)
+        compose.setContent {
+            FitnessHubTheme {
+                PerformanceTheme {
+                    Column(Modifier.verticalScroll(rememberScrollState())) {
+                        DashboardStepsChart(points, TimeRange.SEVEN_DAYS, {})
+                    }
+                }
+            }
+        }
+        compose.onNodeWithTag("steps_period_total").assertTextEquals(compose.activity.getString(R.string.value_unavailable))
+        compose.onNodeWithTag("steps_bars").assertDoesNotExist()
+        compose.onNodeWithTag("steps_coverage").assertTextEquals("0 of 7 days have a step value")
+    }
+
     @Test fun detailRangeAndListSurviveSavedStateAndBackRemainsAvailable() {
         val vm = mock<DashboardViewModel>()
         whenever(vm.uiState).thenReturn(MutableStateFlow<ScreenState<DashboardUiModel>>(

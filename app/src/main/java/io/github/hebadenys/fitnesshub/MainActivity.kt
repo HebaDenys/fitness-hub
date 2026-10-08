@@ -4,6 +4,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Favorite
@@ -18,6 +20,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -50,6 +53,7 @@ import io.github.hebadenys.fitnesshub.feature.workout.WorkoutScreen
 import io.github.hebadenys.fitnesshub.feature.xiaomi.XiaomiSourceScreen
 import io.github.hebadenys.fitnesshub.ui.theme.FitnessHubTheme
 import io.github.hebadenys.fitnesshub.ui.theme.PerformanceTheme
+import io.github.hebadenys.fitnesshub.ui.theme.PerformanceColorScheme
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -100,6 +104,7 @@ private enum class Screen(
 
 @Composable
 internal fun FitnessHubAppRoot(
+    contentWindowInsets: WindowInsets = ScaffoldDefaults.contentWindowInsets,
     dashboardContent: (@Composable (onSettings: () -> Unit) -> Unit)? = null,
     settingsContent: @Composable (onBack: () -> Unit, navigate: (String) -> Unit) -> Unit = { onBack, navigate ->
         SettingsScreen(
@@ -121,7 +126,13 @@ internal fun FitnessHubAppRoot(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: Screen.Dashboard.route
 
+    val performanceRoute = currentRoute in setOf(
+        Screen.Dashboard.route, Screen.SETTINGS_ROUTE, Screen.PROFILE_ROUTE,
+        Screen.HEALTH_CONNECT_ROUTE, Screen.LOCAL_SCALE_ROUTE, Screen.STEPS_ROUTE
+    )
     Scaffold(
+        contentWindowInsets = contentWindowInsets,
+        containerColor = if (performanceRoute) PerformanceColorScheme.background else MaterialTheme.colorScheme.background,
         bottomBar = {
             if (Screen.entries.any { it.route == currentRoute }) {
                 PerformanceTheme {
@@ -163,7 +174,7 @@ internal fun FitnessHubAppRoot(
         NavHost(
             navController = navController,
             startDestination = Screen.Dashboard.route,
-            modifier = Modifier.padding(padding)
+            modifier = Modifier.padding(padding).consumeWindowInsets(padding)
         ) {
             composable(Screen.Dashboard.route) {
                 PerformanceTheme {

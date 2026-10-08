@@ -16,4 +16,5 @@
     <string name="dashboard_source_unreported">Sorgente non riportata per questo giorno</string>
     <string name="dashboard_show_list">Mostra elenco giornaliero</string>
     <string name="dashboard_hide_list">Nascondi elenco giornaliero</string>
+    <string name="dashboard_zero_and_gaps">Un cerchio sulla linea di base indica zero registrato; i vuoti indicano una misura mancante.</string>
 </resources>
