@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -39,7 +40,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -63,7 +67,6 @@ fun DashboardScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val spacing = FitnessHubTheme.spacing
-    val dimensions = FitnessHubTheme.dimensions
     val snackbarHostState = remember { SnackbarHostStateState() }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -74,47 +77,10 @@ fun DashboardScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = stringResource(R.string.dashboard_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.semantics { heading() }
-                    )
-                },
-                actions = {
-                    val contentState = (uiState as? io.github.hebadenys.fitnesshub.ui.state.ScreenState.Content)?.data
-                    if (contentState?.isSyncing == true) {
-                        Box(
-                            modifier = Modifier
-                                .padding(spacing.sm)
-                                .size(dimensions.minTouchTarget),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(dimensions.iconMedium),
-                                strokeWidth = spacing.xxs
-                            )
-                        }
-                    } else {
-                        IconButton(
-                            onClick = { viewModel.sync() },
-                            modifier = Modifier.defaultMinSize(
-                                minWidth = dimensions.minTouchTarget,
-                                minHeight = dimensions.minTouchTarget
-                            )
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = stringResource(R.string.action_sync_now),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                        }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
-                )
+            DashboardTopBar(
+                isSyncing = (uiState as? io.github.hebadenys.fitnesshub.ui.state.ScreenState.Content)?.data?.isSyncing == true,
+                onSync = viewModel::sync,
+                onNavigateToSettings = onNavigateToSettings
             )
         },
         snackbarHost = { SnackbarHost(hostState = snackbarHostState.hostState) }
@@ -135,8 +101,7 @@ fun DashboardScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(padding)
-                        .padding(spacing.md),
+                        .padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(spacing.md)
                 ) {
                     MetricCardSkeleton()
@@ -160,7 +125,7 @@ fun DashboardScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(spacing.md),
+                    .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(spacing.md)
             ) {
                 // Section: Today's Summary
@@ -268,4 +233,62 @@ fun DashboardScreen(
 
 private class SnackbarHostStateState {
     val hostState = SnackbarHostState()
+}
+
+/** Settings remains available independently of permission, loading and sync state. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+internal fun DashboardTopBar(
+    isSyncing: Boolean,
+    onSync: () -> Unit,
+    onNavigateToSettings: () -> Unit
+) {
+    val spacing = FitnessHubTheme.spacing
+    val dimensions = FitnessHubTheme.dimensions
+    TopAppBar(
+        title = {
+            Text(
+                text = stringResource(R.string.dashboard_title),
+                style = MaterialTheme.typography.headlineSmall.copy(fontSize = 28.sp),
+                modifier = Modifier.semantics { heading() }
+            )
+        },
+        actions = {
+            if (isSyncing) {
+                Box(
+                    modifier = Modifier.size(dimensions.minTouchTarget),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(dimensions.iconMedium),
+                        strokeWidth = spacing.xxs
+                    )
+                }
+            } else {
+                IconButton(onClick = onSync) {
+                    Icon(
+                        Icons.Default.Refresh,
+                        contentDescription = stringResource(R.string.action_sync_now),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
+            IconButton(
+                onClick = onNavigateToSettings,
+                modifier = Modifier.testTag("dashboard_settings").defaultMinSize(
+                    minWidth = dimensions.minTouchTarget,
+                    minHeight = dimensions.minTouchTarget
+                )
+            ) {
+                Icon(
+                    Icons.Default.Settings,
+                    contentDescription = stringResource(R.string.action_open_settings),
+                    tint = MaterialTheme.colorScheme.primary
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = MaterialTheme.colorScheme.background
+        )
+    )
 }

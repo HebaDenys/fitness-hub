@@ -2,7 +2,7 @@
 
 **Aggiornamento:** 8 ottobre 2026.  
 **Branch operativo:** `main`.  
-**Candidate:** 0.3.12, versionCode 14, database 9.  
+**Candidate:** 0.3.13, versionCode 15, database 9.  
 **Checklist:** [qa/0.3.12-functional-checklist.md](qa/0.3.12-functional-checklist.md).
 
 ## Stato raggiunto
@@ -32,9 +32,19 @@ La chat corrente non dispone di Android emulator/ADB. Sono state tentate vere ca
 
 La candidate mantiene test di composizione/semantica su 360dp, 840dp, dark theme, font 1.5×, grafici e stati empty/error. Questi non equivalgono a ispezione pixel. La prova visiva reale resta un gate dispositivo.
 
+## FH-UX-03/06 — Impostazioni dopo il setup (0.3.13)
+
+- IMPLEMENTED: ingranaggio Dashboard sempre presente, indipendente da caricamento, dati vuoti, permessi, errori e sincronizzazione; route Impostazioni esistente senza reset dell'onboarding.
+- Tema Performance B limitato a Dashboard, hub Impostazioni e barra a sei tab: background #11161C, surface #1D252E, testo #F4F7FB, lime #C6F26B. Nessuna migrazione verso le cinque tab del concept.
+- Cards sorgenti con titolo, descrizione e stato in verticale per evitare competizione orizzontale a font grandi. Nessun controllo fittizio o modifica dei connettori.
+- Il profilo per le stime già esistente rimane in Impostazioni -> Bilancia locale; non è stato introdotto un profilo generale.
+- Quattro regressioni Compose/Robolectric aggiunte: accesso in tutti gli stati, sync, apertura/ritorno ripetuti con flag setup conservato e ripristino dello stato salvato della navigazione. Usano schermate reali con ViewModel di test, non Hilt/telefono.
+- Verifica di questo incremento: CI dell'esatto commit da completare prima della consegna; nessuna build locale eseguita. Baseline ee7d577 / run 37849786913 verificata verde.
+- QA pixel e ciclo di vita reale Android restano AWAITING_DEVICE; saved-state Compose non equivale a process death sul Redmi.
+
 ## Prossimo passo
 
-1. ottenere CI verde della candidate 0.3.12 e verificare che `test-latest` punti allo stesso SHA dell’APK;
+1. ottenere CI verde della candidate 0.3.13 e verificare che `test-latest` punti allo stesso SHA dell’APK;
 2. installare quella APK sul Redmi senza disinstallare dati importanti;
 3. eseguire la checklist fisica: onboarding, navigazione, Health Connect, manual body, pasti/camera, grafici, backup file/restore di prova, dark/font grande;
 4. provare S400/BLE e companion→Health Connect con dati di test;

@@ -12,6 +12,9 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBarItemDefaults
+import androidx.compose.ui.platform.testTag
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -44,6 +47,7 @@ import io.github.hebadenys.fitnesshub.feature.sleep.SleepScreen
 import io.github.hebadenys.fitnesshub.feature.workout.WorkoutScreen
 import io.github.hebadenys.fitnesshub.feature.xiaomi.XiaomiSourceScreen
 import io.github.hebadenys.fitnesshub.ui.theme.FitnessHubTheme
+import io.github.hebadenys.fitnesshub.ui.theme.PerformanceTheme
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -91,7 +95,21 @@ private enum class Screen(
 }
 
 @Composable
-fun FitnessHubAppRoot() {
+internal fun FitnessHubAppRoot(
+    dashboardContent: @Composable (onSettings: () -> Unit) -> Unit = { onSettings ->
+        DashboardScreen(onNavigateToSettings = onSettings)
+    },
+    settingsContent: @Composable (onBack: () -> Unit, navigate: (String) -> Unit) -> Unit = { onBack, navigate ->
+        SettingsScreen(
+            onBack = onBack,
+            onNavigateToHealthConnect = { navigate(Screen.HEALTH_CONNECT_ROUTE) },
+            onNavigateToXiaomi = { navigate(Screen.XIAOMI_ROUTE) },
+            onNavigateToScale = { navigate(Screen.LOCAL_SCALE_ROUTE) },
+            onNavigateToInsights = { navigate(Screen.INSIGHTS_ROUTE) },
+            onNavigateToAi = { navigate(Screen.AI_ROUTE) }
+        )
+    }
+) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route ?: Screen.Dashboard.route
@@ -99,30 +117,37 @@ fun FitnessHubAppRoot() {
     Scaffold(
         bottomBar = {
             if (Screen.entries.any { it.route == currentRoute }) {
-                NavigationBar {
-                    Screen.entries.forEach { screen ->
-                        val selected = currentRoute == screen.route
-                        NavigationBarItem(
-                            selected = selected,
-                            onClick = {
-                                if (!selected) {
-                                    navController.navigate(screen.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
+                PerformanceTheme {
+                    NavigationBar(modifier = Modifier.testTag("main_navigation")) {
+                        Screen.entries.forEach { screen ->
+                            val selected = currentRoute == screen.route
+                            NavigationBarItem(
+                                selected = selected,
+                                colors = NavigationBarItemDefaults.colors(
+                                    indicatorColor = MaterialTheme.colorScheme.primary,
+                                    selectedIconColor = MaterialTheme.colorScheme.onPrimary,
+                                    selectedTextColor = MaterialTheme.colorScheme.primary
+                                ),
+                                onClick = {
+                                    if (!selected) {
+                                        navController.navigate(screen.route) {
+                                            popUpTo(navController.graph.findStartDestination().id) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
                                         }
-                                        launchSingleTop = true
-                                        restoreState = true
                                     }
-                                }
-                            },
-                            icon = {
-                                Icon(
-                                    imageVector = screen.icon,
-                                    contentDescription = stringResource(screen.cdRes)
-                                )
-                            },
-                            label = { Text(text = stringResource(screen.labelRes)) }
-                        )
+                                },
+                                icon = {
+                                    Icon(
+                                        imageVector = screen.icon,
+                                        contentDescription = stringResource(screen.cdRes)
+                                    )
+                                },
+                                label = { Text(text = stringResource(screen.labelRes)) }
+                            )
+                        }
                     }
                 }
             }
@@ -134,13 +159,15 @@ fun FitnessHubAppRoot() {
             modifier = Modifier.padding(padding)
         ) {
             composable(Screen.Dashboard.route) {
-                DashboardScreen(
-                    onNavigateToSettings = {
-                        navController.navigate(Screen.SETTINGS_ROUTE) {
-                            launchSingleTop = true
+                PerformanceTheme {
+                    dashboardContent(
+                        {
+                            navController.navigate(Screen.SETTINGS_ROUTE) {
+                                launchSingleTop = true
+                            }
                         }
-                    }
-                )
+                    )
+                }
             }
             composable(Screen.Activity.route) {
                 ActivityScreen(
@@ -172,24 +199,14 @@ fun FitnessHubAppRoot() {
             composable(Screen.Nutrition.route) { NutritionScreen() }
             composable(Screen.Workout.route) { WorkoutScreen() }
             composable(Screen.SETTINGS_ROUTE) {
-                SettingsScreen(
-                    onBack = { navController.popBackStack() },
-                    onNavigateToHealthConnect = {
-                        navController.navigate(Screen.HEALTH_CONNECT_ROUTE) { launchSingleTop = true }
-                    },
-                    onNavigateToXiaomi = {
-                        navController.navigate(Screen.XIAOMI_ROUTE) { launchSingleTop = true }
-                    },
-                    onNavigateToScale = {
-                        navController.navigate(Screen.LOCAL_SCALE_ROUTE) { launchSingleTop = true }
-                    },
-                    onNavigateToInsights = {
-                        navController.navigate(Screen.INSIGHTS_ROUTE) { launchSingleTop = true }
-                    },
-                    onNavigateToAi = {
-                        navController.navigate(Screen.AI_ROUTE) { launchSingleTop = true }
-                    }
-                )
+                PerformanceTheme {
+                    settingsContent(
+                        { navController.popBackStack() },
+                        { route ->
+                            navController.navigate(route) { launchSingleTop = true }
+                        }
+                    )
+                }
             }
             composable(Screen.INSIGHTS_ROUTE) {
                 InsightsScreen(onNavigateBack = { navController.popBackStack() })
