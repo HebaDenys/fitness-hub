@@ -194,7 +194,7 @@ internal fun HealthConnectSourceContent(
                 OutlinedButton(
                     onClick = onRefresh,
                     enabled = !model.isSyncing,
-                    modifier = Modifier.weight(1f).testTag("health_check_access")
+                    modifier = Modifier.fillMaxWidth().testTag("health_check_access")
                 ) {
                     Text(stringResource(R.string.source_hc_check_access))
                 }

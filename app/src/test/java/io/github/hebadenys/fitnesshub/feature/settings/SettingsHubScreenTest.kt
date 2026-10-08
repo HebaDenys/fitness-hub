@@ -76,7 +76,7 @@ class SettingsHubScreenTest {
         compose.onNodeWithTag("health_connect_source").performScrollToNode(hasTestTag("health_permissions"))
         compose.onNodeWithTag("health_permissions").assertIsEnabled().performClick()
         compose.onNodeWithTag("health_connect_source").performScrollToNode(hasTestTag("health_check_access"))
-        compose.onNodeWithTag("health_check_access").assertIsEnabled().performClick()
+        compose.onNodeWithTag("health_check_access").assertIsDisplayed().assertIsEnabled().performClick()
         compose.onNodeWithTag("health_connect_source").performScrollToNode(hasTestTag("health_sync"))
         compose.onNodeWithTag("health_sync").assertIsEnabled().performClick()
         compose.runOnIdle {

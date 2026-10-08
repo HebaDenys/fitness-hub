@@ -52,7 +52,7 @@ La candidate mantiene test di composizione/semantica su 360dp, 840dp, dark theme
 - Hub raggruppato: profilo, sorgenti facoltative, inserimento corporeo manuale, dati/privacy. Manuale apre la vera schermata Corpo anche da Health Connect senza permessi/disponibilità. AI resta disabilitata e Xiaomi conserva il gate.
 - Tema B esteso soltanto ai dettagli HC/Bilancia/profilo; testo secondario e status portati almeno a 14sp nei componenti coinvolti. Azioni HC e permessi impilati per font grandi.
 - Tredici regressioni aggiunte: input/persistenza UI, virgola e NaN, scarto/cancel, saved-state, navigazione profilo, font 2×, validazione e salvataggio ripetuto/fallito. I test mock non sono prove Room/dispositivo.
-- CI/APK dell'esatto nuovo commit da verificare; il precedente runtime 39bc6c2 rimane la baseline verde. Nessun test disabilitato; nessuna build locale o nuova cattura pixel.
+- Run 37854102958: 440 test / 58 suite, 439 passati e 1 fallito; regressione reale trovata nel bottone HC Controlla stato (weight verticale, altezza nulla). Corretto a fillMaxWidth e aggiunta asserzione di visibilità; CI/APK dell'esatto nuovo commit da verificare; il precedente runtime 39bc6c2 rimane la baseline verde. Nessun test disabilitato; nessuna build locale o nuova cattura pixel.
 
 ## Prossimo passo
 
