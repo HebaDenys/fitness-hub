@@ -1,7 +1,6 @@
 package io.github.hebadenys.fitnesshub.feature.scale
 
 import android.Manifest
-import android.bluetooth.BluetoothManager
 import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.content.ContextCompat
@@ -76,9 +75,7 @@ class ScaleViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             configured.value = connector.isConfigured()
-            bluetoothAvailable.value = runCatching {
-                (context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager)?.adapter?.isEnabled
-            }.getOrDefault(false) == true
+            bluetoothAvailable.value = probeBluetoothAvailability()
         }
     }
 
@@ -148,10 +145,11 @@ class ScaleViewModel @Inject constructor(
         }
 
     fun refreshBluetoothState() {
-        bluetoothAvailable.value = runCatching {
-            (context.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager)?.adapter?.isEnabled
-        }.getOrDefault(false) == true
+        bluetoothAvailable.value = probeBluetoothAvailability()
     }
+
+    private fun probeBluetoothAvailability(): Boolean =
+        ScaleBleScanner(context, viewModelScope) { _, _ -> }.isBluetoothAvailable()
 
     fun importHistoryCsv(csv: String, userFilter: String?) {
         if (historyImportResult.value is ScaleHistoryImportState.Working) return

@@ -42,7 +42,21 @@ class ScaleBleScanner(
             ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) ==
             PackageManager.PERMISSION_GRANTED
 
-    fun isBluetoothAvailable(): Boolean = runCatching { adapter?.isEnabled == true }.getOrDefault(false)
+    fun isBluetoothAvailable(): Boolean {
+        val local = adapter ?: return false
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            if (!hasPermission()) {
+                // Hardware can exist before the user grants scan access. Avoid
+                // BluetoothAdapter.isEnabled here: Android 12+ may require
+                // BLUETOOTH_CONNECT, which this receive-only fallback does not request.
+                true
+            } else {
+                runCatching { local.bluetoothLeScanner != null }.getOrDefault(false)
+            }
+        } else {
+            runCatching { local.isEnabled }.getOrDefault(false)
+        }
+    }
 
     /** Starts scanning; a second call while already scanning is ignored. */
     fun start(): Boolean {
