@@ -158,7 +158,7 @@ class VisualQaCompactSemanticsTest {
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("body_add_measurement").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("body_add_measurement").assertExists()
         compose.onNodeWithTag("body_add_measurement").assertIsEnabled()
-        compose.onNodeWithText("99.4 kg").assertExists()
+        compose.onNode(hasText("99.4 kg") and hasAnyAncestor(hasTestTag("body_latest_weight"))).assertIsDisplayed()
     }
 
     @Test fun nutritionComposesAndRemoteCatalogIsExplicitlyDisabled() {

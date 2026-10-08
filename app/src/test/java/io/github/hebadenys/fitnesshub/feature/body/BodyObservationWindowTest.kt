@@ -29,6 +29,16 @@ class BodyObservationWindowTest {
             TimeRange.SEVEN_DAYS, LocalDate.of(2026,10,8), ZoneId.of("UTC")))
     }
 
+    @Test fun dailyFallbackKeepsItsOriginalDateWithoutPretendingMidnightIsExact() {
+        val dateOnly = item("2026-10-08T00:00:00Z", id = "hc-day:2026-10-08:weight")
+            .copy(source = Source.HEALTH_CONNECT, method = Method.UNKNOWN)
+        assertFalse(bodyHasExactTime(dateOnly))
+        assertEquals(LocalDate.of(2026,10,8), bodyObservationDay(dateOnly, ZoneId.of("America/Los_Angeles")))
+        assertEquals(listOf(dateOnly), bodyObservationWindow(listOf(dateOnly), TimeRange.SEVEN_DAYS,
+            LocalDate.of(2026,10,8), ZoneId.of("America/Los_Angeles")))
+        assertTrue(bodyHasExactTime(item("2026-10-08T00:00:00Z").copy(method = Method.UNKNOWN)))
+    }
+
     @Test fun repeatedDstHourRetainsBothExactSourceInstantsAndZero() {
         val earlier = item("2026-10-25T00:30:00Z", 0.0).copy(metric = Metric.BODY_FAT, unit = "%")
         val later = item("2026-10-25T01:30:00Z", 1.0).copy(metric = Metric.BODY_FAT, unit = "%")

@@ -1,5 +1,5 @@
 <resources>
-    <string name="body_entry_source">Source: Manual · stored on this device</string>
+    <string name="body_entry_source">Source: Manual · local save</string>
     <string name="body_entry_zone">Phone time zone: %1$s</string>
     <string name="body_entry_saving">Saving measurement…</string>
     <string name="body_entry_close">Close</string>
@@ -19,8 +19,10 @@
     <string name="body_chart_exact_description">Weight measurements at their recorded times. Select each event with the slider.</string>
     <string name="body_chart_event_count">%1$d weight records in this period</string>
     <string name="body_chart_change">First-to-last recorded change: %1$s kg</string>
-    <string name="body_chart_no_events">No weight records in this period. Try a longer range or add a measurement.</string>
+    <string name="body_chart_no_events">No weight records with a known time in this period. Any daily summaries remain in history.</string>
     <string name="body_chart_exact_note">Every point is a recorded weight, including multiple measurements on one day. Missing calendar days break the line. This is a history view, not a health assessment.</string>
     <string name="body_exact_history">Available measurement history</string>
-    <string name="body_history_record_count">%1$d metric records · original times and sources</string>
+    <string name="body_history_record_count">%1$d metric records · dates, sources and available times</string>
+    <string name="body_time_unavailable">Time unavailable · daily summary</string>
+    <string name="body_chart_daily_only">%1$d date-only summaries are in history and excluded from this exact-time chart.</string>
 </resources>

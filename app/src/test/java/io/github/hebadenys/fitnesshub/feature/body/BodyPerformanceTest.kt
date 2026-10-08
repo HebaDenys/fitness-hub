@@ -3,6 +3,10 @@ package io.github.hebadenys.fitnesshub.feature.body
 import android.app.Application
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.test.*
@@ -59,6 +63,26 @@ class BodyPerformanceTest {
         compose.onNode(hasText(bodyObservationTime(last)) and hasAnyAncestor(hasTestTag("body_selected_event"))).assertExists()
         compose.onNodeWithTag("body_history_list").performScrollToNode(hasTestTag("body_record_2"))
         compose.onNode(hasText("0 %") and hasAnyAncestor(hasTestTag("body_record_2"))).assertExists()
+    }
+
+    @Test fun legacyDailySummaryShowsNoInventedClockTimeOrExactPlotPoint() {
+        val date = LocalDate.now()
+        val legacy = Observation(Metric.WEIGHT, 70.0, "kg", date.atStartOfDay(ZoneId.systemDefault()).toInstant(),
+            Source.HEALTH_CONNECT, Method.UNKNOWN, sourceId = "hc-day:$date:weight")
+        compose.setContent {
+            FitnessHubTheme {
+                PerformanceTheme {
+                    Column(Modifier.verticalScroll(rememberScrollState())) {
+                        BodyMeasurementCard("Legacy weight", legacy)
+                        BodyObservationChart(listOf(legacy), TimeRange.SEVEN_DAYS, {})
+                    }
+                }
+            }
+        }
+        compose.onNodeWithText("Time unavailable · daily summary").assertExists()
+        compose.onAllNodesWithText("00:00", substring = true).assertCountEquals(0)
+        compose.onNodeWithTag("body_event_plot").assertDoesNotExist()
+        compose.onNodeWithText("1 date-only summaries are in history and excluded from this exact-time chart.").assertExists()
     }
 
     @Test fun draftSurvivesRecreationAndBackCanCancelOrDiscardWithoutSaving() {

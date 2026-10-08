@@ -65,7 +65,11 @@ internal fun BodyReadyContent(model: BodyUiModel, onRange: (TimeRange) -> Unit, 
             Text(stringResource(R.string.body_latest_section), style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.semantics { heading() })
         }
-        item { BodyMeasurementCard(stringResource(R.string.metric_weight), model.latestWeight, prominent = true) }
+        item {
+            Box(Modifier.testTag("body_latest_weight")) {
+                BodyMeasurementCard(stringResource(R.string.metric_weight), model.latestWeight, prominent = true)
+            }
+        }
         item { BodyMeasurementCard(stringResource(R.string.metric_body_fat), model.latestBodyFat) }
         item { BodyObservationChart(model.weightObservations, model.selectedRange, onRange) }
         item {

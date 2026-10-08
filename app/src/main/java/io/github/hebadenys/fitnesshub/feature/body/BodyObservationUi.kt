@@ -19,7 +19,8 @@ internal fun bodyObservationValue(value: Observation): String =
     NumberFormat.getNumberInstance().apply { maximumFractionDigits = 15 }.format(value.value) + " " + value.unit
 
 internal fun bodyObservationTime(value: Observation): String =
-    DateTimeFormatter.ofPattern("d MMM uuuu, HH:mm:ss.SSS xxx")
+    if (!bodyHasExactTime(value)) bodyObservationDay(value).toString()
+    else DateTimeFormatter.ofPattern("d MMM uuuu, HH:mm:ss.SSS xxx")
         .withZone(ZoneId.systemDefault()).format(value.measuredAt)
 
 internal fun bodyObservationKey(value: Observation, index: Int): String =
@@ -41,6 +42,9 @@ internal fun BodyObservationDetails(value: Observation) {
         CanonicalBodyMetricResolver.Method.UNKNOWN -> R.string.body_method_unknown
     }
     Text(bodyObservationTime(value), style = MaterialTheme.typography.bodyMedium)
+    if (!bodyHasExactTime(value)) {
+        Text(stringResource(R.string.body_time_unavailable), style = MaterialTheme.typography.bodyMedium)
+    }
     Text(
         stringResource(R.string.body_source_and_method, stringResource(source), stringResource(method)),
         style = MaterialTheme.typography.bodyMedium,

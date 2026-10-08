@@ -70,7 +70,7 @@ Esiti CI, SHA software e limiti di verifica sono in [PROGRESS.md](docs/PROGRESS.
 
 Dashboard aggiunge passi in evidenza, sonno/peso con date reali, accesso al diario e inserimento corporeo manuale. Il dettaglio passi usa intervalli di calendario 7/30/90 giorni, selezione delle barre e un elenco giornaliero accessibile: zero misurato e giorno mancante restano distinti. Nessun obiettivo o orario di aggiornamento dimostrativo viene inventato.
 
-Corpo usa adesso le osservazioni canoniche esatte nel grafico e nello storico, mantenendo più misure nello stesso giorno e mostrando timestamp/fonte/metodo. L’inserimento manuale ha una pagina dedicata con campi recuperabili, data/ora, errori leggibili e conferma prima di scartare modifiche. Nessuna nuova tabella o account.
+Corpo usa adesso le osservazioni canoniche esatte nel grafico e nello storico, mantenendo più misure nello stesso giorno e mostrando orari disponibili, fonte e metodo. L’inserimento manuale ha una pagina dedicata con campi recuperabili, data/ora, errori leggibili e conferma prima di scartare modifiche. Nessuna nuova tabella o account.
 
 **Impostazioni -> Xiaomi Home** mostra blocco di accesso e archivio locale. Le credenziali non vengono richieste nel canale test attuale. Nessun account o dato dimostrativo è aggiunto al database dell'utente.
 

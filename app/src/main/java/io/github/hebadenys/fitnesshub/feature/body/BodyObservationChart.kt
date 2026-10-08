@@ -42,7 +42,9 @@ internal fun BodyObservationChart(
     val first = end.minusDays(range.days.toLong() - 1)
     val startMillis = first.atStartOfDay(zone).toInstant().toEpochMilli()
     val endMillis = end.plusDays(1).atStartOfDay(zone).toInstant().toEpochMilli()
-    val points = bodyObservationWindow(observations, range, end, zone)
+    val window = bodyObservationWindow(observations, range, end, zone)
+    val points = window.filter(::bodyHasExactTime)
+    val dailyOnlyCount = window.count { !bodyHasExactTime(it) }
     var selectedKey by rememberSaveable { mutableStateOf<String?>(null) }
     val selectedIndex = points.indices.firstOrNull { bodyObservationKey(points[it], it) == selectedKey }
         ?: points.lastIndex
@@ -74,6 +76,9 @@ internal fun BodyObservationChart(
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.testTag("body_event_count")
             )
+            if (dailyOnlyCount > 0) {
+                Text(stringResource(R.string.body_chart_daily_only, dailyOnlyCount), style = MaterialTheme.typography.bodyMedium)
+            }
             if (points.size >= 2) {
                 val difference = points.last().value - points.first().value
                 Text(

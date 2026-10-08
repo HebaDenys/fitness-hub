@@ -76,7 +76,9 @@ La candidate mantiene test di composizione/semantica su 360dp, 840dp, dark theme
 - Form manuale spostato in route dedicata raggiungibile da Corpo, Dashboard e aiuti Settings/HC: peso e/o grasso, virgola decimale, selettori nativi data/ora più input esplicito, saved state, campi bloccati durante scrittura, esito live-region e conferma scarto. Zero body-fat conservato; dato assente distinto.
 - Parser locale ora strict: date impossibili non vengono normalizzate; gli orari locali inesistenti/ambigui al cambio DST sono rifiutati esplicitamente (offset manuale non ancora selezionabile). Timestamp esatti già acquisiti via sorgenti restano conservati, anche nelle ore ripetute.
 - Cancellazione coroutine non è un errore storage; doppio salvataggio simultaneo bloccato. Nessuna migrazione e nessuna modifica a login/gate Xiaomi, rete, credenziali, firma o permessi.
-- Quattordici nuove regressioni su eventi/stesso giorno/DST, parse strict/zero, salvataggio doppio/errori/retry/cancel, storico, selezione, draft/recreation/back, font2× e ritorno alla route originaria. Mock e saved state Compose non equivalgono a processo Android o hardware.
+- Sedici nuove regressioni su eventi/stesso giorno/DST, parse strict/zero, salvataggio doppio/errori/retry/cancel, storico, selezione, draft/recreation/back, font2× e ritorno alla route originaria. Mock e saved state Compose non equivalgono a processo Android o hardware.
+- Review: fallback HC `hc-day:*` distinti come sola data, orario non disponibile; non vengono presentati come eventi a mezzanotte nel grafico esatto. Rimangono nei valori disponibili/storico. Fixture specifiche aggiunte.
+- Run 37861054605: 464 test, 463 passati; una vecchia ricerca semantica ambiguamente trovava lo stesso peso in card e grafico. Asserzione ora riferita alla card principale e alla sua visibilità, non rimossa.
 - CI/APK dell'esatto nuovo commit da verificare. Prove pixel, picker nativi, TalkBack e telefono ancora da eseguire.
 
 ## Prossimo passo
