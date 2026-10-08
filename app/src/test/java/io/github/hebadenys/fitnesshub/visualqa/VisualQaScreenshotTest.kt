@@ -50,6 +50,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 import org.robolectric.annotation.LooperMode
 import java.io.File
 import java.io.FileOutputStream
@@ -110,7 +111,7 @@ private fun settingsFixture() = SettingsUiModel(
 private fun saveScreenshot(rule: androidx.compose.ui.test.junit4.AndroidComposeTestRule<*, *>, name: String) {
     rule.waitForIdle()
     val bitmap = rule.onRoot(useUnmergedTree = true).captureToImage().asAndroidBitmap()
-    val directory = File(System.getProperty("fitnesshub.visualQaDir"))
+    val directory = File(requireNotNull(System.getProperty("fitnesshub.visualQaDir")))
     check(directory.exists() || directory.mkdirs()) { "Could not create visual QA directory" }
     val file = File(directory, name)
     FileOutputStream(file).use { output ->
@@ -122,6 +123,7 @@ private fun saveScreenshot(rule: androidx.compose.ui.test.junit4.AndroidComposeT
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28], application = Application::class, qualifiers = "en-rUS-w360dp-h720dp")
 @LooperMode(LooperMode.Mode.PAUSED)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 class VisualQaCompactTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
@@ -231,6 +233,7 @@ class VisualQaCompactTest {
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28], application = Application::class, qualifiers = "en-rUS-w840dp-h900dp")
 @LooperMode(LooperMode.Mode.PAUSED)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 class VisualQaWideDarkTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
@@ -247,6 +250,7 @@ class VisualQaWideDarkTest {
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28], application = Application::class, qualifiers = "en-rUS-w360dp-h720dp")
 @LooperMode(LooperMode.Mode.PAUSED)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 class VisualQaLargeTextTest {
     @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
 
