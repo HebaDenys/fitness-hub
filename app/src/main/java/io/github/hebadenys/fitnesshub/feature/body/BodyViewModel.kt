@@ -18,6 +18,7 @@ import io.github.hebadenys.fitnesshub.ui.components.BaselineDelta
 import io.github.hebadenys.fitnesshub.ui.components.ChartPoint
 import io.github.hebadenys.fitnesshub.ui.components.TimeRange
 import io.github.hebadenys.fitnesshub.ui.state.ScreenState
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -40,7 +41,9 @@ data class BodyUiModel(
     val chartPoints: List<ChartPoint>,
     val selectedRange: TimeRange,
     val healthConnectAvailable: Boolean,
-    val hasHealthConnectBodyPermission: Boolean
+    val hasHealthConnectBodyPermission: Boolean,
+    val weightObservations: List<CanonicalBodyMetricResolver.Observation> = emptyList(),
+    val observations: List<CanonicalBodyMetricResolver.Observation> = emptyList()
 )
 
 sealed interface ManualBodyEntryState {
@@ -85,7 +88,7 @@ class BodyViewModel @Inject constructor(
         val previousFat = fats.asReversed().firstOrNull { it != latestFat }
         val cutoff = LocalDate.now(ZoneId.systemDefault()).minusDays(range.days.toLong() - 1)
         val chartPoints = data.days
-            .filter { !it.date.isBefore(cutoff) }
+            .filter { !it.date.isBefore(cutoff) && !it.date.isAfter(LocalDate.now(ZoneId.systemDefault())) }
             .sortedBy { it.date }
             .map { day ->
                 ChartPoint(
@@ -107,7 +110,9 @@ class BodyViewModel @Inject constructor(
                 selectedRange = range,
                 healthConnectAvailable = health.client != null,
                 hasHealthConnectBodyPermission =
-                    HealthMetrics.WEIGHT in granted || HealthMetrics.BODY_FAT in granted
+                    HealthMetrics.WEIGHT in granted || HealthMetrics.BODY_FAT in granted,
+                weightObservations = bodyObservationWindow(weights, range),
+                observations = (weights + fats).sortedByDescending { it.measuredAt }
             )
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ScreenState.Loading)
@@ -122,18 +127,21 @@ class BodyViewModel @Inject constructor(
                 manualEntry.value = ManualBodyEntryState.Working
                 viewModelScope.launch {
                     val input = parsed.input
-                    manualEntry.value = runCatching {
-                        healthDao.insertManualBodyMeasurement(
+                    try {
+                        val id = healthDao.insertManualBodyMeasurement(
                             ManualBodyMeasurementEntity(
                                 measuredAtMillis = input.measuredAtMillis,
                                 weightKg = input.weightKg,
                                 bodyFatPercent = input.bodyFatPercent
                             )
                         )
-                    }.fold(
-                        onSuccess = { ManualBodyEntryState.Saved(it) },
-                        onFailure = { ManualBodyEntryState.StorageError }
-                    )
+                        manualEntry.value = ManualBodyEntryState.Saved(id)
+                    } catch (cancelled: CancellationException) {
+                        manualEntry.value = ManualBodyEntryState.Idle
+                        throw cancelled
+                    } catch (_: Exception) {
+                        manualEntry.value = ManualBodyEntryState.StorageError
+                    }
                 }
             }
         }

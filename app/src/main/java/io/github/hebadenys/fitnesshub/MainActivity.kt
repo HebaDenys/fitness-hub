@@ -37,6 +37,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dagger.hilt.android.AndroidEntryPoint
 import io.github.hebadenys.fitnesshub.feature.activity.ActivityScreen
 import io.github.hebadenys.fitnesshub.feature.body.BodyScreen
+import io.github.hebadenys.fitnesshub.feature.body.ManualBodyEntryScreen
 import io.github.hebadenys.fitnesshub.feature.dashboard.DashboardScreen
 import io.github.hebadenys.fitnesshub.feature.dashboard.DashboardStepsScreen
 import io.github.hebadenys.fitnesshub.feature.insights.InsightsScreen
@@ -99,6 +100,7 @@ private enum class Screen(
         const val AI_ROUTE = "settings/ai"
         const val PROFILE_ROUTE = "settings/profile"
         const val STEPS_ROUTE = "dashboard/steps"
+        const val MANUAL_BODY_ROUTE = "body/manual"
     }
 }
 
@@ -115,11 +117,14 @@ internal fun FitnessHubAppRoot(
             onNavigateToInsights = { navigate(Screen.INSIGHTS_ROUTE) },
             onNavigateToAi = { navigate(Screen.AI_ROUTE) },
             onNavigateToProfile = { navigate(Screen.PROFILE_ROUTE) },
-            onNavigateToManualBody = { navigate(Screen.Body.route) }
+            onNavigateToManualBody = { navigate(Screen.MANUAL_BODY_ROUTE) }
         )
     },
     profileContent: @Composable (onBack: () -> Unit) -> Unit = { onBack ->
         LocalProfileScreen(onBack = onBack)
+    },
+    manualBodyContent: @Composable (onBack: () -> Unit) -> Unit = { onBack ->
+        ManualBodyEntryScreen(onBack = onBack)
     }
 ) {
     val navController = rememberNavController()
@@ -128,7 +133,8 @@ internal fun FitnessHubAppRoot(
 
     val performanceRoute = currentRoute in setOf(
         Screen.Dashboard.route, Screen.SETTINGS_ROUTE, Screen.PROFILE_ROUTE,
-        Screen.HEALTH_CONNECT_ROUTE, Screen.LOCAL_SCALE_ROUTE, Screen.STEPS_ROUTE
+        Screen.HEALTH_CONNECT_ROUTE, Screen.LOCAL_SCALE_ROUTE, Screen.STEPS_ROUTE,
+        Screen.Body.route, Screen.MANUAL_BODY_ROUTE
     )
     Scaffold(
         contentWindowInsets = contentWindowInsets,
@@ -186,7 +192,7 @@ internal fun FitnessHubAppRoot(
                     } else {
                         DashboardScreen(
                             onNavigateToSettings = openSettings,
-                            onNavigateToBody = { navController.navigate(Screen.Body.route) { launchSingleTop = true } },
+                            onNavigateToBody = { navController.navigate(Screen.MANUAL_BODY_ROUTE) { launchSingleTop = true } },
                             onNavigateToNutrition = { navController.navigate(Screen.Nutrition.route) { launchSingleTop = true } },
                             onNavigateToSteps = { navController.navigate(Screen.STEPS_ROUTE) { launchSingleTop = true } }
                         )
@@ -212,13 +218,15 @@ internal fun FitnessHubAppRoot(
                 )
             }
             composable(Screen.Body.route) {
-                BodyScreen(
-                    onNavigateToSettings = {
-                        navController.navigate(Screen.SETTINGS_ROUTE) {
-                            launchSingleTop = true
-                        }
-                    }
-                )
+                PerformanceTheme {
+                    BodyScreen(
+                        onNavigateToSettings = { navController.navigate(Screen.SETTINGS_ROUTE) { launchSingleTop = true } },
+                        onAddMeasurement = { navController.navigate(Screen.MANUAL_BODY_ROUTE) { launchSingleTop = true } }
+                    )
+                }
+            }
+            composable(Screen.MANUAL_BODY_ROUTE) {
+                PerformanceTheme { manualBodyContent { navController.popBackStack() } }
             }
             composable(Screen.Nutrition.route) { NutritionScreen() }
             composable(Screen.Workout.route) { WorkoutScreen() }
@@ -236,7 +244,7 @@ internal fun FitnessHubAppRoot(
                 PerformanceTheme {
                     DashboardStepsScreen(
                         onBack = { navController.popBackStack() },
-                        onAddBody = { navController.navigate(Screen.Body.route) { launchSingleTop = true } }
+                        onAddBody = { navController.navigate(Screen.MANUAL_BODY_ROUTE) { launchSingleTop = true } }
                     )
                 }
             }
@@ -250,7 +258,7 @@ internal fun FitnessHubAppRoot(
                 PerformanceTheme {
                     HealthConnectSourceScreen(
                         onBack = { navController.popBackStack() },
-                        onManualBody = { navController.navigate(Screen.Body.route) { launchSingleTop = true } }
+                        onManualBody = { navController.navigate(Screen.MANUAL_BODY_ROUTE) { launchSingleTop = true } }
                     )
                 }
             }

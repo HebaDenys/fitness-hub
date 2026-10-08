@@ -2,7 +2,7 @@
 
 **Aggiornamento:** 8 ottobre 2026.  
 **Branch operativo:** `main`.  
-**Candidate:** 0.3.15, versionCode 17, database 9.  
+**Candidate:** 0.3.16, versionCode 18, database 9.  
 **Checklist:** [qa/0.3.12-functional-checklist.md](qa/0.3.12-functional-checklist.md).
 
 ## Stato raggiunto
@@ -65,11 +65,23 @@ La candidate mantiene test di composizione/semantica su 360dp, 840dp, dark theme
 - Contenuto Dashboard ora applica una volta il padding della toolbar anche a loading/content, che il vecchio handler non applicava nei propri slot.
 - Dieci regressioni aggiunte su finestre sparse/anno nuovo/null/zero, scorciatoie, stato vuoto/font2×, tap/slider/lista e ripristino range/lista. Grafici delle altre feature non riscritti.
 - Review grafico: lo zero usa un anello sulla baseline, null resta un vuoto; asse verticale max/metà/zero allineato alle griglie e assente senza valori. Il NavHost consuma gli inset del root e usa background B solo sulle route ridisegnate; test geometrico evita il doppio padding.
-- CI dell'esatto commit da completare. Screenshot reali e valutazione pixel/TalkBack sul dispositivo ancora AWAITING_DEVICE.
+- VERIFICA AUTOMATICA: runtime `a033924c3be91df440e31e80e4446ee6dff9304a`, [CI 37858445321](https://github.com/HebaDenys/fitness-hub/actions/runs/37858445321) verde: **450 test / 60 suite, 0 failure/error/skip**, 14 controlli Python, test/lint/build e firma/checksum superati. Anche il test geometrico di consumo inset è passato.
+- APK 0.3.15/code17 SHA-256 `6ad71bc9f757b24b0cdd4c333064905705f104160f42e9753e83fee06c4d0666`; main, tag e release confrontati allo stesso SHA prima dell'incremento seguente. Screenshot reali e valutazione pixel/TalkBack sul dispositivo ancora AWAITING_DEVICE.
+
+## FH-BODY-02 / FH-UX-03/04/06 — Corpo e inserimento manuale (0.3.16)
+
+- IMPLEMENTED: Corpo Performance B con ultimi valori indipendenti per metrica, fonte/metodo e timestamp al millisecondo/offset visibile. Nessun colore attribuisce un giudizio sanitario al delta.
+- Grafico peso basato sugli eventi canonici esatti, non sull'ultima misura aggregata del giorno: più eventi nello stesso giorno rimangono selezionabili tramite touch/slider. Range 7/30/90 di calendario e interruzione delle linee nei giorni mancanti.
+- Storico lazy di tutti i record metrici disponibili nel repository corrente, con fonte/metodo/orario; non è una promessa di completezza delle fonti vendor. Il repository/resolver e gli originali non sono stati riscritti.
+- Form manuale spostato in route dedicata raggiungibile da Corpo, Dashboard e aiuti Settings/HC: peso e/o grasso, virgola decimale, selettori nativi data/ora più input esplicito, saved state, campi bloccati durante scrittura, esito live-region e conferma scarto. Zero body-fat conservato; dato assente distinto.
+- Parser locale ora strict: date impossibili non vengono normalizzate; gli orari locali inesistenti/ambigui al cambio DST sono rifiutati esplicitamente (offset manuale non ancora selezionabile). Timestamp esatti già acquisiti via sorgenti restano conservati, anche nelle ore ripetute.
+- Cancellazione coroutine non è un errore storage; doppio salvataggio simultaneo bloccato. Nessuna migrazione e nessuna modifica a login/gate Xiaomi, rete, credenziali, firma o permessi.
+- Quattordici nuove regressioni su eventi/stesso giorno/DST, parse strict/zero, salvataggio doppio/errori/retry/cancel, storico, selezione, draft/recreation/back, font2× e ritorno alla route originaria. Mock e saved state Compose non equivalgono a processo Android o hardware.
+- CI/APK dell'esatto nuovo commit da verificare. Prove pixel, picker nativi, TalkBack e telefono ancora da eseguire.
 
 ## Prossimo passo
 
-1. verificare CI/APK della 0.3.15; poi ispezionare su dispositivo insets, grafici e font grandi e proseguire il redesign per incrementi, mantenendo sei tab;
+1. verificare CI/APK della 0.3.16; poi proseguire con Diario/Nutrizione e Report/Backup, salvo cambio di priorità esplicito per il canale Xiaomi privato;
 2. installare quella APK sul Redmi senza disinstallare dati importanti;
 3. eseguire la checklist fisica: onboarding, navigazione, Health Connect, manual body, pasti/camera, grafici, backup file/restore di prova, dark/font grande;
 4. provare S400/BLE e companion→Health Connect con dati di test;

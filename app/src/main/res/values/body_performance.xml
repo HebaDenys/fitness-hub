@@ -1,0 +1,26 @@
+<resources>
+    <string name="body_entry_source">Source: Manual · stored on this device</string>
+    <string name="body_entry_zone">Phone time zone: %1$s</string>
+    <string name="body_entry_saving">Saving measurement…</string>
+    <string name="body_entry_close">Close</string>
+    <string name="body_pick_date">Choose date</string>
+    <string name="body_pick_time">Choose time</string>
+    <string name="body_discard_title">Discard this unsaved measurement?</string>
+    <string name="body_discard_description">Existing measurements will stay unchanged.</string>
+    <string name="body_source_manual">Manual</string>
+    <string name="body_source_scale">Local scale</string>
+    <string name="body_source_xiaomi">Xiaomi</string>
+    <string name="body_method_recorded">Recorded value</string>
+    <string name="body_method_vendor">Vendor estimate</string>
+    <string name="body_method_local">Local estimate</string>
+    <string name="body_method_unknown">Method not reported</string>
+    <string name="body_source_and_method">%1$s · %2$s</string>
+    <string name="body_weight_chart_kg">Body weight (kg)</string>
+    <string name="body_chart_exact_description">Weight measurements at their recorded times. Select each event with the slider.</string>
+    <string name="body_chart_event_count">%1$d weight records in this period</string>
+    <string name="body_chart_change">First-to-last recorded change: %1$s kg</string>
+    <string name="body_chart_no_events">No weight records in this period. Try a longer range or add a measurement.</string>
+    <string name="body_chart_exact_note">Every point is a recorded weight, including multiple measurements on one day. Missing calendar days break the line. This is a history view, not a health assessment.</string>
+    <string name="body_exact_history">Available measurement history</string>
+    <string name="body_history_record_count">%1$d metric records · original times and sources</string>
+</resources>

@@ -5,6 +5,7 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
+import java.time.format.ResolverStyle
 
 data class ManualBodyInput(
     val measuredAtMillis: Long,
@@ -26,7 +27,7 @@ sealed interface ManualBodyInputResult {
 }
 
 private val MANUAL_BODY_TIME_FORMAT: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm")
+    DateTimeFormatter.ofPattern("uuuu-MM-dd HH:mm").withResolverStyle(ResolverStyle.STRICT)
 
 fun formatManualBodyTimestamp(instant: Instant, zone: ZoneId): String =
     MANUAL_BODY_TIME_FORMAT.format(instant.atZone(zone))
@@ -60,6 +61,9 @@ fun parseManualBodyInput(
     val local = try {
         LocalDateTime.parse(timestampRaw.trim(), MANUAL_BODY_TIME_FORMAT)
     } catch (_: DateTimeParseException) {
+        return ManualBodyInputResult.Invalid(ManualBodyInputError.INVALID_TIMESTAMP)
+    }
+    if (zone.rules.getValidOffsets(local).size != 1) {
         return ManualBodyInputResult.Invalid(ManualBodyInputError.INVALID_TIMESTAMP)
     }
     val zoned = local.atZone(zone)

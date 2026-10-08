@@ -25,6 +25,26 @@ class ManualBodyInputTest {
         assertTrue(fat is ManualBodyInputResult.Valid)
     }
 
+    @Test fun rejectsImpossibleCalendarDatesAndAmbiguousDstInsteadOfNormalizingThem() {
+        listOf("2026-02-30 12:00", "2026-04-31 12:00").forEach {
+            assertEquals(ManualBodyInputError.INVALID_TIMESTAMP,
+                (parseManualBodyInput("70", "", it, zone, now) as ManualBodyInputResult.Invalid).error)
+        }
+        val afterDst = Instant.parse("2026-10-26T12:00:00Z")
+        assertEquals(ManualBodyInputError.INVALID_TIMESTAMP,
+            (parseManualBodyInput("70", "", "2026-10-25 02:30", ZoneId.of("Europe/Rome"), afterDst) as ManualBodyInputResult.Invalid).error)
+    }
+
+    @Test fun zeroBodyFatIsNotMissingAndMalformedDecimalsAreRejected() {
+        val zero = parseManualBodyInput("", "0", "2026-10-08 18:00", zone, now) as ManualBodyInputResult.Valid
+        assertEquals(0.0, zero.input.bodyFatPercent)
+        assertEquals(null, zero.input.weightKg)
+        listOf("74,2.5", "NaN", "Infinity").forEach {
+            assertEquals(ManualBodyInputError.INVALID_WEIGHT,
+                (parseManualBodyInput(it, "", "2026-10-08 18:00", zone, now) as ManualBodyInputResult.Invalid).error)
+        }
+    }
+
     @Test fun rejectsMissingImplausibleOrFutureValues() {
         assertEquals(ManualBodyInputError.MISSING_VALUES,
             (parseManualBodyInput("", "", "2026-10-08 18:00", zone, now) as ManualBodyInputResult.Invalid).error)

@@ -3,6 +3,10 @@ package io.github.hebadenys.fitnesshub.feature.body
 import android.app.Application
 import androidx.activity.ComponentActivity
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import org.junit.Assert.assertEquals
@@ -25,6 +29,7 @@ class ManualBodyEntryCardTest {
         var savedTime = ""
         compose.setContent {
             MaterialTheme {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
                 ManualBodyEntryCard(
                     state = ManualBodyEntryState.Idle,
                     healthConnectAvailable = true,
@@ -37,12 +42,13 @@ class ManualBodyEntryCardTest {
                     },
                     onDismissState = {}
                 )
+                }
             }
         }
 
         compose.onNodeWithTag("manual_weight").performTextInput("80.5")
         compose.onNodeWithTag("manual_body_fat").performTextInput("18.2")
-        compose.onNodeWithTag("manual_save").assertIsEnabled().performClick()
+        compose.onNodeWithTag("manual_save").performScrollTo().assertIsEnabled().performClick()
 
         compose.runOnIdle {
             assertEquals("80.5", savedWeight)

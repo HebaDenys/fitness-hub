@@ -81,7 +81,7 @@ class SettingsNavigationTest {
                         onNavigateToInsights = {},
                         onNavigateToAi = {},
                         onNavigateToProfile = { navigate("settings/profile") },
-                        onNavigateToManualBody = {},
+                        onNavigateToManualBody = { navigate("body/manual") },
                         viewModel = settings
                     )
                 },
@@ -89,6 +89,12 @@ class SettingsNavigationTest {
                     Column {
                         Text("Profile route")
                         Button(onClick = back) { Text("Back to settings") }
+                    }
+                },
+                manualBodyContent = { back ->
+                    Column {
+                        Text("Manual measurement route")
+                        Button(onClick = back) { Text("Close measurement") }
                     }
                 }
             )
@@ -182,6 +188,18 @@ class SettingsNavigationTest {
         compose.onNodeWithTag("settings_hub").assertExists()
         compose.onNodeWithContentDescription("Navigate back").performClick()
         compose.onNodeWithTag("dashboard_settings").assertIsDisplayed()
+    }
+
+    @Test fun manualEntryReturnsToItsOriginatingSettingsScreen() {
+        val vm = dashboard(MutableStateFlow(ScreenState.Empty()))
+        val settings = settings()
+        compose.setContent { App(vm, settings) }
+        compose.onNodeWithTag("dashboard_settings").performClick()
+        compose.onNodeWithTag("settings_hub").performScrollToNode(hasTestTag("settings_manual_body"))
+        compose.onNodeWithTag("settings_manual_body").performClick()
+        compose.onNodeWithText("Manual measurement route").assertExists()
+        compose.onNodeWithText("Close measurement").performClick()
+        compose.onNodeWithTag("settings_hub").assertExists()
     }
 
     @Test fun settingsAndBackStackSurviveSavedStateRecreation() {

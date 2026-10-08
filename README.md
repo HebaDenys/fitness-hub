@@ -4,7 +4,7 @@
 
 App Android local-first per unificare salute, composizione corporea, alimentazione, attività, sonno, allenamenti, obiettivi, analytics e report.
 
-**Stato: pre-alpha, candidate di test 0.3.15.** Codice e test non equivalgono a compatibilità hardware verificata o prodotto pronto per credenziali sensibili.
+**Stato: pre-alpha, candidate di test 0.3.16.** Codice e test non equivalgono a compatibilità hardware verificata o prodotto pronto per credenziali sensibili.
 
 ## Piano e continuità
 
@@ -13,7 +13,7 @@ App Android local-first per unificare salute, composizione corporea, alimentazio
 - **[Roadmap](docs/ROADMAP.md):** ordine e dipendenze dei traguardi.
 - **[Istruzioni agenti](AGENTS.md):** cosa leggere e come avanzare in ogni sessione.
 
-La 0.3.15 è una candidate funzionale: dati corporei canonici condivisi, record Health Connect con timestamp/ID, inserimento manuale offline, Centro sorgenti, onboarding, grafici interattivi, pasti con basi nutrizionali esplicite, backup/restore e CSV grezzo. **Xiaomi cloud login resta bloccato dalla firma privata.** La candidate non richiede INTERNET: lookup Open Food Facts e AI remota sono disabilitati invece di simulare una connessione.
+La 0.3.16 è una candidate funzionale: dati corporei canonici condivisi, record Health Connect con timestamp/ID, inserimento manuale offline, Centro sorgenti, onboarding, grafici interattivi, pasti con basi nutrizionali esplicite, backup/restore e CSV grezzo. **Xiaomi cloud login resta bloccato dalla firma privata.** La candidate non richiede INTERNET: lookup Open Food Facts e AI remota sono disabilitati invece di simulare una connessione.
 
 ## Obiettivo
 
@@ -64,17 +64,19 @@ Esiti CI, SHA software e limiti di verifica sono in [PROGRESS.md](docs/PROGRESS.
 
 ## Installazione e recupero
 
-[APK 0.3.15](https://github.com/HebaDenys/fitness-hub/releases/download/test-latest/FitnessHub-v0.3.15-debug.apk) dalla [prerelease test-latest](https://github.com/HebaDenys/fitness-hub/releases/tag/test-latest). Controllare versione, commit, checksum e note; la release rolling può essere aggiornata.
+[APK 0.3.16](https://github.com/HebaDenys/fitness-hub/releases/download/test-latest/FitnessHub-v0.3.16-debug.apk) dalla [prerelease test-latest](https://github.com/HebaDenys/fitness-hub/releases/tag/test-latest). Controllare versione, commit, checksum e note; la release rolling può essere aggiornata.
 
 **Dashboard -> ingranaggio Impostazioni** rimane disponibile dopo il setup, anche durante sincronizzazione o senza dati/permessi. Performance B applica nero/lime a Dashboard, hub Impostazioni, profilo locale, dettagli Health Connect/Bilancia e barra a sei tab; le altre schermate non sono ancora ridisegnate. Impostazioni -> Profilo per le stime apre i dati locali esistenti senza richiedere una connessione. I campi salvati sono precaricati; valori invalidi sono segnalati e le modifiche non salvate richiedono conferma prima di uscire.
 
 Dashboard aggiunge passi in evidenza, sonno/peso con date reali, accesso al diario e inserimento corporeo manuale. Il dettaglio passi usa intervalli di calendario 7/30/90 giorni, selezione delle barre e un elenco giornaliero accessibile: zero misurato e giorno mancante restano distinti. Nessun obiettivo o orario di aggiornamento dimostrativo viene inventato.
 
+Corpo usa adesso le osservazioni canoniche esatte nel grafico e nello storico, mantenendo più misure nello stesso giorno e mostrando timestamp/fonte/metodo. L’inserimento manuale ha una pagina dedicata con campi recuperabili, data/ora, errori leggibili e conferma prima di scartare modifiche. Nessuna nuova tabella o account.
+
 **Impostazioni -> Xiaomi Home** mostra blocco di accesso e archivio locale. Le credenziali non vengono richieste nel canale test attuale. Nessun account o dato dimostrativo è aggiunto al database dell'utente.
 
 La chiave test pubblica mantiene continuità fra build compatibili ma non autentica il distributore contro chi possiede la stessa chiave. Firma privata/custodia/migrazione restano un gate prima del normale uso con login sensibili.
 
-**Non disinstallare una versione con dati importanti per risolvere un errore di firma.** Il vecchio package Open Health Hub e `io.github.hebadenys.fitnesshub` sono identità distinte, senza migrazione automatica dimostrata. La 0.3.15 mantiene package e chiave test e porta il database a schema 9 con migrazioni additive per identità corporea, basi nutrizionali e misure manuali.
+**Non disinstallare una versione con dati importanti per risolvere un errore di firma.** Il vecchio package Open Health Hub e `io.github.hebadenys.fitnesshub` sono identità distinte, senza migrazione automatica dimostrata. La 0.3.16 mantiene package e chiave test e porta il database a schema 9 con migrazioni additive per identità corporea, basi nutrizionali e misure manuali.
 
 Backup v2 in **Insights -> Backup**: file cifrato, apertura e ripristino. Copre righe DB, non l'intero ambiente app. Massimo 32 MiB decifrati, stesso schema; conflitti annullano tutto senza sovrascrivere. V1 parziale solo in archivio salute vuoto; catalogo esercizi e impostazioni del profilo possono rimanere. Prova fisica di trasferimento e portabilità fra schemi ancora da completare. [Formato e limiti](docs/backup-format-v2.md).
 

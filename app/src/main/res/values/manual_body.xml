@@ -11,7 +11,7 @@
     <string name="body_manual_error_missing">Enter weight, body fat, or both.</string>
     <string name="body_manual_error_weight">Weight must be a number between 1 and 500 kg.</string>
     <string name="body_manual_error_body_fat">Body fat must be a number between 0 and 100%.</string>
-    <string name="body_manual_error_timestamp">Use a valid date and time in YYYY-MM-DD HH:MM format.</string>
+    <string name="body_manual_error_timestamp">Use a valid, unambiguous local date and time in YYYY-MM-DD HH:MM format. Times skipped or repeated by daylight saving changes are not supported.</string>
     <string name="body_manual_error_future">The measurement time cannot be in the future.</string>
     <string name="body_manual_hc_optional">Health Connect is optional. Manual measurements work without granting health permissions.</string>
     <string name="body_manual_connect_hc">Connect Health Connect</string>

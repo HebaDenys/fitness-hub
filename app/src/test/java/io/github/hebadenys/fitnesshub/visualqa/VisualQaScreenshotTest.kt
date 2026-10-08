@@ -155,9 +155,9 @@ class VisualQaCompactSemanticsTest {
                 BodyScreen(onNavigateToSettings = {}, viewModel = vm)
             }
         }
-        compose.waitUntil(5_000) { compose.onAllNodesWithTag("manual_body_card").fetchSemanticsNodes().isNotEmpty() }
-        compose.onNodeWithTag("manual_body_card").assertExists()
-        compose.onNodeWithTag("manual_save").assertIsEnabled()
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("body_add_measurement").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("body_add_measurement").assertExists()
+        compose.onNodeWithTag("body_add_measurement").assertIsEnabled()
         compose.onNodeWithText("99.4 kg").assertExists()
     }
 

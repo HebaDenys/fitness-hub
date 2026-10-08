@@ -1,0 +1,26 @@
+<resources>
+    <string name="body_entry_source">Fonte: Manuale · salvata sul dispositivo</string>
+    <string name="body_entry_zone">Fuso orario del telefono: %1$s</string>
+    <string name="body_entry_saving">Salvataggio della misura…</string>
+    <string name="body_entry_close">Chiudi</string>
+    <string name="body_pick_date">Scegli data</string>
+    <string name="body_pick_time">Scegli ora</string>
+    <string name="body_discard_title">Scartare questa misura non salvata?</string>
+    <string name="body_discard_description">Le misure già salvate resteranno invariate.</string>
+    <string name="body_source_manual">Manuale</string>
+    <string name="body_source_scale">Bilancia locale</string>
+    <string name="body_source_xiaomi">Xiaomi</string>
+    <string name="body_method_recorded">Valore registrato</string>
+    <string name="body_method_vendor">Stima del produttore</string>
+    <string name="body_method_local">Stima locale</string>
+    <string name="body_method_unknown">Metodo non riportato</string>
+    <string name="body_source_and_method">%1$s · %2$s</string>
+    <string name="body_weight_chart_kg">Peso corporeo (kg)</string>
+    <string name="body_chart_exact_description">Misure di peso ai loro orari registrati. Seleziona ogni evento con il cursore.</string>
+    <string name="body_chart_event_count">%1$d record di peso nel periodo</string>
+    <string name="body_chart_change">Variazione tra primo e ultimo valore registrato: %1$s kg</string>
+    <string name="body_chart_no_events">Nessun record di peso nel periodo. Prova un intervallo più lungo o aggiungi una misura.</string>
+    <string name="body_chart_exact_note">Ogni punto è un peso registrato, anche con più misure nello stesso giorno. I giorni mancanti interrompono la linea. È una vista dello storico, non una valutazione sanitaria.</string>
+    <string name="body_exact_history">Storico delle misure disponibili</string>
+    <string name="body_history_record_count">%1$d record metrici · orari e sorgenti originali</string>
+</resources>
