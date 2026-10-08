@@ -15,6 +15,7 @@ android {
     unitTests.all {
         it.useJUnitPlatform()
         it.systemProperty("fitnesshub.schemas", "$projectDir/schemas")
+        it.systemProperty("fitnesshub.visualQaDir", "$projectDir/build/reports/visual-qa")
         it.systemProperty("robolectric.dependency.repo.url", "https://repo.maven.apache.org/maven2")
         it.maxHeapSize = "2g"
         it.testLogging.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
