@@ -104,3 +104,6 @@ Preparata pipeline firma privata manuale e inattiva, con build senza segreti, jo
 Setup read-only commit 6cf515f: run 37865632700 verifica Dev Env ID 23832844662, reviewer unico e main-only. Scope segreti non leggibile con GITHUB_TOKEN: warning, non attestazione API. Run Android 37865632662 fermo su regex test che escludeva cifre nei nomi B64; corretto senza disabilitare test.
 
 0.3.17/code19 aggiunge INTERNET solo alla release e gate certificato reale/non-debuggable/package. Login/storico esistenti diventano accessibili solo nella APK correttamente firmata; debug pubblico resta bloccato. Icona FH originale adattiva nero/lime. Test gate positivi/negativi, controlli manifest e pipeline; CI ancora da eseguire. Nessun login reale o installazione telefono dichiarati.
+
+
+Firma: guard metadata nomi riceve403 sul token CI standard. Con consenso del proprietario si ammette attestazione esplicita del solo owner per SHA/envID esatti, primo tentativo e triggering actor owner; le verifiche API ambiente/reviewer/main restano obbligatorie. Scope è manualmente attestato, non provato dall’API. Certificato finale anche confrontato al pin runtime Xiaomi. Workflow resta manuale con activation variable e approvazione ambiente. Nessuna chiave/credenziale visualizzata. Test aggiunti per drift, rerun e403/404/429; verifica CI pendente.

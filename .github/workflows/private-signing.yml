@@ -9,6 +9,20 @@ on:
         required: true
         default: false
 
+      owner_scope_attested:
+        description: I verified these three secrets exist only in Dev Env and removed all repository copies
+        type: boolean
+        required: true
+        default: false
+      source_sha:
+        description: Exact 40-character main commit reviewed for signing
+        type: string
+        required: true
+      environment_id:
+        description: Numeric existing Dev Env ID verified by setup
+        type: string
+        required: true
+
 permissions:
   contents: read
 
@@ -34,6 +48,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           SIGNING_ENABLED: ${{ vars.FITNESS_HUB_PRIVATE_SIGNING_ENABLED }}
           EXPECTED_ENVIRONMENT_ID: ${{ vars.FITNESS_HUB_RELEASE_ENVIRONMENT_ID }}
+          OWNER_SCOPE_ATTESTED: ${{ inputs.owner_scope_attested }}
+          ATTESTED_SOURCE_SHA: ${{ inputs.source_sha }}
+          ATTESTED_ENVIRONMENT_ID: ${{ inputs.environment_id }}
         run: python3 ci/private_signing_guard.py
 
   build:
@@ -152,6 +169,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           SIGNING_ENABLED: ${{ vars.FITNESS_HUB_PRIVATE_SIGNING_ENABLED }}
           EXPECTED_ENVIRONMENT_ID: ${{ vars.FITNESS_HUB_RELEASE_ENVIRONMENT_ID }}
+          OWNER_SCOPE_ATTESTED: ${{ inputs.owner_scope_attested }}
+          ATTESTED_SOURCE_SHA: ${{ inputs.source_sha }}
+          ATTESTED_ENVIRONMENT_ID: ${{ inputs.environment_id }}
         run: |
           python3 - <<'PY'
           # BEGIN_REVIEWED_ENVIRONMENT_GUARD
@@ -254,6 +274,15 @@ jobs:
                   return json.loads(payload)
           
           
+          def validate_owner_scope_attestation(context, observed_id):
+              require(context.get("GITHUB_ACTOR") == "HebaDenys" and context.get("GITHUB_ACTOR_ID") == str(OWNER_ID), "Only the owner may attest secret scope")
+              require(context.get("GITHUB_TRIGGERING_ACTOR") == "HebaDenys", "Only the owner may trigger signing")
+              require(context.get("GITHUB_RUN_ATTEMPT") == "1", "A rerun requires a fresh owner dispatch and attestation")
+              require(context.get("OWNER_SCOPE_ATTESTED") == "true", "Owner secret-scope attestation is required")
+              require(context.get("ATTESTED_SOURCE_SHA") == context.get("GITHUB_SHA"), "Attestation must name this exact source SHA")
+              require(context.get("ATTESTED_ENVIRONMENT_ID") == str(observed_id), "Attestation must name the verified environment ID")
+          
+          
           def verify_setup(require_activation=True):
               if require_activation:
                   require(os.environ.get("SIGNING_ENABLED") == "true", "Private signing is inactive")
@@ -266,6 +295,8 @@ jobs:
               policies = read_json("environments/" + urllib.parse.quote(ENVIRONMENT, safe="") + "/deployment-branch-policies?per_page=100")
               observed_id = environment.get("id")
               validate_environment(environment, policies, int(raw_id) if raw_id else observed_id)
+              if require_activation:
+                  validate_owner_scope_attestation(os.environ, observed_id)
               if not require_activation:
                   print("Environment ID:", observed_id)
                   if not raw_id:
@@ -278,8 +309,12 @@ jobs:
                   )
                   print("Environment-only secret NAMES verified; no values were retrieved.")
               except urllib.error.HTTPError as error:
-                  if not require_activation and error.code in (401, 403):
-                      print("::warning::Secret-name scope could not be verified with this read-only token. Signing must remain disabled pending manual review; no fallback is allowed.")
+                  if error.code in (401, 403):
+                      if require_activation:
+                          validate_owner_scope_attestation(os.environ, observed_id)
+                          print("::warning::Secret scope is owner-attested for this SHA/environment, NOT API-verified. Absence of repository fallback is owner-attested, not programmatically proven.")
+                      else:
+                          print("::warning::Secret-name scope cannot be API-verified by this token. Signing requires explicit owner attestation for the exact SHA/environment and environment approval.")
                   else:
                       raise
               print("Reviewer, environment identity and exact main-branch rules verified.")
@@ -315,6 +350,7 @@ jobs:
           test -n "$FITNESS_HUB_RELEASE_KEY_ALIAS"
           EXPECTED=$(printf '%s' "$FITNESS_HUB_RELEASE_CERT_SHA256" | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')
           [[ "$EXPECTED" =~ ^[0-9a-f]{64}$ ]] || { echo "Approved certificate fingerprint is missing or invalid"; exit 1; }
+          test "$EXPECTED" = "a1345938ecf27fb5d87609695c161ef4331529648dabdb8700ea1b51c1df3d13" || { echo "Certificate does not match the approved app publisher"; exit 1; }
           SDK="$ANDROID_HOME/build-tools/36.0.0"
           test -x "$SDK/apksigner" && test -x "$SDK/zipalign"
           printf '%s' "$FITNESS_HUB_RELEASE_KEYSTORE_B64" | base64 --decode > "$KEYSTORE"

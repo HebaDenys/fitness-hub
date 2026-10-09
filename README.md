@@ -111,7 +111,7 @@ Strumento personale di benessere e fitness, non diagnosi o dispositivo medico. M
 
 
 ### Preparazione firma privata
-La pipeline manuale è inattiva e separa build senza segreti e firma isolata. Il controllo setup non usa chiavi. Ambiente concordato: Dev Env, reviewer proprietario e bypass admin consentito. La verifica dello scope dei segreti deve riuscire prima della firma; nessun fallback a repository secrets. [Configurazione, limiti e installazione](docs/security/private-signing.md). Questa preparazione non abilita ancora Xiaomi cloud né cambia l'identità dell'app.
+La pipeline manuale è inattiva e separa build senza segreti e firma isolata. Il controllo setup non usa chiavi. Ambiente concordato: Dev Env, reviewer proprietario e bypass admin consentito. Lo scope dei segreti viene verificato via API quando consentito, altrimenti attestato esplicitamente dal proprietario per SHA e ambiente esatti; non si dichiara prova automatica del mancato fallback. [Configurazione, limiti e installazione](docs/security/private-signing.md). La release 0.3.17 abilita il percorso Xiaomi soltanto con il certificato privato approvato; l’identità package resta invariata.
 
 
 ### Xiaomi nella release 0.3.17

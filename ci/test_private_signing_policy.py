@@ -3,11 +3,12 @@ import os
 from pathlib import Path
 import re
 import unittest
+import urllib.error
 from unittest.mock import patch
 
 from private_signing_guard import (
     REQUIRED_SECRETS, validate_context, validate_environment,
-    validate_secret_scopes, verify_setup,
+    validate_secret_scopes, verify_setup, validate_owner_scope_attestation,
 )
 from package_unsigned_release import apk_metadata
 
@@ -97,6 +98,50 @@ class SigningGuardTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate_context(context, {"name": "main", "commit": {"sha": "b" * 40}})
 
+    def test_owner_scope_attestation_is_bound_to_actor_sha_and_environment(self):
+        context = {"GITHUB_ACTOR": "HebaDenys", "GITHUB_ACTOR_ID": "99826912", "GITHUB_TRIGGERING_ACTOR": "HebaDenys", "GITHUB_RUN_ATTEMPT": "1", "OWNER_SCOPE_ATTESTED": "true",
+                   "GITHUB_SHA": "a" * 40, "ATTESTED_SOURCE_SHA": "a" * 40, "ATTESTED_ENVIRONMENT_ID": "123"}
+        validate_owner_scope_attestation(context, 123)
+        for field, value in [("GITHUB_ACTOR", "someone"), ("GITHUB_ACTOR_ID", "1"), ("GITHUB_TRIGGERING_ACTOR", "someone"), ("GITHUB_RUN_ATTEMPT", "2"), ("OWNER_SCOPE_ATTESTED", "false"),
+                             ("ATTESTED_SOURCE_SHA", "b" * 40), ("ATTESTED_ENVIRONMENT_ID", "124")]:
+            with self.assertRaises(ValueError):
+                validate_owner_scope_attestation(dict(context, **{field: value}), 123)
+
+    def test_active_preflight_checks_attestation_even_when_name_api_succeeds(self):
+        context = {"GITHUB_REPOSITORY": "HebaDenys/fitness-hub", "GITHUB_EVENT_NAME": "workflow_dispatch",
+                   "GITHUB_REF": "refs/heads/main", "GITHUB_SHA": "a" * 40, "SIGNING_ENABLED": "true",
+                   "GITHUB_ACTOR": "HebaDenys", "GITHUB_ACTOR_ID": "99826912",
+                   "GITHUB_TRIGGERING_ACTOR": "HebaDenys", "GITHUB_RUN_ATTEMPT": "1",
+                   "EXPECTED_ENVIRONMENT_ID": "123", "ATTESTED_ENVIRONMENT_ID": "123",
+                   "OWNER_SCOPE_ATTESTED": "true", "ATTESTED_SOURCE_SHA": "b" * 40}
+        responses = [{"name": "main", "commit": {"sha": "a" * 40}}, environment(), policies(),
+                     names(REQUIRED_SECRETS), names([])]
+        with patch.dict(os.environ, context, clear=True), patch("private_signing_guard.read_json", side_effect=responses):
+            with self.assertRaises(ValueError):
+                verify_setup()
+
+    def test_metadata_denial_only_allows_exact_owner_attestation(self):
+        context = {"GITHUB_REPOSITORY": "HebaDenys/fitness-hub", "GITHUB_EVENT_NAME": "workflow_dispatch",
+                   "GITHUB_REF": "refs/heads/main", "GITHUB_SHA": "a" * 40, "SIGNING_ENABLED": "true",
+                   "GITHUB_ACTOR": "HebaDenys", "GITHUB_ACTOR_ID": "99826912",
+                   "GITHUB_TRIGGERING_ACTOR": "HebaDenys", "GITHUB_RUN_ATTEMPT": "1",
+                   "EXPECTED_ENVIRONMENT_ID": "123", "ATTESTED_ENVIRONMENT_ID": "123",
+                   "OWNER_SCOPE_ATTESTED": "true", "ATTESTED_SOURCE_SHA": "a" * 40}
+        for status in (401, 403, 404, 429):
+            responses = [{"name": "main", "commit": {"sha": "a" * 40}}, environment(), policies(),
+                         urllib.error.HTTPError("https://api.github.com", status, "denied", {}, None)]
+            with patch.dict(os.environ, context, clear=True), patch("private_signing_guard.read_json", side_effect=responses):
+                if status in (401, 403):
+                    verify_setup()
+                else:
+                    with self.assertRaises(urllib.error.HTTPError):
+                        verify_setup()
+        context["OWNER_SCOPE_ATTESTED"] = "false"
+        with patch.dict(os.environ, context, clear=True), patch("private_signing_guard.read_json", side_effect=[
+                {"name": "main", "commit": {"sha": "a" * 40}}, environment(), policies()]):
+            with self.assertRaises(ValueError):
+                verify_setup()
+
     def test_disabled_signing_never_queries_metadata(self):
         with patch.dict(os.environ, {}, clear=True), patch("private_signing_guard.read_json") as read:
             with self.assertRaises(ValueError):
@@ -167,6 +212,7 @@ class SigningWorkflowPolicyTest(unittest.TestCase):
         self.assertIn("--key-pass env:FITNESS_HUB_RELEASE_KEY_PASSWORD", sign)
         self.assertIn("trap 'rm -f", sign)
         self.assertIn("FITNESS_HUB_RELEASE_CERT_SHA256", sign)
+        self.assertIn('test "$EXPECTED" = "a1345938ecf27fb5d87609695c161ef4331529648dabdb8700ea1b51c1df3d13"', sign)
         self.assertIn("signed-output/FitnessHub-release.apk.sha256", sign)
         self.assertNotRegex(sign, r"path:\s*\|?\s*\$\{\{ runner.temp \}\}\s*$")
         self.assertNotIn("release create", sign)

@@ -97,6 +97,15 @@ def read_json(path):
         return json.loads(payload)
 
 
+def validate_owner_scope_attestation(context, observed_id):
+    require(context.get("GITHUB_ACTOR") == "HebaDenys" and context.get("GITHUB_ACTOR_ID") == str(OWNER_ID), "Only the owner may attest secret scope")
+    require(context.get("GITHUB_TRIGGERING_ACTOR") == "HebaDenys", "Only the owner may trigger signing")
+    require(context.get("GITHUB_RUN_ATTEMPT") == "1", "A rerun requires a fresh owner dispatch and attestation")
+    require(context.get("OWNER_SCOPE_ATTESTED") == "true", "Owner secret-scope attestation is required")
+    require(context.get("ATTESTED_SOURCE_SHA") == context.get("GITHUB_SHA"), "Attestation must name this exact source SHA")
+    require(context.get("ATTESTED_ENVIRONMENT_ID") == str(observed_id), "Attestation must name the verified environment ID")
+
+
 def verify_setup(require_activation=True):
     if require_activation:
         require(os.environ.get("SIGNING_ENABLED") == "true", "Private signing is inactive")
@@ -109,6 +118,8 @@ def verify_setup(require_activation=True):
     policies = read_json("environments/" + urllib.parse.quote(ENVIRONMENT, safe="") + "/deployment-branch-policies?per_page=100")
     observed_id = environment.get("id")
     validate_environment(environment, policies, int(raw_id) if raw_id else observed_id)
+    if require_activation:
+        validate_owner_scope_attestation(os.environ, observed_id)
     if not require_activation:
         print("Environment ID:", observed_id)
         if not raw_id:
@@ -121,8 +132,12 @@ def verify_setup(require_activation=True):
         )
         print("Environment-only secret NAMES verified; no values were retrieved.")
     except urllib.error.HTTPError as error:
-        if not require_activation and error.code in (401, 403):
-            print("::warning::Secret-name scope could not be verified with this read-only token. Signing must remain disabled pending manual review; no fallback is allowed.")
+        if error.code in (401, 403):
+            if require_activation:
+                validate_owner_scope_attestation(os.environ, observed_id)
+                print("::warning::Secret scope is owner-attested for this SHA/environment, NOT API-verified. Absence of repository fallback is owner-attested, not programmatically proven.")
+            else:
+                print("::warning::Secret-name scope cannot be API-verified by this token. Signing requires explicit owner attestation for the exact SHA/environment and environment approval.")
         else:
             raise
     print("Reviewer, environment identity and exact main-branch rules verified.")
