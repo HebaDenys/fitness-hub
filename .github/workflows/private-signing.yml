@@ -1,0 +1,355 @@
+name: Private-key APK signing (manual, inactive by default)
+
+on:
+  workflow_dispatch:
+    inputs:
+      acknowledge_public_artifact:
+        description: I approve uploading the signed APK to this public repository's Actions artifacts (never the key)
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: private-signing
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    if: github.repository == 'HebaDenys/fitness-hub' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.acknowledge_public_artifact
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Validate approved existing environment without secrets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SIGNING_ENABLED: ${{ vars.FITNESS_HUB_PRIVATE_SIGNING_ENABLED }}
+          EXPECTED_ENVIRONMENT_ID: ${{ vars.FITNESS_HUB_RELEASE_ENVIRONMENT_ID }}
+        run: python3 ci/private_signing_guard.py
+
+  build:
+    needs: preflight
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    outputs:
+      artifact_id: ${{ steps.upload.outputs.artifact-id }}
+      artifact_digest: ${{ steps.upload.outputs.artifact-digest }}
+      apk_sha256: ${{ steps.package.outputs.apk_sha256 }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Check source and policies
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 -m unittest discover -s ci -p 'test_*.py' -v
+      - name: Shared unit suite and unsigned release checks
+        run: ./gradlew testDebugUnitTest lintRelease assembleRelease --stacktrace
+      - name: Package validated unsigned release
+        id: package
+        run: python3 ci/package_unsigned_release.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        id: upload
+        with:
+          name: unsigned-release-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            unsigned-release/unsigned.apk
+            unsigned-release/provenance.json
+          if-no-files-found: error
+          retention-days: 1
+
+  sign:
+    needs: [preflight, build]
+    if: github.repository == 'HebaDenys/fitness-hub' && github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && vars.FITNESS_HUB_PRIVATE_SIGNING_ENABLED == 'true' && inputs.acknowledge_public_artifact
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: Dev Env
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          artifact-ids: ${{ needs.build.outputs.artifact_id }}
+          path: ${{ runner.temp }}/unsigned-input
+          merge-multiple: true
+          github-token: ${{ github.token }}
+          run-id: ${{ github.run_id }}
+      - name: Validate immutable same-run input before any private material
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_DIR: ${{ runner.temp }}/unsigned-input
+          ARTIFACT_ID: ${{ needs.build.outputs.artifact_id }}
+          ARTIFACT_DIGEST: ${{ needs.build.outputs.artifact_digest }}
+          EXPECTED_APK_SHA256: ${{ needs.build.outputs.apk_sha256 }}
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, re, subprocess, urllib.request
+          root = pathlib.Path(os.environ["INPUT_DIR"])
+          files = sorted(p.relative_to(root).as_posix() for p in root.rglob("*"))
+          assert files == ["provenance.json", "unsigned.apk"], "Unexpected artifact files"
+          assert all(not p.is_symlink() and p.is_file() for p in root.iterdir()), "Unexpected symlink or directory"
+          expected_sha = os.environ["EXPECTED_APK_SHA256"]
+          assert re.fullmatch(r"[0-9a-f]{64}", expected_sha), "Invalid expected APK digest"
+          assert hashlib.sha256((root / "unsigned.apk").read_bytes()).hexdigest() == expected_sha, "APK digest mismatch"
+          metadata = json.loads((root / "provenance.json").read_text())
+          assert metadata.get("schema") == 1 and metadata.get("variant") == "release"
+          assert metadata.get("source_sha") == os.environ["GITHUB_SHA"]
+          assert metadata.get("repository") == "HebaDenys/fitness-hub"
+          assert metadata.get("run_id") == os.environ["GITHUB_RUN_ID"]
+          assert metadata.get("run_attempt") == os.environ["GITHUB_RUN_ATTEMPT"]
+          assert metadata.get("apk_sha256") == expected_sha and metadata.get("debuggable") is False
+          artifact_id = os.environ["ARTIFACT_ID"]
+          assert re.fullmatch(r"[1-9][0-9]*", artifact_id)
+          request = urllib.request.Request(
+              "https://api.github.com/repos/HebaDenys/fitness-hub/actions/artifacts/" + artifact_id,
+              headers={"Authorization": "Bearer " + os.environ["GH_TOKEN"], "Accept": "application/vnd.github+json",
+                       "X-GitHub-Api-Version": "2022-11-28"})
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, request, fp, code, message, headers, new_url):
+                  return None
+          with urllib.request.build_opener(NoRedirect()).open(request, timeout=20) as response:
+              assert response.status == 200
+              artifact = json.load(response)
+          assert artifact.get("id") == int(artifact_id) and artifact.get("expired") is False
+          assert artifact.get("digest") == "sha256:" + os.environ["ARTIFACT_DIGEST"]
+          run = artifact.get("workflow_run") or {}
+          assert run.get("id") == int(os.environ["GITHUB_RUN_ID"])
+          assert run.get("head_sha") == os.environ["GITHUB_SHA"] and run.get("head_branch") == "main"
+          tools = pathlib.Path(os.environ["ANDROID_HOME"]) / "build-tools" / "36.0.0"
+          badging = subprocess.check_output([str(tools/"aapt2"), "dump", "badging", str(root/"unsigned.apk")], text=True)
+          match = re.search(r"^package: name='([^']+)' versionCode='([0-9]+)' versionName='([^']*)'", badging, re.MULTILINE)
+          assert match and match.group(1) == "io.github.hebadenys.fitnesshub"
+          assert int(match.group(2)) == metadata["version_code"] and match.group(3) == metadata["version_name"]
+          assert "application-debuggable" not in badging
+          assert "android.permission.INTERNET" not in badging and "android.permission.health.WRITE_" not in badging
+          assert subprocess.run([str(tools/"apksigner"), "verify", str(root/"unsigned.apk")],
+                                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode != 0
+          print("Same-run unsigned release artifact and actual APK metadata verified.")
+          PY
+      - name: Recheck approved environment immediately before signing
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SIGNING_ENABLED: ${{ vars.FITNESS_HUB_PRIVATE_SIGNING_ENABLED }}
+          EXPECTED_ENVIRONMENT_ID: ${{ vars.FITNESS_HUB_RELEASE_ENVIRONMENT_ID }}
+        run: |
+          python3 - <<'PY'
+          # BEGIN_REVIEWED_ENVIRONMENT_GUARD
+          """Fail-closed preflight for the inactive, manually approved signing workflow.
+          
+          This validates documented API fields only. The owner explicitly permits administrator bypass;
+          that UI setting is not exposed or monitored by this guard.
+          No environment, variable, secret or branch setting is created or changed.
+          """
+          import json
+          import os
+          import re
+          import urllib.error
+          import urllib.request
+          import urllib.parse
+          
+          REPOSITORY = "HebaDenys/fitness-hub"
+          ENVIRONMENT = "Dev Env"
+          OWNER_ID = 99826912
+          REQUIRED_SECRETS = {"FITNESS_HUB_RELEASE_KEYSTORE_B64", "FITNESS_HUB_RELEASE_STORE_PASSWORD", "FITNESS_HUB_RELEASE_KEY_PASSWORD"}
+          
+          
+          def require(condition, message):
+              if not condition:
+                  raise ValueError(message)
+          
+          
+          def validate_environment(environment, policies, expected_id):
+              require(type(expected_id) is int and expected_id > 0, "Pin the approved environment ID")
+              require(type(environment.get("id")) is int and environment.get("id") == expected_id and environment.get("name") == ENVIRONMENT,
+                      "Environment identity mismatch")
+              policy = environment.get("deployment_branch_policy") or {}
+              require(policy.get("custom_branch_policies") is True and policy.get("protected_branches") is False,
+                      "Require selected deployment branches, not protected-branches-only")
+              rules = environment.get("protection_rules")
+              require(isinstance(rules, list), "Missing protection rules")
+              require(all(rule.get("type") in {"required_reviewers", "branch_policy"} for rule in rules),
+                      "Unexpected protection rule; review configuration")
+              reviewers = [rule for rule in rules if rule.get("type") == "required_reviewers"]
+              require(len(reviewers) == 1, "Exactly one required-reviewers rule is required")
+              rule = reviewers[0]
+              require(rule.get("prevent_self_review") is False, "Self-review policy differs from approved solo-owner setup")
+              entries = rule.get("reviewers")
+              require(isinstance(entries, list) and len(entries) == 1, "Only the approved reviewer is allowed")
+              require(entries[0].get("type") == "User" and entries[0].get("reviewer", {}).get("id") == OWNER_ID,
+                      "Reviewer is not the approved repository owner")
+              require(type(policies.get("total_count")) is int and policies["total_count"] == 1,
+                      "Exactly one deployment branch policy is required")
+              branches = policies.get("branch_policies")
+              require(isinstance(branches, list) and len(branches) == 1, "Incomplete or extra branch policies")
+              require(branches[0].get("name") == "main" and branches[0].get("type") == "branch",
+                      "Require exactly the main branch; missing type, tags and wildcards are rejected")
+          
+          
+          def secret_names(metadata):
+              entries = metadata.get("secrets")
+              require(isinstance(entries, list) and type(metadata.get("total_count")) is int, "Incomplete secret-name metadata")
+              require(metadata["total_count"] == len(entries) and len(entries) <= 100, "Secret-name pagination is incomplete")
+              names = [entry.get("name") for entry in entries]
+              require(all(isinstance(name, str) for name in names) and len(set(names)) == len(names), "Malformed secret-name metadata")
+              return set(names)
+          
+          
+          def validate_secret_scopes(environment_secrets, repository_secrets):
+              require(secret_names(environment_secrets) == REQUIRED_SECRETS,
+                      "The three signing secrets must exist in the dedicated environment")
+              require(REQUIRED_SECRETS.isdisjoint(secret_names(repository_secrets)),
+                      "Repository-level signing-secret copies must be removed; fallback is prohibited")
+          
+          
+          def validate_context(context, branch, require_activation=True):
+              require(context.get("GITHUB_REPOSITORY") == REPOSITORY, "Unexpected repository")
+              allowed = {"workflow_dispatch"} if require_activation else {"workflow_dispatch", "push"}
+              require(context.get("GITHUB_EVENT_NAME") in allowed, "Unexpected workflow event")
+              require(context.get("GITHUB_REF") == "refs/heads/main", "Only refs/heads/main is trusted")
+              if require_activation:
+                  require(context.get("SIGNING_ENABLED") == "true", "Private signing is inactive")
+              sha = context.get("GITHUB_SHA", "")
+              require(re.fullmatch(r"[0-9a-f]{40}", sha) is not None, "Invalid source SHA")
+              require(branch.get("name") == "main" and branch.get("commit", {}).get("sha") == sha,
+                      "The requested commit is no longer main HEAD")
+          
+          
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, request, fp, code, message, headers, new_url):
+                  return None
+          
+          
+          def read_json(path):
+              token = os.environ["GH_TOKEN"]
+              request = urllib.request.Request(
+                  "https://api.github.com/repos/" + REPOSITORY + "/" + path,
+                  headers={"Authorization": "Bearer " + token, "Accept": "application/vnd.github+json",
+                           "X-GitHub-Api-Version": "2022-11-28"},
+              )
+              with urllib.request.build_opener(NoRedirect()).open(request, timeout=20) as response:
+                  require(response.status == 200, "Metadata API did not return 200")
+                  payload = response.read(1_048_577)
+                  require(len(payload) <= 1_048_576, "Metadata response exceeds limit")
+                  return json.loads(payload)
+          
+          
+          def verify_setup(require_activation=True):
+              if require_activation:
+                  require(os.environ.get("SIGNING_ENABLED") == "true", "Private signing is inactive")
+              raw_id = os.environ.get("EXPECTED_ENVIRONMENT_ID", "")
+              if require_activation or raw_id:
+                  require(re.fullmatch(r"[1-9][0-9]*", raw_id) is not None, "Approved environment ID is missing")
+              branch = read_json("branches/main")
+              validate_context(os.environ, branch, require_activation)
+              environment = read_json("environments/" + urllib.parse.quote(ENVIRONMENT, safe=""))
+              policies = read_json("environments/" + urllib.parse.quote(ENVIRONMENT, safe="") + "/deployment-branch-policies?per_page=100")
+              observed_id = environment.get("id")
+              validate_environment(environment, policies, int(raw_id) if raw_id else observed_id)
+              if not require_activation:
+                  print("Environment ID:", observed_id)
+                  if not raw_id:
+                      print("Pin FITNESS_HUB_RELEASE_ENVIRONMENT_ID before activation.")
+                  print("Read-only setup check: secret values and environment variables were not accessed.")
+              try:
+                  validate_secret_scopes(
+                      read_json("environments/" + urllib.parse.quote(ENVIRONMENT, safe="") + "/secrets?per_page=100"),
+                      read_json("actions/secrets?per_page=100"),
+                  )
+                  print("Environment-only secret NAMES verified; no values were retrieved.")
+              except urllib.error.HTTPError as error:
+                  if not require_activation and error.code in (401, 403):
+                      print("::warning::Secret-name scope could not be verified with this read-only token. Signing must remain disabled pending manual review; no fallback is allowed.")
+                  else:
+                      raise
+              print("Reviewer, environment identity and exact main-branch rules verified.")
+              print("Administrator bypass is owner-approved; no API enforcement is claimed.")
+          
+          
+          if __name__ == "__main__":
+              try:
+                  verify_setup(require_activation=os.environ.get("SETUP_CHECK_ONLY") != "true")
+              except (ValueError, KeyError, TypeError, urllib.error.URLError) as error:
+                  reason = str(error) if type(error) is ValueError else type(error).__name__
+                  raise SystemExit("Signing preflight blocked: " + reason) from None
+          
+          # END_REVIEWED_ENVIRONMENT_GUARD
+          PY
+      - name: Sign only with user-provided environment material
+        env:
+          FITNESS_HUB_RELEASE_KEYSTORE_B64: ${{ secrets.FITNESS_HUB_RELEASE_KEYSTORE_B64 }}
+          FITNESS_HUB_RELEASE_STORE_PASSWORD: ${{ secrets.FITNESS_HUB_RELEASE_STORE_PASSWORD }}
+          FITNESS_HUB_RELEASE_KEY_PASSWORD: ${{ secrets.FITNESS_HUB_RELEASE_KEY_PASSWORD }}
+          FITNESS_HUB_RELEASE_KEY_ALIAS: ${{ vars.FITNESS_HUB_RELEASE_KEY_ALIAS }}
+          FITNESS_HUB_RELEASE_CERT_SHA256: ${{ vars.FITNESS_HUB_RELEASE_CERT_SHA256 }}
+        run: |
+          set -euo pipefail
+          umask 077
+          KEYSTORE="$RUNNER_TEMP/fitnesshub-release.jks"
+          ALIGNED="$RUNNER_TEMP/fitnesshub-aligned.apk"
+          VERIFY="$RUNNER_TEMP/fitnesshub-signature.txt"
+          trap 'rm -f "$KEYSTORE" "$ALIGNED" "$VERIFY"' EXIT
+          test -n "$FITNESS_HUB_RELEASE_KEYSTORE_B64"
+          test -n "$FITNESS_HUB_RELEASE_STORE_PASSWORD"
+          test -n "$FITNESS_HUB_RELEASE_KEY_PASSWORD"
+          test -n "$FITNESS_HUB_RELEASE_KEY_ALIAS"
+          EXPECTED=$(printf '%s' "$FITNESS_HUB_RELEASE_CERT_SHA256" | tr -d ':[:space:]' | tr '[:upper:]' '[:lower:]')
+          [[ "$EXPECTED" =~ ^[0-9a-f]{64}$ ]] || { echo "Approved certificate fingerprint is missing or invalid"; exit 1; }
+          SDK="$ANDROID_HOME/build-tools/36.0.0"
+          test -x "$SDK/apksigner" && test -x "$SDK/zipalign"
+          printf '%s' "$FITNESS_HUB_RELEASE_KEYSTORE_B64" | base64 --decode > "$KEYSTORE"
+          test -s "$KEYSTORE"
+          "$SDK/zipalign" -P 16 -f 4 "$RUNNER_TEMP/unsigned-input/unsigned.apk" "$ALIGNED"
+          mkdir -p "$RUNNER_TEMP/signed-output"
+          "$SDK/apksigner" sign --ks "$KEYSTORE" --ks-type JKS \
+            --ks-key-alias "$FITNESS_HUB_RELEASE_KEY_ALIAS" \
+            --ks-pass env:FITNESS_HUB_RELEASE_STORE_PASSWORD \
+            --key-pass env:FITNESS_HUB_RELEASE_KEY_PASSWORD \
+            --v4-signing-enabled false \
+            --out "$RUNNER_TEMP/signed-output/FitnessHub-release.apk" "$ALIGNED"
+          "$SDK/zipalign" -c -P 16 4 "$RUNNER_TEMP/signed-output/FitnessHub-release.apk"
+          "$SDK/apksigner" verify --verbose --print-certs "$RUNNER_TEMP/signed-output/FitnessHub-release.apk" > "$VERIFY"
+          APPROVED_CERT="$EXPECTED" python3 - <<'PY'
+          import hashlib, json, os, pathlib, re
+          root = pathlib.Path(os.environ["RUNNER_TEMP"])
+          text = (root/"fitnesshub-signature.txt").read_text()
+          certs = {m.replace(":", "").lower() for m in re.findall(r"certificate SHA-256 digest:\s*([0-9a-fA-F:]+)", text)}
+          assert certs == {os.environ["APPROVED_CERT"]}, "Signed certificate does not match the approved fingerprint"
+          apk = root/"signed-output/FitnessHub-release.apk"
+          digest = hashlib.sha256(apk.read_bytes()).hexdigest()
+          (root/"signed-output/FitnessHub-release.apk.sha256").write_text(digest + "  FitnessHub-release.apk\n")
+          provenance = json.loads((root/"unsigned-input/provenance.json").read_text())
+          provenance.update(signed_apk_sha256=digest, certificate_sha256=os.environ["APPROVED_CERT"])
+          (root/"signed-output/provenance.json").write_text(json.dumps(provenance, indent=2) + "\n")
+          print("Approved certificate and signed APK checksum verified.")
+          PY
+      - name: Remove temporary private material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/fitnesshub-release.jks" "$RUNNER_TEMP/fitnesshub-aligned.apk" "$RUNNER_TEMP/fitnesshub-signature.txt"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: signed-release-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/signed-output/FitnessHub-release.apk
+            ${{ runner.temp }}/signed-output/FitnessHub-release.apk.sha256
+            ${{ runner.temp }}/signed-output/provenance.json
+          if-no-files-found: error
+          retention-days: 3

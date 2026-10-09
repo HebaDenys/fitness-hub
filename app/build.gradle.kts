@@ -6,6 +6,7 @@ android {
  namespace="io.github.hebadenys.fitnesshub"; compileSdk=36
  defaultConfig { applicationId="io.github.hebadenys.fitnesshub"; minSdk=28; targetSdk=35; versionCode=18; versionName="0.3.16"; testInstrumentationRunner="androidx.test.runner.AndroidJUnitRunner" }
  buildFeatures { compose=true }
+ buildTypes { getByName("release") { isDebuggable = false } }
  compileOptions { sourceCompatibility=JavaVersion.VERSION_17; targetCompatibility=JavaVersion.VERSION_17 }
  kotlin {
     jvmToolchain(21)

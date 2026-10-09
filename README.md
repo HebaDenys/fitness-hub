@@ -108,3 +108,7 @@ Nessun backend Fitness Hub obbligatorio o SDK di tracking. Backup OS e device tr
 ## Limite sanitario
 
 Strumento personale di benessere e fitness, non diagnosi o dispositivo medico. Misure consumer, formule e associazioni statistiche non sono prove cliniche; correlazione non significa causalità.
+
+
+### Preparazione firma privata
+La pipeline manuale è inattiva e separa build senza segreti e firma isolata. Il controllo setup non usa chiavi. Ambiente concordato: Dev Env, reviewer proprietario e bypass admin consentito. La verifica dello scope dei segreti deve riuscire prima della firma; nessun fallback a repository secrets. [Configurazione, limiti e installazione](docs/security/private-signing.md). Questa preparazione non abilita ancora Xiaomi cloud né cambia l'identità dell'app.

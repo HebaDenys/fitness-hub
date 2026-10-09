@@ -90,3 +90,10 @@ La candidate mantiene test di composizione/semantica su 360dp, 840dp, dark theme
 5. solo dopo decidere firma privata/migrazione per aprire Xiaomi cloud login.
 
 Non chiamare prodotto finito prima di questi gate.
+
+
+## FH-SIGN-01 — preparazione pipeline (9 ottobre 2026)
+
+Corpo 0.3.16 verificato sul commit 9c25fe3fd91bb0bd965d54964ef362ab37c20550: CI 37861713790 verde, 466 test / 63 suite, 0 failure/error/skip, 14 controlli Python, lint/debug APK, firma e pubblicazione. SHA-256 APK: 681978f8bdccc979c3e8989e4556071e9195ae3e5b8661ee9c0e554ccb8cef0d. Nessuna QA pixel/dispositivo.
+
+Preparata pipeline firma privata manuale e inattiva, con build senza segreti, job firma isolato e guard fail-closed. Verifica setup separata senza environment/segretI. Ambiente concordato Dev Env, unico reviewer HebaDenys, self-review ammessa, bypass admin consentito esplicitamente. Scope segreti riportato dal proprietario; verifica API ancora da eseguire. Nessuna chiave letta o generata, nessuna firma privata prodotta. CI di questo incremento ancora da verificare. Dettagli e limiti: [security/private-signing.md](security/private-signing.md).

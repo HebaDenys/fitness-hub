@@ -1,0 +1,31 @@
+name: Verify signing setup (read-only)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/private-signing.yml
+      - .github/workflows/verify-signing-setup.yml
+      - ci/private_signing_guard.py
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  verify:
+    if: github.repository == 'HebaDenys/fitness-hub' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Inspect existing environment rules without signing access
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EXPECTED_ENVIRONMENT_ID: ${{ vars.FITNESS_HUB_RELEASE_ENVIRONMENT_ID }}
+          SETUP_CHECK_ONLY: 'true'
+        run: python3 ci/private_signing_guard.py
