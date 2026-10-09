@@ -9,6 +9,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -27,7 +28,8 @@ internal data class XiaomiSourceUiState(
     val hasMoreHistory: Boolean = false,
     val historyOffset: Int = 0,
     val errorCode: String? = null,
-    val notice: XiaomiNotice = XiaomiNotice.NONE
+    val notice: XiaomiNotice = XiaomiNotice.NONE,
+    val captcha: XiaomiCaptchaChallenge? = null
 ) : PrivateXiaomiValue() {
     val busy: Boolean get() = work != XiaomiWork.IDLE
     val canSync: Boolean get() {
@@ -45,13 +47,22 @@ internal class XiaomiSourceViewModel @Inject constructor(private val gateway: Xi
     val state = mutableState.asStateFlow()
     private var running: Job? = null
     private var generation = 0L
+    private val captchaInput = XiaomiCaptchaController()
+
+    init {
+        viewModelScope.launch { captchaInput.challenge.collect { challenge ->
+            mutableState.update { it.copy(captcha = challenge.takeIf { _ -> it.work == XiaomiWork.LOGIN }) }
+        } }
+    }
+
+    fun submitCaptcha(id: Long, answer: String): Boolean = captchaInput.submit(id, answer)
 
     fun refresh() { start(XiaomiWork.REFRESH) { reload() } }
 
     fun login(region: XiaomiRegion, username: String, password: CharArray) {
         val job = start(XiaomiWork.LOGIN) {
             mutableState.update { it.copy(discovery = null, selectedKey = null) }
-            try { gateway.login(region, username, password) } finally { password.fill('\u0000') }
+            try { gateway.loginWithCaptcha(region, username, password, captchaInput) } finally { password.fill('\u0000') }
             reload()
             mutableState.update { it.copy(notice = XiaomiNotice.SIGNED_IN) }
         }
@@ -124,9 +135,10 @@ internal class XiaomiSourceViewModel @Inject constructor(private val gateway: Xi
     fun cancel() {
         if (mutableState.value.work == XiaomiWork.LOGOUT) return
         generation++
+        captchaInput.cancel()
         running?.cancel()
         running = null
-        mutableState.update { it.copy(work = XiaomiWork.IDLE, notice = XiaomiNotice.CANCELLED) }
+        mutableState.update { it.copy(work = XiaomiWork.IDLE, notice = XiaomiNotice.CANCELLED, captcha = null) }
     }
 
     fun onHidden() {

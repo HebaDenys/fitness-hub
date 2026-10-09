@@ -69,4 +69,13 @@
     <string name="xiaomi_source_error_rate">Xiaomi temporarily limited requests. Wait before retrying; no automatic retry loop is running.</string>
     <string name="xiaomi_source_error_protocol">The response, identity or endpoint could not be verified. Import stopped rather than treating the failure as empty data.</string>
     <string name="xiaomi_source_error_storage">Local operation failed. No successful import is being claimed; keep the existing archive.</string>
+    <string name="xiaomi_source_error_captcha">Xiaomi requested a CAPTCHA but did not provide a usable challenge. Start a new login manually.</string>
+    <string name="xiaomi_source_error_verification">Xiaomi requires additional account verification, such as SMS or email. This version cannot complete that flow yet; no automatic retry will run.</string>
+    <string name="xiaomi_source_error_challenge_expired">The CAPTCHA attempt expired. Start a new login to request a fresh challenge.</string>
+    <string name="xiaomi_captcha_title">Complete the Xiaomi CAPTCHA</string>
+    <string name="xiaomi_captcha_hint">Enter the characters shown by Xiaomi. Only Confirm sends your answer. The attempt expires after five minutes; leaving this screen cancels it.</string>
+    <string name="xiaomi_captcha_image">Xiaomi verification image</string>
+    <string name="xiaomi_captcha_answer">Characters in the image</string>
+    <string name="xiaomi_captcha_confirm">Confirm CAPTCHA</string>
+    <string name="xiaomi_captcha_invalid_image">The Xiaomi image cannot be displayed safely. Cancel and start a new login.</string>
 </resources>

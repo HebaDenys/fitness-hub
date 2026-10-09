@@ -11,7 +11,7 @@ internal enum class XiaomiAccessFailure {
     PROTOCOL_CHANGED, AUTH_REJECTED, CAPTCHA_REQUIRED, VERIFICATION_REQUIRED,
     AUTH_REQUIRED, RATE_LIMITED, REMOTE_UNAVAILABLE, NETWORK_ERROR, TLS_ERROR,
     RESPONSE_TOO_LARGE, SESSION_MISSING, SESSION_EXPIRED, SESSION_UNREADABLE,
-    SESSION_SCOPE_MISMATCH, SESSION_CHANGED, STORAGE_ERROR
+    SESSION_SCOPE_MISMATCH, SESSION_CHANGED, STORAGE_ERROR, CHALLENGE_EXPIRED
 }
 
 internal class XiaomiAccessException(val reason: XiaomiAccessFailure) : Exception(reason.name)
@@ -28,7 +28,7 @@ internal fun interface XiaomiNetworkGate {
     }
 }
 
-internal enum class XiaomiEndpoint { LOGIN_START, LOGIN_PASSWORD, SERVICE_TICKET, SCALE_HISTORY }
+internal enum class XiaomiEndpoint { LOGIN_START, LOGIN_PASSWORD, SERVICE_TICKET, SCALE_HISTORY, CAPTCHA_IMAGE }
 
 internal data class XiaomiHttpRequest(
     val endpoint: XiaomiEndpoint,
@@ -37,7 +37,11 @@ internal data class XiaomiHttpRequest(
     val form: String? = null
 ) : PrivateXiaomiValue() {
     val method: String get() = if (endpoint in setOf(XiaomiEndpoint.LOGIN_PASSWORD, XiaomiEndpoint.SCALE_HISTORY)) "POST" else "GET"
-    val responseLimit: Int get() = if (endpoint == XiaomiEndpoint.SCALE_HISTORY) 2 * 1024 * 1024 else 64 * 1024
+    val responseLimit: Int get() = when (endpoint) {
+        XiaomiEndpoint.SCALE_HISTORY -> 2 * 1024 * 1024
+        XiaomiEndpoint.CAPTCHA_IMAGE -> 256 * 1024
+        else -> 64 * 1024
+    }
 }
 
 internal data class XiaomiHttpResponse(
@@ -75,6 +79,7 @@ internal object XiaomiUrlPolicy {
             XiaomiEndpoint.LOGIN_START -> host == "account.xiaomi.com" && path == "/pass/serviceLogin" && uri.rawQuery == "_json=true&sid=xiaomiio"
             XiaomiEndpoint.LOGIN_PASSWORD -> host == "account.xiaomi.com" && path == "/pass/serviceLoginAuth2" && uri.rawQuery == null
             XiaomiEndpoint.SERVICE_TICKET -> host == "sts.api.io.mi.com" && path == "/sts"
+            XiaomiEndpoint.CAPTCHA_IMAGE -> host == "account.xiaomi.com" && path == "/pass/getCode" && !uri.rawQuery.isNullOrBlank()
             XiaomiEndpoint.SCALE_HISTORY -> uri.rawQuery == null && (
                 host == "api.io.mi.com" && path == "/app/eco/scale/getData" ||
                     regions.any { host == "$it.api.io.mi.com" } && path == "/app/eco/common/scale/getUserDataByPage")
@@ -89,6 +94,7 @@ internal object XiaomiUrlPolicy {
         }
         val allowed = when (request.endpoint) {
             XiaomiEndpoint.LOGIN_START, XiaomiEndpoint.SERVICE_TICKET -> setOf("accept")
+            XiaomiEndpoint.CAPTCHA_IMAGE -> setOf("accept", "cookie")
             XiaomiEndpoint.LOGIN_PASSWORD -> setOf("accept", "cookie", "content-type")
             XiaomiEndpoint.SCALE_HISTORY -> setOf("accept", "cookie", "content-type", "miot-request-model")
         }

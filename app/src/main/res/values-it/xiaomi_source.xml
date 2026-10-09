@@ -69,4 +69,13 @@
     <string name="xiaomi_source_error_rate">Xiaomi ha limitato temporaneamente le richieste. Attendi prima di riprovare; non è attivo un ciclo automatico di tentativi.</string>
     <string name="xiaomi_source_error_protocol">Risposta, identità o endpoint non verificabili. Importazione interrotta senza scambiare l’errore per assenza di dati.</string>
     <string name="xiaomi_source_error_storage">Operazione locale non riuscita. Non viene dichiarata una importazione riuscita; conserva lo storico esistente.</string>
+    <string name="xiaomi_source_error_captcha">Xiaomi ha richiesto un CAPTCHA senza fornire una challenge utilizzabile. Avvia manualmente un nuovo accesso.</string>
+    <string name="xiaomi_source_error_verification">Xiaomi richiede una verifica aggiuntiva dell’account, ad esempio SMS o email. Questa versione non può ancora completarla; nessun tentativo automatico verrà eseguito.</string>
+    <string name="xiaomi_source_error_challenge_expired">Il tentativo CAPTCHA è scaduto. Avvia un nuovo accesso per richiedere una nuova verifica.</string>
+    <string name="xiaomi_captcha_title">Completa il CAPTCHA Xiaomi</string>
+    <string name="xiaomi_captcha_hint">Inserisci i caratteri mostrati da Xiaomi. Solo Conferma invia la risposta. Il tentativo scade dopo cinque minuti; uscendo da questa schermata lo annulli.</string>
+    <string name="xiaomi_captcha_image">Immagine di verifica Xiaomi</string>
+    <string name="xiaomi_captcha_answer">Caratteri nell’immagine</string>
+    <string name="xiaomi_captcha_confirm">Conferma CAPTCHA</string>
+    <string name="xiaomi_captcha_invalid_image">Impossibile mostrare in sicurezza l’immagine Xiaomi. Annulla e avvia un nuovo accesso.</string>
 </resources>

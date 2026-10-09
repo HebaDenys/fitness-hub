@@ -100,4 +100,33 @@ class XiaomiSourceScreenTest {
         compose.onNodeWithTag("xiaomi_source_open").performClick()
         compose.runOnIdle { assertEquals(1, opened) }
     }
+
+    @Test fun captchaRequiresExplicitAnswerAndCannotSubmitTwice() {
+        val pixels = android.graphics.Bitmap.createBitmap(64, 32, android.graphics.Bitmap.Config.ARGB_8888)
+        val bytes = java.io.ByteArrayOutputStream().also { pixels.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it) }.toByteArray()
+        var sent = 0
+        var cancelled = 0
+        compose.setContent { MaterialTheme {
+            XiaomiSourceContent(XiaomiSourceUiState(overview = sourceOverview(selected = false, signedIn = false),
+                work = XiaomiWork.LOGIN, captcha = XiaomiCaptchaChallenge(42, bytes)),
+                onCaptcha = { id, code -> assertEquals(42L, id); assertEquals("AB12", code); sent++; true },
+                onCancel = { cancelled++ })
+        } }
+        compose.onNodeWithTag("xiaomi_source_list").performScrollToNode(hasTestTag("xiaomi_captcha_submit"))
+        compose.onNodeWithTag("xiaomi_captcha_submit").assertIsNotEnabled()
+        compose.onNodeWithTag("xiaomi_captcha_answer").performTextInput("AB12")
+        compose.runOnIdle { assertEquals(0, sent) }
+        compose.onNodeWithTag("xiaomi_captcha_submit").performClick().assertIsNotEnabled()
+        compose.runOnIdle { assertEquals(1, sent) }
+        compose.onNodeWithTag("xiaomi_captcha_cancel").performClick()
+        compose.runOnIdle { assertEquals(1, cancelled) }
+    }
+
+    @Test fun verificationAndCaptchaErrorsHaveDifferentCopy() {
+        val state = mutableStateOf(XiaomiSourceUiState(errorCode = "VERIFICATION_REQUIRED"))
+        compose.setContent { MaterialTheme { XiaomiSourceContent(state.value) } }
+        compose.onNodeWithText(compose.activity.getString(R.string.xiaomi_source_error_verification)).assertExists()
+        compose.runOnIdle { state.value = state.value.copy(errorCode = "CAPTCHA_REQUIRED") }
+        compose.onNodeWithText(compose.activity.getString(R.string.xiaomi_source_error_captcha)).assertExists()
+    }
 }

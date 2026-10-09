@@ -21,11 +21,16 @@ internal class SourceGatewayFake : XiaomiSourceGateway {
     var syncCalls = 0
     var confirmations = 0
     var loginCalls = 0
+    var captchaAction: (suspend (XiaomiCaptchaResponder) -> Unit)? = null
     var syncAction: suspend () -> XiaomiHistoryResult = { XiaomiHistoryResult.Completed(1, 1) }
     val candidate = XiaomiSourceCandidate("fixture-key", XiaomiSubject("10001", "11"), "fixture-scale", "yunmai.scales.ms103", "Fixture", 1791287999000L)
     val record = XiaomiRecordDetail("fixture-hash", 1791287999000L, emptyList(), emptyList())
     override suspend fun overview() = current
     override suspend fun login(region: XiaomiRegion, username: String, password: CharArray) { loginCalls++ }
+    override suspend fun loginWithCaptcha(region: XiaomiRegion, username: String, password: CharArray, captcha: XiaomiCaptchaResponder) {
+        loginCalls++
+        captchaAction?.invoke(captcha)
+    }
     override suspend fun discover(model: String, older: Boolean) = XiaomiDiscoveryState(listOf(candidate), null, 1, 1, 0)
     override suspend fun confirm(candidateKey: String) { confirmations++; current = sourceOverview() }
     override suspend fun sync(): XiaomiHistoryResult { syncCalls++; return syncAction() }
@@ -135,5 +140,25 @@ class XiaomiSourceViewModelTest {
         gateway.syncAction = { XiaomiHistoryResult.Paused(20, 400, 1791287000000) }
         model.refresh(); advanceUntilIdle(); model.sync(); advanceUntilIdle()
         assertEquals(XiaomiNotice.SYNC_PAUSED, model.state.value.notice)
+    }
+
+    @Test fun hiddenScreenCancelsChallengeAndNewLoginRejectsOldAnswer() = runTest {
+        gateway.captchaAction = { it.answer(byteArrayOf(1, 2, 3)); Unit }
+        model.login(XiaomiRegion.DE, "fixture", "x".toCharArray())
+        runCurrent()
+        val old = model.state.value.captcha!!.id
+        model.onHidden()
+        runCurrent()
+        assertNull(model.state.value.captcha)
+        assertFalse(model.submitCaptcha(old, "ABC"))
+        model.login(XiaomiRegion.DE, "fixture", "x".toCharArray())
+        runCurrent()
+        val current = model.state.value.captcha!!.id
+        assertNotEquals(old, current)
+        assertFalse(model.submitCaptcha(old, "ABC"))
+        assertTrue(model.submitCaptcha(current, "DEF"))
+        runCurrent()
+        assertEquals(XiaomiNotice.SIGNED_IN, model.state.value.notice)
+        assertNull(model.state.value.captcha)
     }
 }

@@ -43,7 +43,14 @@ internal class XiaomiSourceRepository(
         }
     }
 
-    override suspend fun login(region: XiaomiRegion, username: String, password: CharArray) {
+    override suspend fun login(region: XiaomiRegion, username: String, password: CharArray) =
+        loginInternal(region, username, password, null)
+
+    override suspend fun loginWithCaptcha(region: XiaomiRegion, username: String, password: CharArray,
+        captcha: XiaomiCaptchaResponder) = loginInternal(region, username, password, captcha)
+
+    private suspend fun loginInternal(region: XiaomiRegion, username: String, password: CharArray,
+        captcha: XiaomiCaptchaResponder?) {
         try {
             lock.withLock { generation++; discovery = null; discoveredScope = null }
             val binding = dao.binding()
@@ -53,7 +60,7 @@ internal class XiaomiSourceRepository(
                 null
             }
             val connection = binding?.connectionId ?: existing?.connectionId ?: UUID.randomUUID().toString()
-            client.login(connection, region, username, password, expectedUserId = binding?.loginUid)
+            client.login(connection, region, username, password, expectedUserId = binding?.loginUid, captcha = captcha)
         } finally { password.fill('\u0000') }
     }
 

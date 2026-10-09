@@ -107,3 +107,10 @@ Setup read-only commit 6cf515f: run 37865632700 verifica Dev Env ID 23832844662,
 
 
 Firma: guard metadata nomi riceve403 sul token CI standard. Con consenso del proprietario si ammette attestazione esplicita del solo owner per SHA/envID esatti, primo tentativo e triggering actor owner; le verifiche API ambiente/reviewer/main restano obbligatorie. Scope è manualmente attestato, non provato dall’API. Certificato finale anche confrontato al pin runtime Xiaomi. Workflow resta manuale con activation variable e approvazione ambiente. Nessuna chiave/credenziale visualizzata. Test aggiunti per drift, rerun e403/404/429; verifica CI pendente.
+
+
+## FH-XIA-12 — CAPTCHA manuale (9 ottobre 2026)
+
+0.3.17 privata verificata: run37926579766 sul commit ea25e6d0d794ccb2e8883c4c2456a2393022488d, firma approvata A1345938ECF27FB5D87609695C161EF4331529648DABDB8700EA1B51C1DF3D13. SHA256 APK0fc3ab0b4081a480e4ef97b362263aa3732c0c0d83c66f4d2721f8869cbb5dc5. L’utente ha incontrato una richiesta CAPTCHA/verifica aggiuntiva: non è prova di login riuscito.
+
+0.3.18/code20 introduce risposta CAPTCHA manuale effimera, scadenza complessiva, max3round, cancel/back/stale/doubletap, cookie confinato e immagini limitate. Messaggi distinti per CAPTCHA non utilizzabile, verifica SMS/email non supportata e scadenza. Test sintetici auth/controller/ViewModel/Compose; CI di questo incremento da verificare. Nessuna modifica a segreti, environment o account reali. Necessario nuovo dispatch firma owner dopo CI.

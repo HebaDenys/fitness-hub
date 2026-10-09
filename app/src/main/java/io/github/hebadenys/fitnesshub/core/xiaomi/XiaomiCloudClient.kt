@@ -41,13 +41,13 @@ internal class XiaomiCloudClient(
     }
 
     suspend fun login(connectionId: String, region: XiaomiRegion, username: String, password: CharArray,
-        expectedUserId: String? = null): Unit = try {
+        expectedUserId: String? = null, captcha: XiaomiCaptchaResponder? = null): Unit = try {
         operation { epoch ->
             loginLock.withLock {
                 readLock.withLock {
                     assertCurrent(epoch)
                     gate.requireAllowed()
-                    val session = XiaomiAuthentication(http, clock).login(connectionId, region, username, password)
+                    val session = XiaomiAuthentication(http, clock, captcha = captcha).login(connectionId, region, username, password)
                     lock.withLock {
                         checkCurrent(epoch)
                         if (expectedUserId != null && session.userId != expectedUserId) {

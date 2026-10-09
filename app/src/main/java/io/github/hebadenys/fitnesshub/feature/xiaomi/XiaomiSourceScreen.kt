@@ -1,6 +1,9 @@
 package io.github.hebadenys.fitnesshub.feature.xiaomi
 
+import android.graphics.BitmapFactory
 import android.app.Activity
+import androidx.compose.foundation.Image
+import androidx.compose.ui.graphics.asImageBitmap
 import android.content.ContextWrapper
 import android.view.WindowManager
 import androidx.compose.foundation.clickable
@@ -46,7 +49,7 @@ internal fun XiaomiSourceScreen(onBack: () -> Unit, viewModel: XiaomiSourceViewM
     }
     XiaomiSourceContent(state, onBack, viewModel::refresh, viewModel::login, viewModel::discover,
         viewModel::select, viewModel::confirmSelection, viewModel::sync, viewModel::cancel,
-        viewModel::disconnect, viewModel::loadMoreHistory)
+        viewModel::disconnect, viewModel::loadMoreHistory, viewModel::submitCaptcha)
 }
 
 @Composable
@@ -75,7 +78,8 @@ internal fun XiaomiSourceContent(
     onSync: () -> Unit = {},
     onCancel: () -> Unit = {},
     onDisconnect: () -> Unit = {},
-    onMoreHistory: () -> Unit = {}
+    onMoreHistory: () -> Unit = {},
+    onCaptcha: (Long, String) -> Boolean = { _, _ -> false }
 ) {
     val context = LocalContext.current
     val activity = remember(context) { generateSequence(context) { (it as? ContextWrapper)?.baseContext }
@@ -121,6 +125,9 @@ internal fun XiaomiSourceContent(
                     Text(stringResource(R.string.xiaomi_source_signing))
                 }
             }
+            state.captcha?.let { challenge -> item {
+                XiaomiCaptchaCard(challenge, onCaptcha, onCancel)
+            } }
             state.errorCode?.let { code -> item {
                 Text(stringResource(errorText(code)), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("xiaomi_error").semantics { liveRegion = LiveRegionMode.Polite })
             } }
@@ -317,10 +324,46 @@ private fun noticeText(notice: XiaomiNotice): Int = when (notice) {
 private fun errorText(code: String): Int = when (code) {
     "PRIVATE_SIGNING_REQUIRED" -> R.string.xiaomi_source_signing
     "AUTH_REJECTED", "AUTH_REQUIRED", "SESSION_MISSING", "SESSION_EXPIRED", "SESSION_UNREADABLE" -> R.string.xiaomi_source_error_auth
-    "CAPTCHA_REQUIRED", "VERIFICATION_REQUIRED" -> R.string.xiaomi_source_error_challenge
+    "CAPTCHA_REQUIRED" -> R.string.xiaomi_source_error_captcha
+    "VERIFICATION_REQUIRED" -> R.string.xiaomi_source_error_verification
+    "CHALLENGE_EXPIRED" -> R.string.xiaomi_source_error_challenge_expired
     "SESSION_SCOPE_MISMATCH", "SESSION_CHANGED", "BINDING_CONFLICT", "SCOPE_MISMATCH" -> R.string.xiaomi_source_error_identity
     "NETWORK_ERROR", "REMOTE_UNAVAILABLE", "TIMEOUT" -> R.string.xiaomi_source_error_network
     "RATE_LIMITED" -> R.string.xiaomi_source_error_rate
     "STORAGE_ERROR", "UNEXPECTED_ERROR" -> R.string.xiaomi_source_error_storage
     else -> R.string.xiaomi_source_error_protocol
+}
+
+@Composable
+private fun XiaomiCaptchaCard(challenge: XiaomiCaptchaChallenge, onSubmit: (Long, String) -> Boolean, onCancel: () -> Unit) {
+    var answer by remember(challenge.id) { mutableStateOf("") }
+    var submitted by remember(challenge.id) { mutableStateOf(false) }
+    val bitmap = remember(challenge.id) {
+        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(challenge.image, 0, challenge.image.size, options)
+        if (options.outWidth in 1..1024 && options.outHeight in 1..1024 &&
+            options.outWidth.toLong() * options.outHeight <= 1_048_576) {
+            BitmapFactory.decodeByteArray(challenge.image, 0, challenge.image.size)?.asImageBitmap()
+        } else null
+    }
+    SourceSection(Modifier.testTag("xiaomi_captcha")) {
+        Text(stringResource(R.string.xiaomi_captcha_title), style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite })
+        Text(stringResource(R.string.xiaomi_captcha_hint))
+        if (bitmap != null) {
+            Image(bitmap, stringResource(R.string.xiaomi_captcha_image), Modifier.fillMaxWidth().heightIn(min = 96.dp, max = 200.dp))
+            OutlinedTextField(answer, { if (it.length <= 16) answer = it }, singleLine = true,
+                label = { Text(stringResource(R.string.xiaomi_captcha_answer)) },
+                enabled = !submitted, modifier = Modifier.fillMaxWidth().testTag("xiaomi_captcha_answer"))
+            Button(onClick = {
+                if (!submitted && onSubmit(challenge.id, answer.trim())) { submitted = true; answer = "" }
+            }, enabled = !submitted && XiaomiCaptchaController.validAnswer(answer.trim()),
+                modifier = Modifier.fillMaxWidth().testTag("xiaomi_captcha_submit")) {
+                Text(stringResource(R.string.xiaomi_captcha_confirm))
+            }
+        } else Text(stringResource(R.string.xiaomi_captcha_invalid_image), color = MaterialTheme.colorScheme.error)
+        OutlinedButton(onClick = { answer = ""; onCancel() }, modifier = Modifier.fillMaxWidth().testTag("xiaomi_captcha_cancel")) {
+            Text(stringResource(R.string.xiaomi_source_stop))
+        }
+    }
 }

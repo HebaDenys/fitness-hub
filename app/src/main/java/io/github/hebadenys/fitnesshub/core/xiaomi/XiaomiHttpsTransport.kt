@@ -51,7 +51,7 @@ internal class XiaomiHttpsTransport(
                                 } finally { bytes.fill(0) }
                             }
                             val status = connection.responseCode
-                            val cookies = if (request.endpoint == XiaomiEndpoint.SERVICE_TICKET) {
+                            val cookies = if (request.endpoint in setOf(XiaomiEndpoint.SERVICE_TICKET, XiaomiEndpoint.CAPTCHA_IMAGE)) {
                                 connection.headerFields.entries.filter { it.key.equals("Set-Cookie", ignoreCase = true) }
                                     .flatMap { it.value.orEmpty() }
                             } else emptyList()

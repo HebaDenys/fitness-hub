@@ -49,6 +49,8 @@ internal data class XiaomiHistoryView(val records: List<XiaomiRecordDetail>, val
 internal interface XiaomiSourceGateway {
     suspend fun overview(): XiaomiSourceOverview
     suspend fun login(region: XiaomiRegion, username: String, password: CharArray)
+    suspend fun loginWithCaptcha(region: XiaomiRegion, username: String, password: CharArray,
+        captcha: XiaomiCaptchaResponder) = login(region, username, password)
     suspend fun discover(model: String, older: Boolean = false): XiaomiDiscoveryState
     suspend fun confirm(candidateKey: String)
     suspend fun sync(): XiaomiHistoryResult

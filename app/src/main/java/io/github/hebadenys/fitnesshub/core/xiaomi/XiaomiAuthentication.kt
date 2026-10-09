@@ -1,5 +1,6 @@
 package io.github.hebadenys.fitnesshub.core.xiaomi
 
+import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.ensureActive
 import java.net.HttpCookie
@@ -8,13 +9,14 @@ import java.time.Clock
 
 /**
  * Three-step xiaomiio login adapted from SmartScaleConnect auth.go, MIT/a9e5c04.
- * Challenge detection is implemented; CAPTCHA/2FA continuation is NOT. Never bypass
+ * Manual CAPTCHA continuation is bounded and ephemeral; additional verification remains explicit. Never bypass
  * a challenge, blindly retry a password, or reinterpret any vendor error as success.
  */
 internal class XiaomiAuthentication(
     private val http: XiaomiHttpExchange,
     private val clock: Clock = Clock.systemUTC(),
-    private val random: SecureRandom = SecureRandom()
+    private val random: SecureRandom = SecureRandom(),
+    private val captcha: XiaomiCaptchaResponder? = null
 ) {
     suspend fun login(connectionId: String, region: XiaomiRegion, username: String, password: CharArray): XiaomiSession {
         try {
@@ -23,27 +25,59 @@ internal class XiaomiAuthentication(
                 accessFailure(XiaomiAccessFailure.INVALID_INPUT)
             }
             val start = loginJson(http.execute(XiaomiHttpRequest(XiaomiEndpoint.LOGIN_START, XiaomiUrlPolicy.START)))
-            detectChallenge(start)
+            val initialCaptcha = optionalText(start, "captchaUrl") ?: optionalText(start, "captchaURL")
+            if (optionalText(start, "notificationUrl") != null) accessFailure(XiaomiAccessFailure.VERIFICATION_REQUIRED)
+            if (initialCaptcha != null && captcha == null) accessFailure(XiaomiAccessFailure.CAPTCHA_REQUIRED)
             val code = number(start, "code")
             // An unauthenticated serviceLogin may legitimately return 70016 plus the login form.
-            if (code != 0L && code != 70016L) authCode(code)
+            if (code != 0L && code != 70016L && !(code == 87001L && initialCaptcha != null)) authCode(code)
             if (text(start, "sid", 32) != "xiaomiio" || text(start, "callback", 8192) != XiaomiUrlPolicy.CALLBACK) {
                 accessFailure(XiaomiAccessFailure.UNSAFE_ENDPOINT)
             }
             val sign = text(start, "_sign", 4096)
             val qs = text(start, "qs", 4096)
             val deviceId = ByteArray(16).also(random::nextBytes).joinToString("") { "%02x".format(it.toInt() and 255) }
-            val form = XiaomiWireCrypto.form(mapOf(
+            val fields = mapOf(
                 "_json" to "true", "hash" to XiaomiWireCrypto.passwordHash(password),
                 "sid" to "xiaomiio", "callback" to XiaomiUrlPolicy.CALLBACK,
                 "_sign" to sign, "qs" to qs, "user" to username
-            ))
+            )
             password.fill('\u0000')
             currentCoroutineContext().ensureActive()
-            val authenticated = loginJson(http.execute(XiaomiHttpRequest(
-                XiaomiEndpoint.LOGIN_PASSWORD, XiaomiUrlPolicy.PASSWORD,
-                mapOf("Content-Type" to "application/x-www-form-urlencoded", "Cookie" to "deviceId=$deviceId"), form
-            )))
+            suspend fun submit(extra: Map<String, String> = emptyMap(), ick: String? = null): Map<String, XiaomiJson> =
+                loginJson(http.execute(XiaomiHttpRequest(
+                    XiaomiEndpoint.LOGIN_PASSWORD, XiaomiUrlPolicy.PASSWORD,
+                    mapOf("Content-Type" to "application/x-www-form-urlencoded",
+                        "Cookie" to ("deviceId=$deviceId" + (ick?.let { "; ick=$it" } ?: ""))),
+                    XiaomiWireCrypto.form(fields + extra)
+                )))
+            var authenticated = if (initialCaptcha != null) start else submit()
+            var rounds = 0
+            val completed = withTimeoutOrNull(XiaomiCaptchaController.TIMEOUT_MILLIS) {
+            while (true) {
+                val captchaUrl = optionalText(authenticated, "captchaUrl") ?: optionalText(authenticated, "captchaURL")
+                if (optionalText(authenticated, "notificationUrl") != null) {
+                    accessFailure(XiaomiAccessFailure.VERIFICATION_REQUIRED)
+                }
+                if (captchaUrl == null) break
+                val responder = captcha ?: accessFailure(XiaomiAccessFailure.CAPTCHA_REQUIRED)
+                if (++rounds > 3) accessFailure(XiaomiAccessFailure.RATE_LIMITED)
+                val url = if (captchaUrl.startsWith("/")) "https://account.xiaomi.com$captchaUrl" else captchaUrl
+                XiaomiUrlPolicy.check(url, XiaomiEndpoint.CAPTCHA_IMAGE)
+                val response = http.execute(XiaomiHttpRequest(XiaomiEndpoint.CAPTCHA_IMAGE, url,
+                    mapOf("Accept" to "image/png,image/jpeg", "Cookie" to "deviceId=$deviceId")))
+                requireHttpOk(response.status)
+                val ick = captchaCookie(response.setCookies)
+                if (!isCaptchaImage(response.body)) accessFailure(XiaomiAccessFailure.PROTOCOL_CHANGED)
+                val answer = try { responder.answer(response.body) } finally { response.body.fill(0) }
+                if (!XiaomiCaptchaController.validAnswer(answer)) accessFailure(XiaomiAccessFailure.INVALID_INPUT)
+                currentCoroutineContext().ensureActive()
+                // Only an explicit response resumes the same form/device. Never retry automatically.
+                authenticated = submit(mapOf("captCode" to answer), ick)
+            }
+            true
+            }
+            if (completed == null) accessFailure(XiaomiAccessFailure.CHALLENGE_EXPIRED)
             detectChallenge(authenticated)
             authCode(number(authenticated, "code"))
             val userId = number(authenticated, "userId").takeIf { it > 0 }?.toString()
@@ -70,6 +104,35 @@ internal class XiaomiAuthentication(
             return XiaomiSession(connectionId, region, userId, security, token.value,
                 cookies["cUserId"]?.value, now, Math.addExact(now, maxAge))
         } finally { password.fill('\u0000') }
+    }
+
+
+    private fun optionalText(fields: Map<String, XiaomiJson>, key: String): String? =
+        (fields[key] as? XiaomiJson.Text)?.value?.takeIf { it.isNotBlank() }
+
+    private fun captchaCookie(headers: List<String>): String {
+        if (headers.size > 16 || headers.sumOf { it.length } > 32 * 1024) accessFailure(XiaomiAccessFailure.RESPONSE_TOO_LARGE)
+        val cookies = try { headers.flatMap {
+            if (it.any { ch -> ch == '\r' || ch == '\n' }) accessFailure(XiaomiAccessFailure.PROTOCOL_CHANGED)
+            HttpCookie.parse(it)
+        }.filter { it.name == "ick" } } catch (_: IllegalArgumentException) {
+            accessFailure(XiaomiAccessFailure.PROTOCOL_CHANGED)
+        }
+        if (cookies.size != 1) accessFailure(XiaomiAccessFailure.PROTOCOL_CHANGED)
+        val cookie = cookies.single()
+        val domain = cookie.domain?.lowercase(java.util.Locale.ROOT)?.removePrefix(".")
+        if (domain != null && domain !in setOf("account.xiaomi.com", "xiaomi.com")) accessFailure(XiaomiAccessFailure.UNSAFE_ENDPOINT)
+        if (!XiaomiSession.cookieValue(cookie.value, 4096) || cookie.maxAge == 0L || cookie.hasExpired()) {
+            accessFailure(XiaomiAccessFailure.PROTOCOL_CHANGED)
+        }
+        return cookie.value
+    }
+
+    private fun isCaptchaImage(bytes: ByteArray): Boolean {
+        if (bytes.size !in 8..256 * 1024) return false
+        val png = byteArrayOf(0x89.toByte(), 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)
+        return bytes.take(8).toByteArray().contentEquals(png) ||
+            (bytes[0] == 0xff.toByte() && bytes[1] == 0xd8.toByte() && bytes[2] == 0xff.toByte())
     }
 
     private fun loginJson(response: XiaomiHttpResponse): Map<String, XiaomiJson> {
