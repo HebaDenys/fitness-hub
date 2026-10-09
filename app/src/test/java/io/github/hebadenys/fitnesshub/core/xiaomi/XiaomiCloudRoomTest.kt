@@ -42,6 +42,7 @@ class XiaomiCloudRoomTest {
         assertTrue(it.moveToFirst()); it.getLong(0)
     }
     private fun loginHttp(request: XiaomiHttpRequest): XiaomiHttpResponse = when (request.endpoint) {
+        XiaomiEndpoint.CAPTCHA_IMAGE -> error("Unexpected CAPTCHA in normal-path fixture")
         XiaomiEndpoint.LOGIN_START -> f.start()
         XiaomiEndpoint.LOGIN_PASSWORD -> f.authenticated()
         XiaomiEndpoint.SERVICE_TICKET -> f.ticket()

@@ -49,9 +49,9 @@ internal class XiaomiCaptchaController : XiaomiCaptchaResponder {
 
     fun submit(id: Long, answer: String): Boolean = synchronized(this) {
         val value = answer.trim()
-        if (!validAnswer(value)) return false
-        val current = pending ?: return false
-        if (current.first != id || current.second.isCompleted) return false
+        if (!validAnswer(value)) return@synchronized false
+        val current = pending ?: return@synchronized false
+        if (current.first != id || current.second.isCompleted) return@synchronized false
         // Clear the visible round immediately so repeated taps cannot submit twice.
         mutableChallenge.value?.image?.fill(0)
         mutableChallenge.value = null
