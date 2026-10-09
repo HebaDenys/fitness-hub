@@ -97,3 +97,10 @@ Non chiamare prodotto finito prima di questi gate.
 Corpo 0.3.16 verificato sul commit 9c25fe3fd91bb0bd965d54964ef362ab37c20550: CI 37861713790 verde, 466 test / 63 suite, 0 failure/error/skip, 14 controlli Python, lint/debug APK, firma e pubblicazione. SHA-256 APK: 681978f8bdccc979c3e8989e4556071e9195ae3e5b8661ee9c0e554ccb8cef0d. Nessuna QA pixel/dispositivo.
 
 Preparata pipeline firma privata manuale e inattiva, con build senza segreti, job firma isolato e guard fail-closed. Verifica setup separata senza environment/segretI. Ambiente concordato Dev Env, unico reviewer HebaDenys, self-review ammessa, bypass admin consentito esplicitamente. Scope segreti riportato dal proprietario; verifica API ancora da eseguire. Nessuna chiave letta o generata, nessuna firma privata prodotta. CI di questo incremento ancora da verificare. Dettagli e limiti: [security/private-signing.md](security/private-signing.md).
+
+
+## FH-XIA-11 — release privata e icona (9 ottobre 2026)
+
+Setup read-only commit 6cf515f: run 37865632700 verifica Dev Env ID 23832844662, reviewer unico e main-only. Scope segreti non leggibile con GITHUB_TOKEN: warning, non attestazione API. Run Android 37865632662 fermo su regex test che escludeva cifre nei nomi B64; corretto senza disabilitare test.
+
+0.3.17/code19 aggiunge INTERNET solo alla release e gate certificato reale/non-debuggable/package. Login/storico esistenti diventano accessibili solo nella APK correttamente firmata; debug pubblico resta bloccato. Icona FH originale adattiva nero/lime. Test gate positivi/negativi, controlli manifest e pipeline; CI ancora da eseguire. Nessun login reale o installazione telefono dichiarati.

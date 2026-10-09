@@ -21,6 +21,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -119,9 +122,9 @@ internal fun XiaomiSourceContent(
                 }
             }
             state.errorCode?.let { code -> item {
-                Text(stringResource(errorText(code)), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("xiaomi_error"))
+                Text(stringResource(errorText(code)), color = MaterialTheme.colorScheme.error, modifier = Modifier.testTag("xiaomi_error").semantics { liveRegion = LiveRegionMode.Polite })
             } }
-            if (state.notice != XiaomiNotice.NONE) item { Text(stringResource(noticeText(state.notice))) }
+            if (state.notice != XiaomiNotice.NONE) item { Text(stringResource(noticeText(state.notice)), Modifier.semantics { liveRegion = LiveRegionMode.Polite }) }
             if (overview != null) {
                 item {
                     SourceSection {

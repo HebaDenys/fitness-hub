@@ -16,8 +16,8 @@ def apk_metadata(badging):
         raise ValueError("Unexpected APK package metadata")
     if "application-debuggable" in badging:
         raise ValueError("Release APK must not be debuggable")
-    if "android.permission.INTERNET" in badging or "android.permission.health.WRITE_" in badging:
-        raise ValueError("This preparation must preserve the offline/read-only candidate")
+    if "android.permission.INTERNET" not in badging or "android.permission.health.WRITE_" in badging:
+        raise ValueError("Private release requires network access and must remain read-only")
     if not re.fullmatch(r"[0-9A-Za-z.+-]+", match.group(3)):
         raise ValueError("Unsafe version name")
     if int(match.group(2)) < 1:
@@ -63,7 +63,7 @@ def main():
     if os.environ.get("GITHUB_OUTPUT"):
         with open(os.environ["GITHUB_OUTPUT"], "a") as file:
             file.write("apk_sha256=" + digest + "\n")
-    print("Unsigned, non-debuggable offline release verified:", actual["version_name"], digest)
+    print("Unsigned, non-debuggable private-network release verified:", actual["version_name"], digest)
 
 
 if __name__ == "__main__":

@@ -58,7 +58,9 @@ jobs:
           test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
           python3 -m unittest discover -s ci -p 'test_*.py' -v
       - name: Shared unit suite and unsigned release checks
-        run: ./gradlew testDebugUnitTest lintRelease assembleRelease --stacktrace
+        run: |
+          chmod +x gradlew
+          ./gradlew testDebugUnitTest lintRelease assembleRelease --stacktrace
       - name: Package validated unsigned release
         id: package
         run: python3 ci/package_unsigned_release.py
@@ -140,7 +142,7 @@ jobs:
           assert match and match.group(1) == "io.github.hebadenys.fitnesshub"
           assert int(match.group(2)) == metadata["version_code"] and match.group(3) == metadata["version_name"]
           assert "application-debuggable" not in badging
-          assert "android.permission.INTERNET" not in badging and "android.permission.health.WRITE_" not in badging
+          assert "android.permission.INTERNET" in badging and "android.permission.health.WRITE_" not in badging
           assert subprocess.run([str(tools/"apksigner"), "verify", str(root/"unsigned.apk")],
                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode != 0
           print("Same-run unsigned release artifact and actual APK metadata verified.")

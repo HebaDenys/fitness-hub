@@ -2,9 +2,9 @@
     <string name="xiaomi_source_title">Xiaomi Home</string>
     <string name="xiaomi_source_entry">Account bilancia, persona selezionata e storico locale</string>
     <string name="xiaomi_source_open">Apri sorgente Xiaomi</string>
-    <string name="xiaomi_source_description">Legge lo storico disponibile direttamente da Xiaomi. Xiaomi Home resta installata. Nessun root, bridge esterno o server Fitness Hub.</string>
+    <string name="xiaomi_source_description">Adapter sperimentale non ufficiale: legge lo storico disponibile direttamente da Xiaomi. Xiaomi Home resta installata. Nessun server Fitness Hub. Compatibilità di account, regione e firmware da verificare sul telefono.</string>
     <string name="xiaomi_source_blocked">Login Xiaomi disabilitato in questa build di test</string>
-    <string name="xiaomi_source_signing">Prima di inserire credenziali reali occorre approvare firma privata e percorso di migrazione. Questa build non può abilitare il cloud. I dati già archiviati restano disponibili offline.</string>
+    <string name="xiaomi_source_signing">Il login richiede il certificato privato approvato e una APK release non debuggable. APK TEST/debug o con firma diversa restano bloccate. Lo storico salvato resta disponibile offline.</string>
     <string name="xiaomi_source_signed_out">Nessuna sessione Xiaomi attiva</string>
     <string name="xiaomi_source_needs_selection">Account collegato; scegli persona e bilancia prima di importare</string>
     <string name="xiaomi_source_ready">Account e sorgente selezionata corrispondono</string>

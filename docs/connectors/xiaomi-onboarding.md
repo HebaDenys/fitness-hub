@@ -6,7 +6,7 @@ Scope: FH-XIA-05/06/10, first UI increment in 0.3.5. Check PROGRESS.md for actua
 
 Settings -> Xiaomi Home -> sources/xiaomi is a normal Compose navigation route in the same APK. XiaomiModule supplies exactly one runtime/client/session store and one source repository through Hilt. No additional Activity, bridge, backend or root is required.
 
-The current production assembly still uses AwaitingPrivateSigning. The screen displays this block and does not render username/password/login controls while access is blocked. Local archive metadata and existing records are readable without a service session. The gate is not a certificate implementation and has not been bypassed.
+The runtime checks the actual APK certificate, package and non-debuggable status. Only the approved privately signed release can render active login controls; the public debug/TEST APK remains blocked and has no INTERNET permission. Local archive metadata remains readable without a service session.
 
 ## Explicit onboarding
 
@@ -22,7 +22,7 @@ The user must select a candidate and confirm a second time before creating the f
 
 ## Actions and status
 
-Login, discovery, confirmation, manual sync, continuation, cancellation, local refresh and disconnect are connected to gateway/client/Room operations, not simulated success buttons. Live access remains disabled by the release gate; tests inject synthetic HTTP.
+Login, discovery, confirmation, manual sync, continuation, cancellation, local refresh and disconnect are connected to gateway/client/Room operations, not simulated success buttons. Live access is enabled only for the approved private release; tests inject synthetic HTTP.
 
 Manual sync has a 20-page budget per click and uses the existing durable checkpoint for interrupted history. Completed means reaching the source page boundary, not proof that every historical vendor record was exposed. The UI shows last page committed, persisted range and snapshot count. Snapshot count is not advertised as a number of deduplicated weighings; changed versions remain separate.
 
@@ -40,7 +40,7 @@ No fake accounts, demo measurements or permissive access switch are shipped. Com
 
 Tests added for discovery identity/name handling, native Room selection/isolation/history paging, ViewModel cancellation/password clearing, and actual Compose semantics/actions under Robolectric. These are not physical-device, live Xiaomi, real TLS, CAPTCHA or hardware Keystore tests.
 
-Remaining: approved private signing/custody/migration; real account/region/model verification; CAPTCHA/additional-verification continuation and separately reviewed STS redirects; richer region/model help; shared canonical body repository; periodic Xiaomi WorkManager sync; Health Connect write-back; full accessible/localized phone validation.
+Remaining: successfully signed private APK and owner installation; real account/region/model verification; CAPTCHA/additional-verification continuation and separately reviewed STS redirects; richer region/model help; shared canonical body repository; periodic Xiaomi WorkManager sync; Health Connect write-back; full accessible/localized phone validation.
 
 References used:
 - SmartScaleConnect pinned history and user label contract: https://github.com/AlexxIT/SmartScaleConnect/blob/a9e5c04f1079b65d456c8a5fd296775a1ef29e8f/pkg/xiaomi/client.go

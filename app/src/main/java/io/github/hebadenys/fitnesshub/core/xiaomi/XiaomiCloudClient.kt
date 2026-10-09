@@ -163,11 +163,11 @@ internal class XiaomiCloudClient(
     }
 }
 
-/** Gate remains closed until owner-approved private signing/custody/migration. */
+/** Owner-approved publisher trust; public TEST/debug builds remain blocked. */
 internal class XiaomiCloudRuntime private constructor(val client: XiaomiCloudClient, val archive: RoomXiaomiArchive) {
     companion object {
         fun create(context: Context, database: HealthDatabase): XiaomiCloudRuntime {
-            val gate = XiaomiNetworkGate.AwaitingPrivateSigning
+            val gate = XiaomiPrivateSigningGate(context)
             val store = XiaomiProtectedSessionStore(XiaomiAtomicSessionFile(context), XiaomiSessionCipher(XiaomiAndroidSessionKeys()))
             return XiaomiCloudRuntime(XiaomiCloudClient(XiaomiHttpsTransport(gate), store, gate), RoomXiaomiArchive(database))
         }

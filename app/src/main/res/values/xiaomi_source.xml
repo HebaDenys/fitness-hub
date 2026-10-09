@@ -2,9 +2,9 @@
     <string name="xiaomi_source_title">Xiaomi Home</string>
     <string name="xiaomi_source_entry">Scale account, selected person and local history</string>
     <string name="xiaomi_source_open">Open Xiaomi source</string>
-    <string name="xiaomi_source_description">Read available scale history directly from Xiaomi. Xiaomi Home stays installed. No root, external bridge or Fitness Hub server.</string>
+    <string name="xiaomi_source_description">Unofficial experimental adapter: reads available scale history directly from Xiaomi. Xiaomi Home stays installed. No Fitness Hub server. Current account, region and firmware compatibility must be tested on your phone.</string>
     <string name="xiaomi_source_blocked">Xiaomi login is disabled in this test build</string>
-    <string name="xiaomi_source_signing">A private signing identity and migration plan must be approved before entering real credentials. This build cannot enable cloud access. Previously archived data remains available offline.</string>
+    <string name="xiaomi_source_signing">Cloud login requires this approved private certificate and a non-debuggable release APK. Public TEST/debug or differently signed APKs remain blocked. Saved history remains available offline.</string>
     <string name="xiaomi_source_signed_out">No active Xiaomi session</string>
     <string name="xiaomi_source_needs_selection">Account connected; choose your person and scale before importing</string>
     <string name="xiaomi_source_ready">Account and selected source match</string>

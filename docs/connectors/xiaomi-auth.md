@@ -53,9 +53,9 @@ A single runtime instance must be reused by the app. No periodic Xiaomi WorkMana
 
 ## Release gate
 
-`XiaomiCloudRuntime.create` uses `AwaitingPrivateSigning`. It cannot make a real login in the publicly signed test APK. There is no permissive build flag or UI switch. Tests explicitly inject synthetic transports and a test gate.
+`XiaomiCloudRuntime.create` uses `XiaomiPrivateSigningGate`: exact package, non-debuggable APK and exactly one actual current signer matching the owner-approved SHA-256 fingerprint are required. INTERNET exists only in the release manifest. Public TEST/debug APKs and other signatures remain blocked; there is no permissive UI switch. Tests use synthetic transports plus positive/negative publisher-gate cases.
 
-FH-SAFE-03 remains: owner-approved private signing/custody/migration, then onboarding UI and real-device tests. The existing test package/key is unchanged. Do not ask for account passwords in chat, commits, CI secrets or fixtures.
+The owner approved private signing and replacement of disposable test data; installation remains an owner action. The release uses the existing package with a different certificate, so an installed TEST APK cannot be upgraded in place. Real-device login/import testing remains pending. The public debug test key is unchanged. Do not ask for account passwords in chat, commits, CI secrets or fixtures.
 
 ## Verification levels
 

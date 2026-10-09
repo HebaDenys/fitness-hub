@@ -112,3 +112,7 @@ Strumento personale di benessere e fitness, non diagnosi o dispositivo medico. M
 
 ### Preparazione firma privata
 La pipeline manuale è inattiva e separa build senza segreti e firma isolata. Il controllo setup non usa chiavi. Ambiente concordato: Dev Env, reviewer proprietario e bypass admin consentito. La verifica dello scope dei segreti deve riuscire prima della firma; nessun fallback a repository secrets. [Configurazione, limiti e installazione](docs/security/private-signing.md). Questa preparazione non abilita ancora Xiaomi cloud né cambia l'identità dell'app.
+
+
+### Xiaomi nella release 0.3.17
+La release non debuggable abilita la rete e il login diretto Xiaomi soltanto se firmata dal certificato privato approvato. Il debug pubblico resta offline e non accetta credenziali reali. [Guida account e storico](docs/connectors/xiaomi-onboarding.md). L’adapter è sperimentale: CAPTCHA/2FA aggiuntivi possono bloccare il login; compatibilità reale da verificare sul telefono. La nuova icona FH è inclusa in entrambe le build.

@@ -103,10 +103,10 @@ class SigningGuardTest(unittest.TestCase):
                 verify_setup()
             read.assert_not_called()
 
-    def test_real_apk_metadata_must_be_nondebuggable_offline_and_expected_package(self):
-        valid = "package: name='io.github.hebadenys.fitnesshub' versionCode='18' versionName='0.3.16'\n"
+    def test_real_apk_metadata_must_be_nondebuggable_network_readonly_and_expected_package(self):
+        valid = "package: name='io.github.hebadenys.fitnesshub' versionCode='18' versionName='0.3.17'\nuses-permission: name='android.permission.INTERNET'\n"
         self.assertEqual(18, apk_metadata(valid)["version_code"])
-        for invalid in [valid + "application-debuggable", valid + "android.permission.INTERNET",
+        for invalid in [valid + "application-debuggable", valid.replace("android.permission.INTERNET", ""),
                         valid.replace("io.github.hebadenys.fitnesshub", "different.app"),
                         valid + "android.permission.health.WRITE_WEIGHT"]:
             with self.assertRaises(ValueError):
@@ -126,7 +126,7 @@ class SigningWorkflowPolicyTest(unittest.TestCase):
         self.assertNotIn("setup-gradle", sign)
         self.assertNotIn("./gradlew", sign)
         self.assertNotIn("run: python3 ci/", sign)
-        self.assertEqual(REQUIRED_SECRETS, set(re.findall(r"secrets\.(FITNESS_HUB_RELEASE_[A-Z_]+)", sign)))
+        self.assertEqual(REQUIRED_SECRETS, set(re.findall(r"secrets\.(FITNESS_HUB_RELEASE_[A-Z0-9_]+)", sign)))
         self.assertEqual(1, self.private.count("environment: Dev Env"))
         self.assertIn("needs: [preflight, build]", sign)
         self.assertIn("artifact-ids: ${{ needs.build.outputs.artifact_id }}", sign)
